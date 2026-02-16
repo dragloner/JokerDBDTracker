@@ -1,17 +1,41 @@
 # JokerDBDTracker
 
-A Windows WPF application for tracking and watching YouTube stream recordings.
+JokerDBDTracker — это Windows-приложение на WPF для просмотра и отслеживания записей стримов JokerDBD с YouTube прямо внутри программы.
 
-Features:
-- View YouTube stream recordings inside the app
-- Mark streams as watched
-- Favorites system
-- Sorting by watch date
-- Embedded YouTube player using WebView2
-- Local tracking and persistence
+Приложение позволяет удобно просматривать стримы, отмечать просмотренные записи и отслеживать свою активность без необходимости открывать браузер.
 
-Built with:
+## Возможности
+
+- Просмотр записей стримов JokerDBD прямо внутри приложения
+- Встроенный YouTube-плеер (без открытия браузера)
+- Отметка стримов как просмотренных
+- Система избранного для быстрого доступа к важным стримам
+- Сортировка стримов по дате просмотра
+- Отслеживание истории просмотров
+- Локальное сохранение данных пользователя
+- Быстрый и удобный интерфейс
+
+## Для чего это нужно
+
+JokerDBDTracker помогает:
+
+- не терять стримы JokerDBD
+- отслеживать, какие стримы уже просмотрены
+- быстро находить нужные записи
+- смотреть стримы в одном месте
+
+## Технологии
+
 - C#
 - WPF (.NET 8)
-- WebView2
-- YouTube integration
+- WebView2 (встроенный браузер)
+- YouTube интеграция
+- JSON хранение данных
+
+## Установка
+
+1. Перейдите в раздел Releases:
+   https://github.com/dragloner/JokerDBDTracker/releases
+
+2. Скачайте последнюю версию:
+
