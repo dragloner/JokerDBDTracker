@@ -39,3 +39,22 @@ JokerDBDTracker помогает:
 
 2. Скачайте последнюю версию:
 
+JokerDBDTracker-vX.X.X-win-x64.zip
+
+
+3. Распакуйте архив
+
+4. Запустите:
+
+
+
+JokerDBDTracker.exe
+
+
+## Обновления
+
+Новые версии публикуются в разделе Releases.
+
+## Автор
+
+dragloner
