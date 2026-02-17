@@ -465,7 +465,12 @@
 
     </Window.Resources>
 
-    <Border Margin="14" Padding="14" Background="{StaticResource AppBackground}" CornerRadius="26">
+    <Border x:Name="MainRootBorder"
+            Margin="14"
+            Padding="14"
+            Background="{StaticResource AppBackground}"
+            CornerRadius="26"
+            MouseLeftButtonDown="MainRootBorder_MouseLeftButtonDown">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>

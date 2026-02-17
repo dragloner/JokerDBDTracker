@@ -6,6 +6,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using JokerDBDTracker.Models;
 using JokerDBDTracker.Services;
 
@@ -42,6 +43,7 @@ namespace JokerDBDTracker
 
         private readonly YouTubeStreamsService _streamsService = new();
         private readonly WatchHistoryService _watchHistoryService = new();
+        private readonly DispatcherTimer _searchDebounceTimer = new();
 
         private bool _suppressSelectionEvents;
         private string? _selectedVideoId;
@@ -56,18 +58,51 @@ namespace JokerDBDTracker
         public MainWindow()
         {
             InitializeComponent();
+            WindowBoundsHelper.Attach(this);
             VideoList.ItemsSource = _videos;
             UpdateTopNavButtonsVisualState();
             StateChanged += MainWindow_StateChanged;
             UpdateMainWindowButtonsState();
             Loaded += MainWindow_Loaded;
+            _searchDebounceTimer.Interval = TimeSpan.FromMilliseconds(180);
+            _searchDebounceTimer.Tick += SearchDebounceTimer_Tick;
         }
 
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            WindowState = WindowState.Maximized;
+            ApplyStartupMaximized();
             UpdateMainWindowButtonsState();
             await LoadVideosAsync();
+        }
+
+        private void ApplyStartupMaximized()
+        {
+            Topmost = false;
+            WindowState = WindowState.Maximized;
+            Dispatcher.BeginInvoke(() =>
+            {
+                if (WindowState != WindowState.Minimized)
+                {
+                    WindowState = WindowState.Maximized;
+                }
+            }, DispatcherPriority.Loaded);
+        }
+
+        private void SearchDebounceTimer_Tick(object? sender, EventArgs e)
+        {
+            _searchDebounceTimer.Stop();
+            ApplySearchFilter();
+        }
+
+        private void ApplySearchFilter()
+        {
+            if (IsProfileTabSelected())
+            {
+                return;
+            }
+
+            RefreshVisibleVideos();
+            RefreshRecommendations();
         }
 
         private void MainMinimizeButton_Click(object sender, RoutedEventArgs e)
@@ -78,7 +113,6 @@ namespace JokerDBDTracker
         private void MainWindowSizeButton_Click(object sender, RoutedEventArgs e)
         {
             WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
-            UpdateMainWindowButtonsState();
         }
 
         private void MainCloseButton_Click(object sender, RoutedEventArgs e)
@@ -103,6 +137,16 @@ namespace JokerDBDTracker
 
         private void TopHeaderBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
+            TryBeginWindowDrag(e, 1060);
+        }
+
+        private void MainRootBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            TryBeginWindowDrag(e, 1060);
+        }
+
+        private void TryBeginWindowDrag(MouseButtonEventArgs e, double minimumRestoreWidth)
+        {
             if (e.ChangedButton != MouseButton.Left || IsInteractiveElement(e.OriginalSource as DependencyObject))
             {
                 return;
@@ -111,7 +155,7 @@ namespace JokerDBDTracker
             if (e.ClickCount == 2)
             {
                 WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
-                UpdateMainWindowButtonsState();
+                e.Handled = true;
                 return;
             }
 
@@ -122,16 +166,16 @@ namespace JokerDBDTracker
                 var widthRatio = ActualWidth > 0 ? pointerPosition.X / ActualWidth : 0.5;
                 widthRatio = Math.Clamp(widthRatio, 0.0, 1.0);
 
-                var restoreWidth = RestoreBounds.Width > 0 ? RestoreBounds.Width : Math.Max(1060, Width);
+                var restoreWidth = RestoreBounds.Width > 0 ? RestoreBounds.Width : Math.Max(minimumRestoreWidth, Width);
                 WindowState = WindowState.Normal;
                 Left = screenPosition.X - restoreWidth * widthRatio;
-                Top = Math.Max(0, screenPosition.Y - 20);
-                UpdateMainWindowButtonsState();
+                Top = screenPosition.Y - 20;
             }
 
             try
             {
                 DragMove();
+                e.Handled = true;
             }
             catch
             {
@@ -143,7 +187,13 @@ namespace JokerDBDTracker
         {
             while (source is not null)
             {
-                if (source is ButtonBase || source is TextBox || source is ComboBox || source is Slider)
+                if (source is ButtonBase ||
+                    source is TextBox ||
+                    source is ComboBox ||
+                    source is Slider ||
+                    source is ScrollBar ||
+                    source is ScrollViewer ||
+                    source is ListBoxItem)
                 {
                     return true;
                 }
@@ -573,11 +623,8 @@ namespace JokerDBDTracker
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             _searchText = SearchBox.Text.Trim();
-            if (!IsProfileTabSelected())
-            {
-                RefreshVisibleVideos();
-                RefreshRecommendations();
-            }
+            _searchDebounceTimer.Stop();
+            _searchDebounceTimer.Start();
         }
 
         private async void ToggleFavoriteButton_Click(object sender, RoutedEventArgs e)
@@ -631,3 +678,5 @@ namespace JokerDBDTracker
         }
     }
 }
+
+

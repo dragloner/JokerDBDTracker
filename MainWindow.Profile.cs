@@ -47,14 +47,15 @@ namespace JokerDBDTracker
 
         private void RefreshProfile()
         {
+            var streakDays = CalculateWatchStreakDays();
             var achievements = new List<ProfileAchievement>
             {
                 BuildAchievement("Первый просмотр", "Открой любой стрим хотя бы один раз.", _watchHistory.Count >= 1),
                 BuildAchievement("10 стримов", "Посмотри десять разных стримов.", _watchHistory.Count >= 10),
                 BuildAchievement("25 стримов", "Посмотри 25 разных стримов.", _watchHistory.Count >= 25),
                 BuildAchievement("50 стримов", "Посмотри 50 разных стримов.", _watchHistory.Count >= 50),
-                BuildAchievement("Стрик 3 дня", "Заходи и смотри стримы три дня подряд.", CalculateWatchStreakDays() >= 3),
-                BuildAchievement("Стрик 7 дней", "Смотри стримы семь дней подряд.", CalculateWatchStreakDays() >= 7),
+                BuildAchievement("Стрик 3 дня", "Заходи и смотри стримы три дня подряд.", streakDays >= 3),
+                BuildAchievement("Стрик 7 дней", "Смотри стримы семь дней подряд.", streakDays >= 7),
                 BuildAchievement("Избранное x5", "Добавь пять стримов в избранное.", _favoriteVideoIds.Count >= 5),
                 BuildAchievement("Избранное x15", "Добавь 15 стримов в избранное.", _favoriteVideoIds.Count >= 15),
                 BuildAchievement("Эффекты x3", "Посмотри 3 сессии с любыми эффектами.", _effectSessionsAny >= 3),

@@ -1,10 +1,12 @@
 ﻿using System.IO;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Web;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
@@ -25,7 +27,8 @@ namespace JokerDBDTracker
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
             "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
         private bool _effectsPanelExpanded = true;
-        private bool _isPlayerElementFullScreen;
+        private bool _isApplyingEffects;
+        private bool _pendingEffectsApply;
         private double _lastMeasuredTime = -1;
         private double _watchXpBuffer;
         private bool _effectsDirty = true;
@@ -34,6 +37,7 @@ namespace JokerDBDTracker
         private DateTime? _lastXpSampleUtc;
         private bool _halfHourBonusGranted;
         private bool _hourBonusGranted;
+        private readonly DispatcherTimer _effectsApplyDebounceTimer = new();
         private const int HalfHourWatchBonusXp = 25;
         private const int OneHourWatchBonusXp = 60;
 
@@ -65,6 +69,7 @@ namespace JokerDBDTracker
         public PlayerWindow(YouTubeVideo video, int startSeconds)
         {
             InitializeComponent();
+            WindowBoundsHelper.Attach(this);
             _video = video;
             _startSeconds = Math.Max(startSeconds, 0);
             LastPlaybackSeconds = _startSeconds;
@@ -88,10 +93,13 @@ namespace JokerDBDTracker
 
             _positionTimer.Interval = TimeSpan.FromSeconds(2);
             _positionTimer.Tick += PositionTimer_Tick;
+            _effectsApplyDebounceTimer.Interval = TimeSpan.FromMilliseconds(70);
+            _effectsApplyDebounceTimer.Tick += EffectsApplyDebounceTimer_Tick;
         }
 
         private async void PlayerWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            ApplyStartupMaximizedWindowed();
             VideoTitleText.Text = _video.Title;
             UpdateWindowSizeButtonState();
             UpdateStrengthSlidersEnabledState();
@@ -99,7 +107,7 @@ namespace JokerDBDTracker
 
             try
             {
-                var userDataFolder = ResolveWebViewUserDataFolder();
+                var userDataFolder = await Task.Run(ResolveWebViewUserDataFolder);
                 var environment = await CoreWebView2Environment.CreateAsync(userDataFolder: userDataFolder);
                 await Player.EnsureCoreWebView2Async(environment);
 
@@ -108,7 +116,6 @@ namespace JokerDBDTracker
                 Player.CoreWebView2.Settings.AreDevToolsEnabled = false;
                 Player.CoreWebView2.Settings.IsZoomControlEnabled = true;
                 Player.CoreWebView2.Settings.UserAgent = DesktopChromeUserAgent;
-                Player.CoreWebView2.ContainsFullScreenElementChanged += CoreWebView2_ContainsFullScreenElementChanged;
                 Player.CoreWebView2.NavigationStarting += CoreWebView2_NavigationStarting;
                 Player.CoreWebView2.NewWindowRequested += CoreWebView2_NewWindowRequested;
                 Player.CoreWebView2.NavigationCompleted += CoreWebView2_NavigationCompleted;
@@ -154,7 +161,7 @@ namespace JokerDBDTracker
                 await Player.CoreWebView2.ExecuteScriptAsync(BuildKioskModeScript(_video.VideoId));
                 _lastAppliedEffectsSignature = string.Empty;
                 _effectsDirty = true;
-                await ApplyEffectsAsync();
+                await ApplyEffectsSafelyAsync();
             }
             catch
             {
@@ -253,6 +260,47 @@ namespace JokerDBDTracker
             return $$"""
                 (() => {
                     const expectedVideoId = '{{safeVideoId}}';
+                    const installScrollLock = () => {
+                        if (window.__jdbdScrollLockInstalled) {
+                            return;
+                        }
+
+                        window.__jdbdScrollLockInstalled = true;
+                        const preventScroll = (event) => {
+                            event.preventDefault();
+                        };
+
+                        const blockedKeys = new Set([
+                            'ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '
+                        ]);
+
+                        document.addEventListener('wheel', preventScroll, { passive: false, capture: true });
+                        document.addEventListener('touchmove', preventScroll, { passive: false, capture: true });
+                        document.addEventListener('keydown', (event) => {
+                            if (blockedKeys.has(event.key)) {
+                                event.preventDefault();
+                            }
+                        }, { capture: true });
+
+                        document.addEventListener('click', (event) => {
+                            const link = event.target && event.target.closest ? event.target.closest('a[href*="/watch"]') : null;
+                            if (!link) {
+                                return;
+                            }
+
+                            try {
+                                const url = new URL(link.href, location.origin);
+                                const video = url.searchParams.get('v');
+                                if (!video || video !== expectedVideoId) {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                }
+                            } catch {
+                                event.preventDefault();
+                                event.stopPropagation();
+                            }
+                        }, { capture: true });
+                    };
 
                     const applyKioskMode = () => {
                         const current = new URL(location.href);
@@ -284,20 +332,43 @@ namespace JokerDBDTracker
                         document.body.style.setProperty('overflow', 'hidden', 'important');
                         document.body.style.setProperty('background', '#000', 'important');
 
+                        for (const scrollRoot of ['ytd-app', '#content', '#page-manager', 'ytd-watch-flexy', '#columns']) {
+                            const node = document.querySelector(scrollRoot);
+                            if (!node) {
+                                continue;
+                            }
+
+                            node.style.setProperty('overflow', 'hidden', 'important');
+                            node.scrollTop = 0;
+                        }
+                        window.scrollTo(0, 0);
+
                         const hideSelectors = [
                             'ytd-masthead',
                             '#masthead-container',
                             '#secondary',
+                            '#secondary-inner',
                             '#related',
                             '#below',
                             '#comments',
                             'ytd-comments',
                             'ytd-watch-metadata',
+                            'ytd-watch-info-text',
+                            '#description',
+                            '#description-inline-expander',
+                            '#description-inner',
+                            'ytd-text-inline-expander',
+                            'ytd-engagement-panel-section-list-renderer',
+                            '#panels',
+                            'ytd-watch-flexy[engagement-panel-visible]',
                             '#chat',
                             '#chat-container',
                             '#guide',
                             'ytd-mini-guide-renderer',
                             'tp-yt-app-drawer',
+                            'ytd-reel-shelf-renderer',
+                            'ytd-watch-next-secondary-results-renderer',
+                            'ytd-watch-next-feed-renderer',
                             '#end',
                             '#meta',
                             '#columns > :not(#primary)'
@@ -312,9 +383,19 @@ namespace JokerDBDTracker
                         if (flexy) {
                             flexy.removeAttribute('is-two-columns_');
                             flexy.setAttribute('theater', '');
+                            flexy.style.setProperty('height', '100vh', 'important');
+                            flexy.style.setProperty('max-height', '100vh', 'important');
+                            flexy.style.setProperty('overflow', 'hidden', 'important');
+                        }
+
+                        const primary = document.querySelector('#primary');
+                        if (primary) {
+                            primary.style.setProperty('max-height', '100vh', 'important');
+                            primary.style.setProperty('overflow', 'hidden', 'important');
                         }
                     };
 
+                    installScrollLock();
                     applyKioskMode();
                     const observer = new MutationObserver(applyKioskMode);
                     observer.observe(document.documentElement, { childList: true, subtree: true });
@@ -378,36 +459,51 @@ namespace JokerDBDTracker
         }
 
 
-        private void CoreWebView2_ContainsFullScreenElementChanged(object? sender, object e)
+        private void ApplyStartupMaximizedWindowed()
         {
-            if (Player.CoreWebView2 is null)
-            {
-                return;
-            }
-
-            _isPlayerElementFullScreen = Player.CoreWebView2.ContainsFullScreenElement;
-            ApplyFullscreenLayout();
+            Topmost = true;
+            WindowState = WindowState.Normal;
+            ResizeMode = ResizeMode.NoResize;
+            ApplyFullMonitorBounds();
+            Activate();
         }
 
-        private void ApplyFullscreenLayout()
+        private void ApplyFullMonitorBounds()
         {
-            var isFullScreen = _isPlayerElementFullScreen;
-            TopBarPanel.Visibility = isFullScreen ? Visibility.Collapsed : Visibility.Visible;
-
-            if (isFullScreen)
+            var hwnd = new WindowInteropHelper(this).Handle;
+            if (hwnd == IntPtr.Zero)
             {
-                MainRootGrid.Margin = new Thickness(0);
-                PlayerHostBorder.Margin = new Thickness(0);
-                PlayerHostBorder.CornerRadius = new CornerRadius(0);
-                EffectsPanel.Visibility = Visibility.Collapsed;
-                EffectsColumn.Width = new GridLength(0);
+                Left = 0;
+                Top = 0;
+                Width = SystemParameters.PrimaryScreenWidth;
+                Height = SystemParameters.PrimaryScreenHeight;
                 return;
             }
 
-            MainRootGrid.Margin = new Thickness(8);
-            PlayerHostBorder.Margin = new Thickness(0, 8, 0, 8);
-            PlayerHostBorder.CornerRadius = new CornerRadius(10);
-            ApplyEffectsPanelLayout();
+            var monitor = MonitorFromWindow(hwnd, MonitorDefaultToNearest);
+            if (monitor == IntPtr.Zero)
+            {
+                Left = 0;
+                Top = 0;
+                Width = SystemParameters.PrimaryScreenWidth;
+                Height = SystemParameters.PrimaryScreenHeight;
+                return;
+            }
+
+            var monitorInfo = new MonitorInfo { cbSize = Marshal.SizeOf<MonitorInfo>() };
+            if (!GetMonitorInfo(monitor, ref monitorInfo))
+            {
+                Left = 0;
+                Top = 0;
+                Width = SystemParameters.PrimaryScreenWidth;
+                Height = SystemParameters.PrimaryScreenHeight;
+                return;
+            }
+
+            Left = monitorInfo.rcMonitor.left;
+            Top = monitorInfo.rcMonitor.top;
+            Width = Math.Max(1, monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left);
+            Height = Math.Max(1, monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top);
         }
 
         private async void PositionTimer_Tick(object? sender, EventArgs e)
@@ -454,7 +550,7 @@ namespace JokerDBDTracker
                 {
                     _lastXpSampleUtc = nowUtc;
                     _lastMeasuredTime = current;
-                    await ApplyEffectsAsync();
+                    await ApplyEffectsSafelyAsync();
                     UpdateCursedAchievementState(current, duration);
                     return;
                 }
@@ -488,7 +584,7 @@ namespace JokerDBDTracker
 
                 if (_effectsDirty)
                 {
-                    await ApplyEffectsAsync();
+                    await ApplyEffectsSafelyAsync();
                 }
                 UpdateCursedAchievementState(current, duration);
             }
@@ -542,23 +638,65 @@ namespace JokerDBDTracker
             }
         }
 
-        private async void EffectToggle_Changed(object sender, RoutedEventArgs e)
+        private void EffectToggle_Changed(object sender, RoutedEventArgs e)
         {
             UpdateStrengthSlidersEnabledState();
             UpdateEffectDetailsVisibility(animate: true);
-            _effectsDirty = true;
-            await ApplyEffectsAsync();
+            RequestApplyEffects(immediate: true);
         }
 
-        private async void StrengthSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        private void StrengthSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (!IsLoaded)
             {
                 return;
             }
 
+            RequestApplyEffects(immediate: false);
+        }
+
+        private async void EffectsApplyDebounceTimer_Tick(object? sender, EventArgs e)
+        {
+            _effectsApplyDebounceTimer.Stop();
+            await ApplyEffectsSafelyAsync();
+        }
+
+        private void RequestApplyEffects(bool immediate)
+        {
             _effectsDirty = true;
-            await ApplyEffectsAsync();
+            if (immediate)
+            {
+                _effectsApplyDebounceTimer.Stop();
+                _ = ApplyEffectsSafelyAsync();
+                return;
+            }
+
+            _effectsApplyDebounceTimer.Stop();
+            _effectsApplyDebounceTimer.Start();
+        }
+
+        private async Task ApplyEffectsSafelyAsync()
+        {
+            if (_isApplyingEffects)
+            {
+                _pendingEffectsApply = true;
+                return;
+            }
+
+            _isApplyingEffects = true;
+            try
+            {
+                do
+                {
+                    _pendingEffectsApply = false;
+                    await ApplyEffectsAsync();
+                }
+                while (_pendingEffectsApply);
+            }
+            finally
+            {
+                _isApplyingEffects = false;
+            }
         }
 
         private int GetActiveEffectsCount()
@@ -751,7 +889,7 @@ namespace JokerDBDTracker
             UpdateStrengthSlidersEnabledState();
             UpdateEffectDetailsVisibility(animate: false);
 
-            await ApplyEffectsAsync();
+            await ApplyEffectsSafelyAsync();
         }
 
         private void UpdateStrengthSlidersEnabledState()
@@ -816,50 +954,6 @@ namespace JokerDBDTracker
                 new DoubleAnimation(details.Opacity, 0, duration) { EasingFunction = easing });
         }
 
-        private async void FullscreenButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (Player.CoreWebView2 is null)
-            {
-                return;
-            }
-
-            const string script = """
-                (() => {
-                    const btn = document.querySelector('.ytp-fullscreen-button');
-                    if (btn) {
-                        btn.click();
-                        return true;
-                    }
-
-                    const video = document.querySelector('video');
-                    if (!video) {
-                        return false;
-                    }
-
-                    if (document.fullscreenElement) {
-                        document.exitFullscreen();
-                        return true;
-                    }
-
-                    if (video.requestFullscreen) {
-                        video.requestFullscreen();
-                        return true;
-                    }
-
-                    return false;
-                })();
-                """;
-
-            try
-            {
-                await Player.CoreWebView2.ExecuteScriptAsync(script);
-            }
-            catch
-            {
-                // Ignore temporary script errors during navigation.
-            }
-        }
-
         private void ToggleEffectsPanelButton_Click(object sender, RoutedEventArgs e)
         {
             _effectsPanelExpanded = !_effectsPanelExpanded;
@@ -868,13 +962,6 @@ namespace JokerDBDTracker
 
         private void ApplyEffectsPanelLayout()
         {
-            if (_isPlayerElementFullScreen)
-            {
-                EffectsPanel.Visibility = Visibility.Collapsed;
-                EffectsColumn.Width = new GridLength(0);
-                return;
-            }
-
             if (_effectsPanelExpanded)
             {
                 EffectsPanel.Visibility = Visibility.Visible;
@@ -901,7 +988,6 @@ namespace JokerDBDTracker
         private void ToggleWindowSizeButton_Click(object sender, RoutedEventArgs e)
         {
             WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
-            UpdateWindowSizeButtonState();
         }
 
         private void PlayerWindow_StateChanged(object? sender, EventArgs e)
@@ -926,6 +1012,16 @@ namespace JokerDBDTracker
 
         private void TopBarPanel_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
+            TryBeginWindowDrag(e, 860);
+        }
+
+        private void MainRootGrid_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            TryBeginWindowDrag(e, 860);
+        }
+
+        private void TryBeginWindowDrag(MouseButtonEventArgs e, double minimumRestoreWidth)
+        {
             if (e.ChangedButton != MouseButton.Left || IsInteractiveElement(e.OriginalSource as DependencyObject))
             {
                 return;
@@ -934,6 +1030,8 @@ namespace JokerDBDTracker
             if (e.ClickCount == 2)
             {
                 WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+
+                e.Handled = true;
                 return;
             }
 
@@ -944,15 +1042,16 @@ namespace JokerDBDTracker
                 var widthRatio = ActualWidth > 0 ? pointerPosition.X / ActualWidth : 0.5;
                 widthRatio = Math.Clamp(widthRatio, 0.0, 1.0);
 
-                var restoreWidth = RestoreBounds.Width > 0 ? RestoreBounds.Width : Math.Max(860, Width);
+                var restoreWidth = RestoreBounds.Width > 0 ? RestoreBounds.Width : Math.Max(minimumRestoreWidth, Width);
                 WindowState = WindowState.Normal;
                 Left = screenPosition.X - restoreWidth * widthRatio;
-                Top = Math.Max(0, screenPosition.Y - 20);
+                Top = screenPosition.Y - 20;
             }
 
             try
             {
                 DragMove();
+                e.Handled = true;
             }
             catch
             {
@@ -979,7 +1078,13 @@ namespace JokerDBDTracker
         {
             while (source is not null)
             {
-                if (source is ButtonBase || source is TextBox || source is ComboBox || source is Slider)
+                if (source is ButtonBase ||
+                    source is TextBox ||
+                    source is ComboBox ||
+                    source is Slider ||
+                    source is ScrollBar ||
+                    source is ScrollViewer ||
+                    source is ListBoxItem)
                 {
                     return true;
                 }
@@ -994,10 +1099,11 @@ namespace JokerDBDTracker
         {
             try
             {
+                Topmost = false;
                 _positionTimer.Stop();
+                _effectsApplyDebounceTimer.Stop();
                 if (Player.CoreWebView2 is not null)
                 {
-                    Player.CoreWebView2.ContainsFullScreenElementChanged -= CoreWebView2_ContainsFullScreenElementChanged;
                     Player.CoreWebView2.NavigationStarting -= CoreWebView2_NavigationStarting;
                     Player.CoreWebView2.NewWindowRequested -= CoreWebView2_NewWindowRequested;
                     Player.CoreWebView2.NavigationCompleted -= CoreWebView2_NavigationCompleted;
@@ -1010,6 +1116,36 @@ namespace JokerDBDTracker
                 // Ignore teardown errors.
             }
         }
+
+        private const uint MonitorDefaultToNearest = 0x00000002;
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint dwFlags);
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool GetMonitorInfo(IntPtr hMonitor, ref MonitorInfo lpmi);
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+        private struct MonitorInfo
+        {
+            public int cbSize;
+            public Rect rcMonitor;
+            public Rect rcWork;
+            public int dwFlags;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct Rect
+        {
+            public int left;
+            public int top;
+            public int right;
+            public int bottom;
+        }
     }
 }
+
+
+
 
