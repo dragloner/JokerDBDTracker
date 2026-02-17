@@ -72,7 +72,7 @@ namespace JokerDBDTracker
             var recent = _allVideos
                 .Where(v => v.LastViewedAtUtc.HasValue)
                 .OrderByDescending(v => v.LastViewedAtUtc)
-                .Take(15)
+                .Take(MaxRecentStreamsInProfile)
                 .ToList();
             RecentStreamsList.ItemsSource = recent;
 

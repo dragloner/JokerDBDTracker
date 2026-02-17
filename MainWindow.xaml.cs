@@ -2,6 +2,8 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using JokerDBDTracker.Models;
@@ -13,6 +15,7 @@ namespace JokerDBDTracker
     {
         private const string StreamsUrl = "https://www.youtube.com/@JokerDBD/streams";
         private const string AchievementCursed15 = "cursed_15_effects_full_stream";
+        private const int MaxRecentStreamsInProfile = 5;
         private const int MaxLevel = 100;
         private const int MaxPrestige = 100;
         private const int XpFirstWatch = 120;
@@ -55,13 +58,100 @@ namespace JokerDBDTracker
             InitializeComponent();
             VideoList.ItemsSource = _videos;
             UpdateTopNavButtonsVisualState();
+            StateChanged += MainWindow_StateChanged;
+            UpdateMainWindowButtonsState();
             Loaded += MainWindow_Loaded;
         }
 
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
             WindowState = WindowState.Maximized;
+            UpdateMainWindowButtonsState();
             await LoadVideosAsync();
+        }
+
+        private void MainMinimizeButton_Click(object sender, RoutedEventArgs e)
+        {
+            WindowState = WindowState.Minimized;
+        }
+
+        private void MainWindowSizeButton_Click(object sender, RoutedEventArgs e)
+        {
+            WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+            UpdateMainWindowButtonsState();
+        }
+
+        private void MainCloseButton_Click(object sender, RoutedEventArgs e)
+        {
+            Application.Current.Shutdown();
+        }
+
+        private void MainWindow_StateChanged(object? sender, EventArgs e)
+        {
+            UpdateMainWindowButtonsState();
+        }
+
+        private void UpdateMainWindowButtonsState()
+        {
+            if (MainWindowSizeButton is null)
+            {
+                return;
+            }
+
+            MainWindowSizeButton.Content = WindowState == WindowState.Maximized ? "\uE923" : "\uE922";
+        }
+
+        private void TopHeaderBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ChangedButton != MouseButton.Left || IsInteractiveElement(e.OriginalSource as DependencyObject))
+            {
+                return;
+            }
+
+            if (e.ClickCount == 2)
+            {
+                WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+                UpdateMainWindowButtonsState();
+                return;
+            }
+
+            if (WindowState == WindowState.Maximized)
+            {
+                var pointerPosition = e.GetPosition(this);
+                var screenPosition = PointToScreen(pointerPosition);
+                var widthRatio = ActualWidth > 0 ? pointerPosition.X / ActualWidth : 0.5;
+                widthRatio = Math.Clamp(widthRatio, 0.0, 1.0);
+
+                var restoreWidth = RestoreBounds.Width > 0 ? RestoreBounds.Width : Math.Max(1060, Width);
+                WindowState = WindowState.Normal;
+                Left = screenPosition.X - restoreWidth * widthRatio;
+                Top = Math.Max(0, screenPosition.Y - 20);
+                UpdateMainWindowButtonsState();
+            }
+
+            try
+            {
+                DragMove();
+            }
+            catch
+            {
+                // Ignore drag interruptions caused by rapid pointer transitions.
+            }
+        }
+
+        private static bool IsInteractiveElement(DependencyObject? source)
+        {
+            while (source is not null)
+            {
+                if (source is ButtonBase || source is TextBox || source is ComboBox || source is Slider)
+                {
+                    return true;
+                }
+
+                source = VisualTreeHelper.GetParent(source);
+            }
+
+            return false;
         }
 
         private async Task LoadVideosAsync()
@@ -166,7 +256,7 @@ namespace JokerDBDTracker
 
             if (CurrentSortMode() is "watched_recent" or "watched_oldest")
             {
-                RefreshVisibleVideos(video.VideoId);
+                RefreshVisibleVideos();
             }
             else
             {
@@ -343,6 +433,16 @@ namespace JokerDBDTracker
             _suppressSelectionEvents = false;
         }
 
+        private void ClearAllSelections()
+        {
+            _selectedVideoId = null;
+            _suppressSelectionEvents = true;
+            VideoList.SelectedItem = null;
+            RecommendationsList.SelectedItem = null;
+            RecentStreamsList.SelectedItem = null;
+            _suppressSelectionEvents = false;
+        }
+
         private async Task OpenVideoAsync(YouTubeVideo video)
         {
             _selectedVideoId = video.VideoId;
@@ -410,7 +510,8 @@ namespace JokerDBDTracker
             RefreshRecommendations();
             RefreshProfile();
             RefreshHomeSummary();
-            RefreshVisibleVideos(video.VideoId);
+            RefreshVisibleVideos();
+            ClearAllSelections();
         }
 
         private async void VideoList_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -426,9 +527,6 @@ namespace JokerDBDTracker
             }
 
             await OpenVideoAsync(video);
-            _suppressSelectionEvents = true;
-            VideoList.SelectedItem = null;
-            _suppressSelectionEvents = false;
         }
 
         private async void RecommendationsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -444,9 +542,6 @@ namespace JokerDBDTracker
             }
 
             await OpenVideoAsync(video);
-            _suppressSelectionEvents = true;
-            RecommendationsList.SelectedItem = null;
-            _suppressSelectionEvents = false;
         }
 
         private async void RecentStreamsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -462,9 +557,6 @@ namespace JokerDBDTracker
             }
 
             await OpenVideoAsync(video);
-            _suppressSelectionEvents = true;
-            RecentStreamsList.SelectedItem = null;
-            _suppressSelectionEvents = false;
         }
 
         private void SortModeBox_SelectionChanged(object sender, SelectionChangedEventArgs e)

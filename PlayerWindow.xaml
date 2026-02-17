@@ -1,14 +1,28 @@
 ﻿<Window x:Class="JokerDBDTracker.PlayerWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         Title="JokerDBD Tracker - Player"
         WindowState="Maximized"
         WindowStyle="None"
-        ResizeMode="NoResize"
+        ResizeMode="CanResize"
+        Width="1480"
+        Height="900"
+        MinWidth="980"
+        MinHeight="640"
+        WindowStartupLocation="CenterScreen"
         Background="#131B22"
         Icon="Assets/app.ico"
         FontFamily="Bahnschrift SemiCondensed">
+
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="0"
+                            ResizeBorderThickness="8"
+                            CornerRadius="0"
+                            GlassFrameThickness="0"
+                            UseAeroCaptionButtons="False"/>
+    </shell:WindowChrome.WindowChrome>
 
     <Window.Resources>
         <Style TargetType="Button">
@@ -46,6 +60,22 @@
             <Setter Property="FontSize" Value="19"/>
             <Setter Property="Padding" Value="18,10"/>
             <Setter Property="Background" Value="#2E5E7B"/>
+        </Style>
+
+        <Style x:Key="WindowControlButtonStyle" TargetType="Button" BasedOn="{StaticResource EffectButtonStyle}">
+            <Setter Property="Width" Value="38"/>
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="Normal"/>
+            <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+            <Setter Property="Background" Value="#2B5D79"/>
+            <Setter Property="BorderBrush" Value="#6D94AF"/>
+        </Style>
+
+        <Style x:Key="WindowCloseButtonStyle" TargetType="Button" BasedOn="{StaticResource WindowControlButtonStyle}">
+            <Setter Property="Background" Value="#7D3A46"/>
+            <Setter Property="BorderBrush" Value="#B77682"/>
         </Style>
 
         <Style x:Key="EffectCheckBoxStyle" TargetType="CheckBox">
@@ -106,18 +136,66 @@
         </Style>
 
         <Style x:Key="EffectStrengthThumbStyle" TargetType="Thumb">
-            <Setter Property="Width" Value="18"/>
-            <Setter Property="Height" Value="18"/>
+            <Setter Property="Width" Value="14"/>
+            <Setter Property="Height" Value="14"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Thumb">
-                        <Border Background="#CFEAFF"
-                                BorderBrush="#9CC3DD"
-                                BorderThickness="1"
-                                CornerRadius="9">
-                            <Border.Effect>
-                                <DropShadowEffect ShadowDepth="0" BlurRadius="5" Opacity="0.25" Color="#000000"/>
-                            </Border.Effect>
+                        <Ellipse x:Name="Knob"
+                                 Width="{TemplateBinding Width}"
+                                 Height="{TemplateBinding Height}"
+                                 Fill="#F5FBFF"
+                                 Stroke="#6EAED5"
+                                 StrokeThickness="1.2"/>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Knob" Property="Stroke" Value="#8AC6EA"/>
+                            </Trigger>
+                            <Trigger Property="IsDragging" Value="True">
+                                <Setter TargetName="Knob" Property="Fill" Value="#FFFFFF"/>
+                                <Setter TargetName="Knob" Property="Stroke" Value="#9DD3F2"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="EffectSliderDecreaseButtonStyle" TargetType="RepeatButton">
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="IsTabStop" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RepeatButton">
+                        <Border CornerRadius="5,0,0,5">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                    <GradientStop Color="#49ADDC" Offset="0"/>
+                                    <GradientStop Color="#66BEEA" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="EffectSliderIncreaseButtonStyle" TargetType="RepeatButton">
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="IsTabStop" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RepeatButton">
+                        <Border CornerRadius="0,5,5,0">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                    <GradientStop Color="#B8D8EC" Offset="0"/>
+                                    <GradientStop Color="#D2E8F7" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
                         </Border>
                     </ControlTemplate>
                 </Setter.Value>
@@ -128,32 +206,37 @@
             <Setter Property="Margin" Value="0,4,0,0"/>
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="Height" Value="30"/>
-            <Setter Property="Minimum" Value="0"/>
-            <Setter Property="Maximum" Value="100"/>
+            <Setter Property="Height" Value="22"/>
+            <Setter Property="UseLayoutRounding" Value="True"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="Minimum" Value="-1"/>
+            <Setter Property="Maximum" Value="1"/>
+            <Setter Property="Value" Value="0"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Slider">
-                        <Grid Margin="0,2,0,2">
+                        <Grid Margin="0,2,0,2" VerticalAlignment="Center" UseLayoutRounding="True">
+                            <Border Height="10"
+                                    VerticalAlignment="Center"
+                                    CornerRadius="5"
+                                    Background="#CFE4F2"
+                                    BorderBrush="#93B8CE"
+                                    BorderThickness="1"/>
                             <Track x:Name="PART_Track"
+                                   Margin="1"
                                    Minimum="{TemplateBinding Minimum}"
                                    Maximum="{TemplateBinding Maximum}"
                                    Value="{TemplateBinding Value}"
-                                   IsDirectionReversed="False">
+                                    IsDirectionReversed="False"
+                                    VerticalAlignment="Center">
                                 <Track.DecreaseRepeatButton>
-                                    <RepeatButton Background="#5AB7E9"
-                                                  BorderThickness="0"
-                                                  Height="10"
-                                                  VerticalAlignment="Center"/>
+                                    <RepeatButton Style="{StaticResource EffectSliderDecreaseButtonStyle}"/>
                                 </Track.DecreaseRepeatButton>
                                 <Track.Thumb>
-                                    <Thumb Style="{StaticResource EffectStrengthThumbStyle}"/>
+                                    <Thumb Style="{StaticResource EffectStrengthThumbStyle}" VerticalAlignment="Center"/>
                                 </Track.Thumb>
                                 <Track.IncreaseRepeatButton>
-                                    <RepeatButton Background="#1E3243"
-                                                  BorderThickness="0"
-                                                  Height="10"
-                                                  VerticalAlignment="Center"/>
+                                    <RepeatButton Style="{StaticResource EffectSliderIncreaseButtonStyle}"/>
                                 </Track.IncreaseRepeatButton>
                             </Track>
                         </Grid>
@@ -168,52 +251,77 @@
         </Style>
 
         <Style x:Key="AppScrollThumbStyle" TargetType="Thumb">
-            <Setter Property="Width" Value="11"/>
-            <Setter Property="Height" Value="110"/>
-            <Setter Property="MinHeight" Value="110"/>
+            <Setter Property="Width" Value="10"/>
+            <Setter Property="MinHeight" Value="64"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Thumb">
-                        <Border Background="#91BDD9"
+                        <Border x:Name="ThumbBody"
                                 CornerRadius="6"
-                                BorderBrush="#B8D5E7"
-                                BorderThickness="1">
-                            <Border.Effect>
-                                <DropShadowEffect ShadowDepth="0" BlurRadius="6" Opacity="0.2" Color="#000000"/>
-                            </Border.Effect>
+                                BorderThickness="1"
+                                BorderBrush="#BEE3F8">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                    <GradientStop Color="#8FD3F7" Offset="0"/>
+                                    <GradientStop Color="#69BDEB" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
                         </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ThumbBody" Property="BorderBrush" Value="#D9F0FF"/>
+                            </Trigger>
+                            <Trigger Property="IsDragging" Value="True">
+                                <Setter TargetName="ThumbBody" Property="BorderBrush" Value="#EAF7FF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="AppScrollRepeatButtonStyle" TargetType="RepeatButton">
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="IsTabStop" Value="False"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RepeatButton">
+                        <Border Background="Transparent"/>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
 
         <Style TargetType="ScrollBar">
-            <Setter Property="Background" Value="#2A3D4E"/>
-            <Setter Property="Width" Value="20"/>
-            <Setter Property="Height" Value="20"/>
+            <Setter Property="Width" Value="18"/>
+            <Setter Property="Background" Value="#213647"/>
+            <Setter Property="Focusable" Value="False"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ScrollBar">
-                        <Grid SnapsToDevicePixels="True">
-                            <Border Background="#20313F" CornerRadius="7"/>
+                        <Grid SnapsToDevicePixels="True" UseLayoutRounding="True">
+                            <Border Background="#22384A" CornerRadius="9"/>
+                            <Border Margin="4,3,4,3" Background="#172734" CornerRadius="6"/>
                             <Track x:Name="PART_Track"
-                                   IsDirectionReversed="True"
                                    Orientation="{TemplateBinding Orientation}"
+                                   IsDirectionReversed="True"
                                    Minimum="{TemplateBinding Minimum}"
                                    Maximum="{TemplateBinding Maximum}"
                                    Value="{TemplateBinding Value}"
-                                   ViewportSize="{TemplateBinding ViewportSize}">
+                                   ViewportSize="NaN"
+                                   Margin="4,3,4,3">
                                 <Track.DecreaseRepeatButton>
-                                    <RepeatButton Background="Transparent"
-                                                  BorderThickness="0"
+                                    <RepeatButton Style="{StaticResource AppScrollRepeatButtonStyle}"
                                                   Command="ScrollBar.PageUpCommand"/>
                                 </Track.DecreaseRepeatButton>
                                 <Track.Thumb>
                                     <Thumb Style="{StaticResource AppScrollThumbStyle}"/>
                                 </Track.Thumb>
                                 <Track.IncreaseRepeatButton>
-                                    <RepeatButton Background="Transparent"
-                                                  BorderThickness="0"
+                                    <RepeatButton Style="{StaticResource AppScrollRepeatButtonStyle}"
                                                   Command="ScrollBar.PageDownCommand"/>
                                 </Track.IncreaseRepeatButton>
                             </Track>
@@ -230,18 +338,21 @@
         </Style>
     </Window.Resources>
 
-    <Grid>
+    <Grid x:Name="MainRootGrid" Margin="8">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <Border x:Name="TopBarPanel"
-                Grid.Row="0"
-                Padding="12"
-                Background="#213241"
-                BorderBrush="#5F8099"
-                BorderThickness="0,0,0,1">
+                 Grid.Row="0"
+                 Margin="0,4,0,8"
+                 Padding="12,10"
+                 Background="#1F3040"
+                 BorderBrush="#5F8099"
+                 BorderThickness="1"
+                 CornerRadius="14"
+                 MouseLeftButtonDown="TopBarPanel_MouseLeftButtonDown">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -250,6 +361,12 @@
                     <ColumnDefinition Width="12"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="8"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="8"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="8"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
                 <Button Grid.Column="0"
@@ -277,6 +394,22 @@
                            FontWeight="Bold"
                            FontSize="28"
                            TextTrimming="CharacterEllipsis"/>
+
+                <Button Grid.Column="7"
+                        Content="&#xE921;"
+                        Style="{StaticResource WindowControlButtonStyle}"
+                        Click="MinimizeButton_Click"/>
+
+                <Button x:Name="WindowSizeButton"
+                        Grid.Column="9"
+                        Content="&#xE922;"
+                        Style="{StaticResource WindowControlButtonStyle}"
+                        Click="ToggleWindowSizeButton_Click"/>
+
+                <Button Grid.Column="11"
+                        Content="&#xE8BB;"
+                        Style="{StaticResource WindowCloseButtonStyle}"
+                        Click="CloseWindowButton_Click"/>
             </Grid>
         </Border>
 
@@ -287,7 +420,7 @@
                 <ColumnDefinition x:Name="EffectsColumn" Width="420"/>
             </Grid.ColumnDefinitions>
 
-            <Border Grid.Column="0" Background="#10171E" CornerRadius="8" Margin="8">
+            <Border x:Name="PlayerHostBorder" Grid.Column="0" Background="#10171E" CornerRadius="10" Margin="0,8,0,8">
                 <wv2:WebView2 x:Name="Player"/>
             </Border>
 
@@ -334,42 +467,98 @@
 
                             <CheckBox x:Name="Fx4" Content="4. Высокий контраст" Style="{StaticResource EffectCheckBoxStyle}" Checked="EffectToggle_Changed" Unchecked="EffectToggle_Changed"/>
                             <Border x:Name="Fx4Details" Margin="44,-8,0,10" Padding="0,0,6,0" MaxHeight="0" Opacity="0" Visibility="Collapsed">
-                                <Slider x:Name="ContrastStrengthSlider" Style="{StaticResource EffectStrengthSliderStyle}" Value="55" ValueChanged="StrengthSlider_ValueChanged"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="64"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Slider x:Name="ContrastStrengthSlider" Style="{StaticResource EffectStrengthSliderStyle}" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
+                                    <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CFEAFF" FontSize="14" Text="{Binding ElementName=ContrastStrengthSlider, Path=Value, StringFormat={}{0:+0.00;-0.00;0.00}}"/>
+                                </Grid>
                             </Border>
 
                             <CheckBox x:Name="Fx5" Content="5. Затемнение" Style="{StaticResource EffectCheckBoxStyle}" Checked="EffectToggle_Changed" Unchecked="EffectToggle_Changed"/>
                             <Border x:Name="Fx5Details" Margin="44,-8,0,10" Padding="0,0,6,0" MaxHeight="0" Opacity="0" Visibility="Collapsed">
-                                <Slider x:Name="DarknessStrengthSlider" Style="{StaticResource EffectStrengthSliderStyle}" Value="45" ValueChanged="StrengthSlider_ValueChanged"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="64"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Slider x:Name="DarknessStrengthSlider" Style="{StaticResource EffectStrengthSliderStyle}" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
+                                    <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CFEAFF" FontSize="14" Text="{Binding ElementName=DarknessStrengthSlider, Path=Value, StringFormat={}{0:+0.00;-0.00;0.00}}"/>
+                                </Grid>
                             </Border>
 
                             <CheckBox x:Name="Fx6" Content="6. Насыщенность" Style="{StaticResource EffectCheckBoxStyle}" Checked="EffectToggle_Changed" Unchecked="EffectToggle_Changed"/>
                             <Border x:Name="Fx6Details" Margin="44,-8,0,10" Padding="0,0,6,0" MaxHeight="0" Opacity="0" Visibility="Collapsed">
-                                <Slider x:Name="SaturationStrengthSlider" Style="{StaticResource EffectStrengthSliderStyle}" Value="55" ValueChanged="StrengthSlider_ValueChanged"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="64"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Slider x:Name="SaturationStrengthSlider" Style="{StaticResource EffectStrengthSliderStyle}" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
+                                    <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CFEAFF" FontSize="14" Text="{Binding ElementName=SaturationStrengthSlider, Path=Value, StringFormat={}{0:+0.00;-0.00;0.00}}"/>
+                                </Grid>
                             </Border>
 
                             <CheckBox x:Name="Fx7" Content="7. Сдвиг оттенка" Style="{StaticResource EffectCheckBoxStyle}" Checked="EffectToggle_Changed" Unchecked="EffectToggle_Changed"/>
                             <Border x:Name="Fx7Details" Margin="44,-8,0,10" Padding="0,0,6,0" MaxHeight="0" Opacity="0" Visibility="Collapsed">
-                                <Slider x:Name="HueShiftStrengthSlider" Style="{StaticResource EffectStrengthSliderStyle}" Value="50" ValueChanged="StrengthSlider_ValueChanged"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="64"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Slider x:Name="HueShiftStrengthSlider" Style="{StaticResource EffectStrengthSliderStyle}" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
+                                    <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CFEAFF" FontSize="14" Text="{Binding ElementName=HueShiftStrengthSlider, Path=Value, StringFormat={}{0:+0.00;-0.00;0.00}}"/>
+                                </Grid>
                             </Border>
 
                             <CheckBox x:Name="Fx8" Content="8. Размытие" Style="{StaticResource EffectCheckBoxStyle}" Checked="EffectToggle_Changed" Unchecked="EffectToggle_Changed"/>
                             <Border x:Name="Fx8Details" Margin="44,-8,0,10" Padding="0,0,6,0" MaxHeight="0" Opacity="0" Visibility="Collapsed">
-                                <Slider x:Name="BlurStrengthSlider" Style="{StaticResource EffectStrengthSliderStyle}" Value="45" ValueChanged="StrengthSlider_ValueChanged"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="64"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Slider x:Name="BlurStrengthSlider" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="0" Maximum="1" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
+                                    <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CFEAFF" FontSize="14" Text="{Binding ElementName=BlurStrengthSlider, Path=Value, StringFormat={}{0:0.00}}"/>
+                                </Grid>
                             </Border>
 
                             <CheckBox x:Name="Fx9" Content="9. Красное свечение" Style="{StaticResource EffectCheckBoxStyle}" Checked="EffectToggle_Changed" Unchecked="EffectToggle_Changed"/>
                             <Border x:Name="Fx9Details" Margin="44,-8,0,10" Padding="0,0,6,0" MaxHeight="0" Opacity="0" Visibility="Collapsed">
-                                <Slider x:Name="RedGlowStrengthSlider" Style="{StaticResource EffectStrengthSliderStyle}" Value="50" ValueChanged="StrengthSlider_ValueChanged"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="64"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Slider x:Name="RedGlowStrengthSlider" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="0" Maximum="1" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
+                                    <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CFEAFF" FontSize="14" Text="{Binding ElementName=RedGlowStrengthSlider, Path=Value, StringFormat={}{0:0.00}}"/>
+                                </Grid>
                             </Border>
 
                             <CheckBox x:Name="Fx10" Content="10. VHS сканлайн" Style="{StaticResource EffectCheckBoxStyle}" Checked="EffectToggle_Changed" Unchecked="EffectToggle_Changed"/>
                             <Border x:Name="Fx10Details" Margin="44,-8,0,10" Padding="0,0,6,0" MaxHeight="0" Opacity="0" Visibility="Collapsed">
-                                <Slider x:Name="VhsStrengthSlider" Style="{StaticResource EffectStrengthSliderStyle}" Value="45" ValueChanged="StrengthSlider_ValueChanged"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="64"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Slider x:Name="VhsStrengthSlider" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="0" Maximum="1" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
+                                    <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CFEAFF" FontSize="14" Text="{Binding ElementName=VhsStrengthSlider, Path=Value, StringFormat={}{0:0.00}}"/>
+                                </Grid>
                             </Border>
 
                             <CheckBox x:Name="Fx11" Content="11. Тряска кадра" Style="{StaticResource EffectCheckBoxStyle}" Checked="EffectToggle_Changed" Unchecked="EffectToggle_Changed"/>
                             <Border x:Name="Fx11Details" Margin="44,-8,0,10" Padding="0,0,6,0" MaxHeight="0" Opacity="0" Visibility="Collapsed">
-                                <Slider x:Name="ShakeStrengthSlider" Style="{StaticResource EffectStrengthSliderStyle}" Value="35" ValueChanged="StrengthSlider_ValueChanged"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="64"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Slider x:Name="ShakeStrengthSlider" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="0" Maximum="1" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
+                                    <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CFEAFF" FontSize="14" Text="{Binding ElementName=ShakeStrengthSlider, Path=Value, StringFormat={}{0:0.00}}"/>
+                                </Grid>
                             </Border>
 
                             <CheckBox x:Name="Fx12" Content="12. Зеркало" Style="{StaticResource EffectCheckBoxStyle}" Checked="EffectToggle_Changed" Unchecked="EffectToggle_Changed"/>
@@ -377,12 +566,26 @@
 
                             <CheckBox x:Name="Fx14" Content="14. Холодный тон" Style="{StaticResource EffectCheckBoxStyle}" Checked="EffectToggle_Changed" Unchecked="EffectToggle_Changed"/>
                             <Border x:Name="Fx14Details" Margin="44,-8,0,10" Padding="0,0,6,0" MaxHeight="0" Opacity="0" Visibility="Collapsed">
-                                <Slider x:Name="ColdToneStrengthSlider" Style="{StaticResource EffectStrengthSliderStyle}" Value="40" ValueChanged="StrengthSlider_ValueChanged"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="64"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Slider x:Name="ColdToneStrengthSlider" Style="{StaticResource EffectStrengthSliderStyle}" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
+                                    <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CFEAFF" FontSize="14" Text="{Binding ElementName=ColdToneStrengthSlider, Path=Value, StringFormat={}{0:+0.00;-0.00;0.00}}"/>
+                                </Grid>
                             </Border>
 
                             <CheckBox x:Name="Fx15" Content="15. Фиолетовое свечение" Style="{StaticResource EffectCheckBoxStyle}" Checked="EffectToggle_Changed" Unchecked="EffectToggle_Changed"/>
                             <Border x:Name="Fx15Details" Margin="44,-8,0,10" Padding="0,0,6,0" MaxHeight="0" Opacity="0" Visibility="Collapsed">
-                                <Slider x:Name="VioletGlowStrengthSlider" Style="{StaticResource EffectStrengthSliderStyle}" Value="50" ValueChanged="StrengthSlider_ValueChanged"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="64"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Slider x:Name="VioletGlowStrengthSlider" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="0" Maximum="1" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
+                                    <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CFEAFF" FontSize="14" Text="{Binding ElementName=VioletGlowStrengthSlider, Path=Value, StringFormat={}{0:0.00}}"/>
+                                </Grid>
                             </Border>
                         </StackPanel>
                     </ScrollViewer>
