@@ -25,6 +25,7 @@ namespace JokerDBDTracker.Services
 
     public class WatchHistoryService
     {
+        private static readonly SemaphoreSlim FileAccessLock = new(1, 1);
         private readonly string _historyPath;
 
         public WatchHistoryService()
@@ -54,39 +55,73 @@ namespace JokerDBDTracker.Services
 
         public async Task<WatchHistoryData> LoadAsync(CancellationToken cancellationToken = default)
         {
-            if (!File.Exists(_historyPath))
+            await FileAccessLock.WaitAsync(cancellationToken);
+            try
             {
-                return new WatchHistoryData();
+                if (!File.Exists(_historyPath))
+                {
+                    return new WatchHistoryData();
+                }
+
+                await using var stream = new FileStream(
+                    _historyPath,
+                    FileMode.Open,
+                    FileAccess.Read,
+                    FileShare.Read,
+                    bufferSize: 8192,
+                    useAsync: true);
+                using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+
+                if (document.RootElement.ValueKind == JsonValueKind.Object &&
+                    document.RootElement.TryGetProperty("LastWatchedByVideoId", out _))
+                {
+                    var typed = document.RootElement.Deserialize<WatchHistoryData>();
+                    return typed ?? new WatchHistoryData();
+                }
+
+                // Backward compatibility: old format was Dictionary<string, DateTime>.
+                var oldFormat = document.RootElement.Deserialize<Dictionary<string, DateTime>>() ??
+                                new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
+
+                var migrated = new WatchHistoryData();
+                foreach (var item in oldFormat)
+                {
+                    migrated.LastWatchedByVideoId[item.Key] = item.Value;
+                    migrated.WatchedDays.Add(item.Value.ToLocalTime().Date.ToString("yyyy-MM-dd"));
+                }
+
+                return migrated;
             }
-
-            await using var stream = File.OpenRead(_historyPath);
-            using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
-
-            if (document.RootElement.ValueKind == JsonValueKind.Object &&
-                document.RootElement.TryGetProperty("LastWatchedByVideoId", out _))
+            finally
             {
-                var typed = document.RootElement.Deserialize<WatchHistoryData>();
-                return typed ?? new WatchHistoryData();
+                FileAccessLock.Release();
             }
-
-            // Backward compatibility: old format was Dictionary<string, DateTime>.
-            var oldFormat = document.RootElement.Deserialize<Dictionary<string, DateTime>>() ??
-                            new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
-
-            var migrated = new WatchHistoryData();
-            foreach (var item in oldFormat)
-            {
-                migrated.LastWatchedByVideoId[item.Key] = item.Value;
-                migrated.WatchedDays.Add(item.Value.ToLocalTime().Date.ToString("yyyy-MM-dd"));
-            }
-
-            return migrated;
         }
 
         public async Task SaveAsync(WatchHistoryData data, CancellationToken cancellationToken = default)
         {
-            await using var stream = File.Create(_historyPath);
-            await JsonSerializer.SerializeAsync(stream, data, cancellationToken: cancellationToken);
+            await FileAccessLock.WaitAsync(cancellationToken);
+            try
+            {
+                var tempPath = $"{_historyPath}.tmp";
+                await using (var stream = new FileStream(
+                                 tempPath,
+                                 FileMode.Create,
+                                 FileAccess.Write,
+                                 FileShare.None,
+                                 bufferSize: 8192,
+                                 useAsync: true))
+                {
+                    await JsonSerializer.SerializeAsync(stream, data, cancellationToken: cancellationToken);
+                    await stream.FlushAsync(cancellationToken);
+                }
+
+                File.Move(tempPath, _historyPath, overwrite: true);
+            }
+            finally
+            {
+                FileAccessLock.Release();
+            }
         }
     }
 }

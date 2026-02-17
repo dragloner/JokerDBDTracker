@@ -207,6 +207,7 @@
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="Height" Value="22"/>
+            <Setter Property="IsMoveToPointEnabled" Value="True"/>
             <Setter Property="UseLayoutRounding" Value="True"/>
             <Setter Property="SnapsToDevicePixels" Value="True"/>
             <Setter Property="Minimum" Value="-1"/>
@@ -555,6 +556,16 @@
 
                             <CheckBox x:Name="Fx12" Content="12. Зеркало" Style="{StaticResource EffectCheckBoxStyle}" Checked="EffectToggle_Changed" Unchecked="EffectToggle_Changed"/>
                             <CheckBox x:Name="Fx13" Content="13. Пикселизация" Style="{StaticResource EffectCheckBoxStyle}" Checked="EffectToggle_Changed" Unchecked="EffectToggle_Changed"/>
+                            <Border x:Name="Fx13Details" Margin="44,-8,0,10" Padding="0,0,6,0" MaxHeight="0" Opacity="0" Visibility="Collapsed">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="64"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Slider x:Name="PixelationStrengthSlider" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="0" Maximum="1" Value="0.45" ValueChanged="StrengthSlider_ValueChanged"/>
+                                    <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CFEAFF" FontSize="14" Text="{Binding ElementName=PixelationStrengthSlider, Path=Value, StringFormat={}{0:0.00}}"/>
+                                </Grid>
+                            </Border>
 
                             <CheckBox x:Name="Fx14" Content="14. Холодный тон" Style="{StaticResource EffectCheckBoxStyle}" Checked="EffectToggle_Changed" Unchecked="EffectToggle_Changed"/>
                             <Border x:Name="Fx14Details" Margin="44,-8,0,10" Padding="0,0,6,0" MaxHeight="0" Opacity="0" Visibility="Collapsed">

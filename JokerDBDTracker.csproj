@@ -10,14 +10,15 @@
     <RootNamespace>JokerDBDTracker</RootNamespace>
     <Product>JokerDBD Tracker</Product>
     <Title>JokerDBD Tracker</Title>
-    <Version>1.0.1.1</Version>
-    <AssemblyVersion>1.0.1.1</AssemblyVersion>
-    <FileVersion>1.0.1.1</FileVersion>
-    <InformationalVersion>1.0.1.1</InformationalVersion>
+    <Version>1.0.1.2</Version>
+    <AssemblyVersion>1.0.1.2</AssemblyVersion>
+    <FileVersion>1.0.1.2</FileVersion>
+    <InformationalVersion>1.0.1.2</InformationalVersion>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <Company>dragloner</Company>
     <Authors>dragloner</Authors>
     <RepositoryUrl>https://github.com/dragloner/JokerDBDTracker</RepositoryUrl>
+    <UseAppHost>true</UseAppHost>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
@@ -26,7 +27,8 @@
     <DebugSymbols>false</DebugSymbols>
     <Deterministic>true</Deterministic>
     <TieredCompilation>true</TieredCompilation>
-    <SelfContained>false</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
     <PublishSingleFile>false</PublishSingleFile>
     <PublishTrimmed>false</PublishTrimmed>
     <PublishReadyToRun>true</PublishReadyToRun>

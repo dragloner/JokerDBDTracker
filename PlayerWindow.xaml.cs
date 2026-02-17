@@ -29,15 +29,25 @@ namespace JokerDBDTracker
         private bool _effectsPanelExpanded = true;
         private bool _isApplyingEffects;
         private bool _pendingEffectsApply;
+        private bool _isPlayerElementFullScreen;
+        private WindowState _windowStateBeforePlayerFullscreen = WindowState.Maximized;
+        private ResizeMode _resizeModeBeforePlayerFullscreen = ResizeMode.CanResize;
         private double _lastMeasuredTime = -1;
         private double _watchXpBuffer;
-        private bool _effectsDirty = true;
-        private string _lastAppliedEffectsSignature = string.Empty;
         private double _eligibleWatchSeconds;
         private DateTime? _lastXpSampleUtc;
         private bool _halfHourBonusGranted;
         private bool _hourBonusGranted;
         private readonly DispatcherTimer _effectsApplyDebounceTimer = new();
+        private readonly WatchHistoryService _watchHistoryPersistService = new();
+        private int _lastPersistedPlaybackSeconds;
+        private DateTime _lastPlaybackPersistUtc = DateTime.MinValue;
+        private bool _isPersistingPlayback;
+        private int _effectRefreshCounter;
+        private bool _isEffectsBurstReapplyRunning;
+        private static readonly SemaphoreSlim PlaybackPersistLock = new(1, 1);
+        private const int PlaybackPersistIntervalSeconds = 10;
+        private const int EffectRefreshTickInterval = 3;
         private const int HalfHourWatchBonusXp = 25;
         private const int OneHourWatchBonusXp = 60;
 
@@ -52,6 +62,7 @@ namespace JokerDBDTracker
             public double RedGlow { get; init; }
             public double Vhs { get; init; }
             public double Shake { get; init; }
+            public double Pixelation { get; init; }
             public double ColdTone { get; init; }
             public double VioletGlow { get; init; }
         }
@@ -73,6 +84,7 @@ namespace JokerDBDTracker
             _video = video;
             _startSeconds = Math.Max(startSeconds, 0);
             LastPlaybackSeconds = _startSeconds;
+            _lastPersistedPlaybackSeconds = _startSeconds;
             _effectDetails =
             [
                 (Fx4, Fx4Details),
@@ -83,6 +95,7 @@ namespace JokerDBDTracker
                 (Fx9, Fx9Details),
                 (Fx10, Fx10Details),
                 (Fx11, Fx11Details),
+                (Fx13, Fx13Details),
                 (Fx14, Fx14Details),
                 (Fx15, Fx15Details)
             ];
@@ -116,6 +129,7 @@ namespace JokerDBDTracker
                 Player.CoreWebView2.Settings.AreDevToolsEnabled = false;
                 Player.CoreWebView2.Settings.IsZoomControlEnabled = true;
                 Player.CoreWebView2.Settings.UserAgent = DesktopChromeUserAgent;
+                Player.CoreWebView2.ContainsFullScreenElementChanged += CoreWebView2_ContainsFullScreenElementChanged;
                 Player.CoreWebView2.NavigationStarting += CoreWebView2_NavigationStarting;
                 Player.CoreWebView2.NewWindowRequested += CoreWebView2_NewWindowRequested;
                 Player.CoreWebView2.NavigationCompleted += CoreWebView2_NavigationCompleted;
@@ -159,8 +173,6 @@ namespace JokerDBDTracker
             try
             {
                 await Player.CoreWebView2.ExecuteScriptAsync(BuildKioskModeScript(_video.VideoId));
-                _lastAppliedEffectsSignature = string.Empty;
-                _effectsDirty = true;
                 await ApplyEffectsSafelyAsync();
             }
             catch
@@ -461,11 +473,63 @@ namespace JokerDBDTracker
 
         private void ApplyStartupMaximizedWindowed()
         {
+            Topmost = false;
+            ResizeMode = ResizeMode.CanResize;
+            WindowState = WindowState.Maximized;
+            Dispatcher.BeginInvoke(() =>
+            {
+                if (WindowState != WindowState.Minimized)
+                {
+                    WindowState = WindowState.Maximized;
+                }
+            }, DispatcherPriority.Loaded);
+        }
+
+        private void CoreWebView2_ContainsFullScreenElementChanged(object? sender, object e)
+        {
+            if (Player.CoreWebView2 is null)
+            {
+                return;
+            }
+
+            var shouldBeFullscreen = Player.CoreWebView2.ContainsFullScreenElement;
+            if (shouldBeFullscreen == _isPlayerElementFullScreen)
+            {
+                return;
+            }
+
+            _isPlayerElementFullScreen = shouldBeFullscreen;
+            if (shouldBeFullscreen)
+            {
+                _windowStateBeforePlayerFullscreen = WindowState;
+                _resizeModeBeforePlayerFullscreen = ResizeMode;
+                ResizeMode = ResizeMode.NoResize;
+                WindowState = WindowState.Normal;
+                ApplyFullMonitorBounds();
+                Activate();
+                PulseTopmost();
+                RequestApplyEffects(immediate: true);
+                TriggerEffectsReapplyBurst();
+                return;
+            }
+
+            ResizeMode = _resizeModeBeforePlayerFullscreen == ResizeMode.NoResize
+                ? ResizeMode.CanResize
+                : _resizeModeBeforePlayerFullscreen;
+            WindowState = _windowStateBeforePlayerFullscreen == WindowState.Minimized
+                ? WindowState.Maximized
+                : _windowStateBeforePlayerFullscreen;
+            RequestApplyEffects(immediate: true);
+            TriggerEffectsReapplyBurst();
+        }
+
+        private void PulseTopmost()
+        {
             Topmost = true;
-            WindowState = WindowState.Normal;
-            ResizeMode = ResizeMode.NoResize;
-            ApplyFullMonitorBounds();
-            Activate();
+            Dispatcher.BeginInvoke(() =>
+            {
+                Topmost = false;
+            }, DispatcherPriority.ApplicationIdle);
         }
 
         private void ApplyFullMonitorBounds()
@@ -582,10 +646,23 @@ namespace JokerDBDTracker
                 _lastMeasuredTime = current;
                 WatchXpEarned = (int)Math.Floor(_watchXpBuffer);
 
-                if (_effectsDirty)
+                var activeEffects = GetActiveEffectsCount();
+                var shakeEnabled = Fx11.IsChecked == true;
+                if (activeEffects > 0 && !shakeEnabled)
                 {
-                    await ApplyEffectsSafelyAsync();
+                    _effectRefreshCounter++;
+                    if (_effectRefreshCounter >= EffectRefreshTickInterval)
+                    {
+                        _effectRefreshCounter = 0;
+                        await ApplyEffectsSafelyAsync();
+                    }
                 }
+                else
+                {
+                    _effectRefreshCounter = 0;
+                }
+
+                _ = PersistPlaybackPositionAsync(force: false);
                 UpdateCursedAchievementState(current, duration);
             }
             catch
@@ -663,7 +740,7 @@ namespace JokerDBDTracker
 
         private void RequestApplyEffects(bool immediate)
         {
-            _effectsDirty = true;
+            _effectRefreshCounter = 0;
             if (immediate)
             {
                 _effectsApplyDebounceTimer.Stop();
@@ -742,6 +819,7 @@ namespace JokerDBDTracker
                 RedGlow = NormalizePositive(RedGlowStrengthSlider),
                 Vhs = NormalizePositive(VhsStrengthSlider),
                 Shake = NormalizePositive(ShakeStrengthSlider),
+                Pixelation = NormalizePositive(PixelationStrengthSlider),
                 ColdTone = NormalizeSigned(ColdToneStrengthSlider),
                 VioletGlow = NormalizePositive(VioletGlowStrengthSlider)
             };
@@ -755,10 +833,6 @@ namespace JokerDBDTracker
             }
 
             var settingsJson = JsonSerializer.Serialize(GetEffectSettings());
-            if (!_effectsDirty && string.Equals(settingsJson, _lastAppliedEffectsSignature, StringComparison.Ordinal))
-            {
-                return;
-            }
 
             var script = $$"""
                 (() => {
@@ -767,12 +841,47 @@ namespace JokerDBDTracker
                     const video = document.querySelector('video');
                     if (!video) return;
                     const activeCount = flags.reduce((acc, v) => acc + (v ? 1 : 0), 0);
+                    const clearMirrorGuard = () => {
+                        if (!window.__stwfxMirrorGuard) {
+                            return;
+                        }
+
+                        try {
+                            window.__stwfxMirrorGuard.disconnect();
+                        } catch {
+                            // no-op
+                        }
+                        window.__stwfxMirrorGuard = null;
+                    };
+
+                    const installMirrorGuard = (targetVideo) => {
+                        clearMirrorGuard();
+                        const enforceMirror = () => {
+                            targetVideo.style.setProperty('transform-origin', 'center center', 'important');
+                            targetVideo.style.setProperty('transform', 'scaleX(-1)', 'important');
+                        };
+
+                        const observer = new MutationObserver(() => {
+                            enforceMirror();
+                        });
+                        observer.observe(targetVideo, {
+                            attributes: true,
+                            attributeFilter: ['style', 'class']
+                        });
+
+                        enforceMirror();
+                        window.__stwfxMirrorGuard = {
+                            disconnect: () => observer.disconnect()
+                        };
+                    };
 
                     if (activeCount === 0) {
-                        video.style.filter = 'none';
-                        video.style.transform = 'none';
-                        video.style.imageRendering = 'auto';
-                        video.style.animation = 'none';
+                        clearMirrorGuard();
+                        video.style.setProperty('filter', 'none', 'important');
+                        video.style.setProperty('transform', 'none', 'important');
+                        video.style.setProperty('transform-origin', 'center center', 'important');
+                        video.style.setProperty('image-rendering', 'auto', 'important');
+                        video.style.setProperty('animation', 'none', 'important');
 
                         const existingOverlay = document.getElementById('stwfx-vhs');
                         if (existingOverlay) {
@@ -804,6 +913,7 @@ namespace JokerDBDTracker
                     if (flags[6]) filters.push(`hue-rotate(${Math.round(settings.HueShift * 260)}deg)`);
                     if (flags[7]) filters.push(`blur(${(0.6 + settings.Blur * 9.4).toFixed(1)}px)`);
                     if (flags[8]) filters.push(`drop-shadow(0 0 ${(10 + settings.RedGlow * 48).toFixed(1)}px rgba(255,35,35,${(0.35 + settings.RedGlow * 0.65).toFixed(2)}))`);
+                    if (flags[12]) filters.push(`contrast(${(1.05 + settings.Pixelation * 1.40).toFixed(2)})`);
                     if (flags[13]) {
                         const toneHue = settings.ColdTone >= 0
                             ? 170 + settings.ColdTone * 170
@@ -813,13 +923,15 @@ namespace JokerDBDTracker
                     }
                     if (flags[14]) filters.push(`drop-shadow(0 0 ${(12 + settings.VioletGlow * 52).toFixed(1)}px rgba(186,85,255,${(0.35 + settings.VioletGlow * 0.65).toFixed(2)}))`);
 
-                    video.style.filter = filters.length > 0 ? filters.join(' ') : 'none';
-                    video.style.transform = flags[11] ? 'scaleX(-1)' : 'none';
-                    video.style.imageRendering = flags[12] ? 'pixelated' : 'auto';
+                    video.style.setProperty('filter', filters.length > 0 ? filters.join(' ') : 'none', 'important');
+                    const mirrorScaleX = flags[11] ? -1 : 1;
+                    const mirrorEnabled = mirrorScaleX === -1;
+                    const shakeEnabled = flags[10];
+                    video.style.setProperty('image-rendering', flags[12] ? 'pixelated' : 'auto', 'important');
+                    video.style.setProperty('transform-origin', 'center center', 'important');
 
                     const shakeDuration = Math.max(0.03, 0.20 - settings.Shake * 0.17);
                     const shakeAmp = 1 + settings.Shake * 10.0;
-                    video.style.animation = flags[10] ? `stw_shake ${shakeDuration.toFixed(2)}s infinite linear` : 'none';
 
                     let style = document.getElementById('stwfx-style');
                     if (!style) {
@@ -827,15 +939,31 @@ namespace JokerDBDTracker
                         style.id = 'stwfx-style';
                         document.head.appendChild(style);
                     }
+                    const mirrorTransform = mirrorScaleX === -1 ? ' scaleX(-1)' : '';
                     style.textContent = `
                         @keyframes stw_shake {
-                            0% { transform: translate(0,0); }
-                            25% { transform: translate(${shakeAmp.toFixed(2)}px, ${(-shakeAmp).toFixed(2)}px); }
-                            50% { transform: translate(${(-shakeAmp).toFixed(2)}px, ${shakeAmp.toFixed(2)}px); }
-                            75% { transform: translate(${shakeAmp.toFixed(2)}px, ${shakeAmp.toFixed(2)}px); }
-                            100% { transform: translate(0,0); }
+                            0% { transform: translate(0,0)${mirrorTransform}; }
+                            25% { transform: translate(${shakeAmp.toFixed(2)}px, ${(-shakeAmp).toFixed(2)}px)${mirrorTransform}; }
+                            50% { transform: translate(${(-shakeAmp).toFixed(2)}px, ${shakeAmp.toFixed(2)}px)${mirrorTransform}; }
+                            75% { transform: translate(${shakeAmp.toFixed(2)}px, ${shakeAmp.toFixed(2)}px)${mirrorTransform}; }
+                            100% { transform: translate(0,0)${mirrorTransform}; }
                         }
                     `;
+
+                    if (mirrorEnabled && !shakeEnabled) {
+                        video.style.setProperty('transform', 'scaleX(-1)', 'important');
+                        installMirrorGuard(video);
+                    } else {
+                        clearMirrorGuard();
+                        video.style.setProperty('transform', mirrorEnabled ? 'scaleX(-1)' : 'none', 'important');
+                    }
+
+                    video.style.setProperty('animation', 'none', 'important');
+                    void video.offsetWidth;
+                    video.style.setProperty(
+                        'animation',
+                        shakeEnabled ? `stw_shake ${shakeDuration.toFixed(2)}s infinite linear` : 'none',
+                        'important');
 
                     let overlay = document.getElementById('stwfx-vhs');
                     if (!overlay) {
@@ -847,20 +975,20 @@ namespace JokerDBDTracker
                         overlay.style.width = '100%';
                         overlay.style.height = '100%';
                         overlay.style.pointerEvents = 'none';
-                        overlay.style.mixBlendMode = 'overlay';
-                        overlay.style.backgroundImage = 'repeating-linear-gradient(0deg, rgba(255,255,255,0.08) 0px, rgba(255,255,255,0.08) 1px, rgba(0,0,0,0) 2px, rgba(0,0,0,0) 4px)';
+                        overlay.style.mixBlendMode = 'screen';
+                        overlay.style.backgroundImage =
+                            'repeating-linear-gradient(0deg, rgba(255,255,255,0.26) 0px, rgba(255,255,255,0.26) 1px, rgba(0,0,0,0) 2px, rgba(0,0,0,0) 4px), ' +
+                            'repeating-linear-gradient(180deg, rgba(15,15,15,0.18) 0px, rgba(15,15,15,0.18) 2px, rgba(0,0,0,0) 3px, rgba(0,0,0,0) 5px)';
                         overlay.style.zIndex = '2147483647';
                         overlay.style.display = 'none';
                         document.body.appendChild(overlay);
                     }
                     overlay.style.display = flags[9] ? 'block' : 'none';
-                    overlay.style.opacity = (0.12 + settings.Vhs * 0.86).toFixed(2);
+                    overlay.style.opacity = (0.30 + settings.Vhs * 0.70).toFixed(2);
                 })();
                 """;
 
             await Player.CoreWebView2.ExecuteScriptAsync(script);
-            _lastAppliedEffectsSignature = settingsJson;
-            _effectsDirty = false;
         }
 
         private async void ResetEffectsButton_Click(object sender, RoutedEventArgs e)
@@ -883,9 +1011,9 @@ namespace JokerDBDTracker
             RedGlowStrengthSlider.Value = 0;
             VhsStrengthSlider.Value = 0;
             ShakeStrengthSlider.Value = 0;
+            PixelationStrengthSlider.Value = 0.45;
             ColdToneStrengthSlider.Value = 0;
             VioletGlowStrengthSlider.Value = 0;
-            _effectsDirty = true;
             UpdateStrengthSlidersEnabledState();
             UpdateEffectDetailsVisibility(animate: false);
 
@@ -902,6 +1030,7 @@ namespace JokerDBDTracker
             RedGlowStrengthSlider.IsEnabled = Fx9.IsChecked == true;
             VhsStrengthSlider.IsEnabled = Fx10.IsChecked == true;
             ShakeStrengthSlider.IsEnabled = Fx11.IsChecked == true;
+            PixelationStrengthSlider.IsEnabled = Fx13.IsChecked == true;
             ColdToneStrengthSlider.IsEnabled = Fx14.IsChecked == true;
             VioletGlowStrengthSlider.IsEnabled = Fx15.IsChecked == true;
         }
@@ -958,6 +1087,8 @@ namespace JokerDBDTracker
         {
             _effectsPanelExpanded = !_effectsPanelExpanded;
             ApplyEffectsPanelLayout();
+            RequestApplyEffects(immediate: true);
+            TriggerEffectsReapplyBurst();
         }
 
         private void ApplyEffectsPanelLayout()
@@ -993,6 +1124,37 @@ namespace JokerDBDTracker
         private void PlayerWindow_StateChanged(object? sender, EventArgs e)
         {
             UpdateWindowSizeButtonState();
+            RequestApplyEffects(immediate: true);
+            TriggerEffectsReapplyBurst();
+        }
+
+        private void TriggerEffectsReapplyBurst()
+        {
+            _ = ApplyEffectsSafelyAsync();
+            if (_isEffectsBurstReapplyRunning)
+            {
+                return;
+            }
+
+            _ = ReapplyEffectsBurstAsync();
+        }
+
+        private async Task ReapplyEffectsBurstAsync()
+        {
+            _isEffectsBurstReapplyRunning = true;
+            try
+            {
+                await Task.Delay(120);
+                await ApplyEffectsSafelyAsync();
+                await Task.Delay(280);
+                await ApplyEffectsSafelyAsync();
+                await Task.Delay(500);
+                await ApplyEffectsSafelyAsync();
+            }
+            finally
+            {
+                _isEffectsBurstReapplyRunning = false;
+            }
         }
 
         private void UpdateWindowSizeButtonState()
@@ -1007,7 +1169,7 @@ namespace JokerDBDTracker
 
         private void CloseWindowButton_Click(object sender, RoutedEventArgs e)
         {
-            Application.Current.Shutdown();
+            Close();
         }
 
         private void TopBarPanel_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -1099,11 +1261,13 @@ namespace JokerDBDTracker
         {
             try
             {
+                _ = PersistPlaybackPositionAsync(force: true);
                 Topmost = false;
                 _positionTimer.Stop();
                 _effectsApplyDebounceTimer.Stop();
                 if (Player.CoreWebView2 is not null)
                 {
+                    Player.CoreWebView2.ContainsFullScreenElementChanged -= CoreWebView2_ContainsFullScreenElementChanged;
                     Player.CoreWebView2.NavigationStarting -= CoreWebView2_NavigationStarting;
                     Player.CoreWebView2.NewWindowRequested -= CoreWebView2_NewWindowRequested;
                     Player.CoreWebView2.NavigationCompleted -= CoreWebView2_NavigationCompleted;
@@ -1114,6 +1278,48 @@ namespace JokerDBDTracker
             catch
             {
                 // Ignore teardown errors.
+            }
+        }
+
+        private async Task PersistPlaybackPositionAsync(bool force)
+        {
+            if (_isPersistingPlayback)
+            {
+                return;
+            }
+
+            var playbackSeconds = Math.Max(0, LastPlaybackSeconds);
+            if (!force &&
+                playbackSeconds == _lastPersistedPlaybackSeconds &&
+                (DateTime.UtcNow - _lastPlaybackPersistUtc).TotalSeconds < PlaybackPersistIntervalSeconds)
+            {
+                return;
+            }
+
+            _isPersistingPlayback = true;
+            try
+            {
+                await PlaybackPersistLock.WaitAsync();
+                try
+                {
+                    var history = await _watchHistoryPersistService.LoadAsync();
+                    history.LastPlaybackSecondsByVideoId[_video.VideoId] = playbackSeconds;
+                    await _watchHistoryPersistService.SaveAsync(history);
+                    _lastPersistedPlaybackSeconds = playbackSeconds;
+                    _lastPlaybackPersistUtc = DateTime.UtcNow;
+                }
+                finally
+                {
+                    PlaybackPersistLock.Release();
+                }
+            }
+            catch
+            {
+                // Best-effort persistence.
+            }
+            finally
+            {
+                _isPersistingPlayback = false;
             }
         }
 
