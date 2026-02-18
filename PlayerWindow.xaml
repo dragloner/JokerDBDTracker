@@ -414,7 +414,43 @@
             </Grid.ColumnDefinitions>
 
             <Border x:Name="PlayerHostBorder" Grid.Column="0" Background="#10171E" CornerRadius="10" Margin="0,8,0,8">
-                <wv2:WebView2 x:Name="Player"/>
+                <Grid>
+                    <Border x:Name="PlayerSurfaceHost" Background="#000000" Visibility="Collapsed">
+                        <wv2:WebView2 x:Name="Player"/>
+                    </Border>
+                    <Border x:Name="PlayerLoadingOverlay"
+                            Panel.ZIndex="20"
+                            Background="#FF0F161D"
+                            Visibility="Visible"
+                            IsHitTestVisible="True">
+                        <Border Width="420"
+                                Padding="20"
+                                Background="#263B4B"
+                                BorderBrush="#6D91A9"
+                                BorderThickness="1"
+                                CornerRadius="14"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center">
+                            <StackPanel>
+                                <TextBlock Text="Загрузка плеера"
+                                           Foreground="#EDF7FF"
+                                           FontSize="28"
+                                           FontWeight="Bold"
+                                           HorizontalAlignment="Center"/>
+                                <TextBlock x:Name="PlayerLoadingText"
+                                           Margin="0,8,0,0"
+                                           Text="Подготовка YouTube..."
+                                           Foreground="#CFE3F1"
+                                           FontSize="17"
+                                           TextAlignment="Center"
+                                           TextWrapping="Wrap"/>
+                                <ProgressBar Margin="0,14,0,0"
+                                             Height="16"
+                                             IsIndeterminate="True"/>
+                            </StackPanel>
+                        </Border>
+                    </Border>
+                </Grid>
             </Border>
 
             <Border x:Name="EffectsPanel"

@@ -1,4 +1,6 @@
-﻿using System.Windows;
+﻿using System.Net;
+using System.Net.Http;
+using System.Windows;
 using JokerDBDTracker.Services;
 
 namespace JokerDBDTracker
@@ -7,9 +9,23 @@ namespace JokerDBDTracker
     {
         private async Task LoadVideosAsync()
         {
+            List<Models.YouTubeVideo> videos;
             try
             {
-                var videos = await _streamsService.GetAllStreamsAsync(StreamsUrl);
+                videos = await _streamsService.GetAllStreamsAsync(StreamsUrl);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    BuildStreamsLoadErrorMessage(ex),
+                    "Ошибка",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                return;
+            }
+
+            try
+            {
                 var history = await _watchHistoryService.LoadAsync();
 
                 _watchHistory.Clear();
@@ -88,11 +104,57 @@ namespace JokerDBDTracker
             catch (Exception ex)
             {
                 MessageBox.Show(
-                    $"Не удалось загрузить стримы:{Environment.NewLine}{ex.Message}",
+                    $"Не удалось инициализировать данные приложения:{Environment.NewLine}{ex.Message}",
                     "Ошибка",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
+        }
+
+        private static string BuildStreamsLoadErrorMessage(Exception ex)
+        {
+            var baseMessage = $"Не удалось загрузить стримы:{Environment.NewLine}{ex.Message}";
+            var errorText = ex.ToString();
+
+            if (ex is HttpRequestException httpEx)
+            {
+                if (httpEx.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.Unauthorized ||
+                    errorText.Contains("403") ||
+                    errorText.Contains("451"))
+                {
+                    return $"{baseMessage}{Environment.NewLine}{Environment.NewLine}" +
+                           "Возможно, доступ к YouTube ограничен в вашей сети/регионе. " +
+                           "Попробуйте включить VPN.";
+                }
+
+                if (httpEx.StatusCode is HttpStatusCode.BadGateway or HttpStatusCode.ServiceUnavailable or HttpStatusCode.GatewayTimeout ||
+                    errorText.Contains("timed out", StringComparison.OrdinalIgnoreCase) ||
+                    errorText.Contains("timeout", StringComparison.OrdinalIgnoreCase))
+                {
+                    return $"{baseMessage}{Environment.NewLine}{Environment.NewLine}" +
+                           "Похоже на нестабильное интернет-соединение или временную недоступность сервиса. " +
+                           "Проверьте интернет и попробуйте снова.";
+                }
+            }
+
+            if (ex is TaskCanceledException ||
+                errorText.Contains("No such host", StringComparison.OrdinalIgnoreCase) ||
+                errorText.Contains("Name or service not known", StringComparison.OrdinalIgnoreCase) ||
+                errorText.Contains("The remote name could not be resolved", StringComparison.OrdinalIgnoreCase))
+            {
+                return $"{baseMessage}{Environment.NewLine}{Environment.NewLine}" +
+                       "Проверьте интернет-соединение. Возможно, сеть недоступна или есть проблемы с DNS.";
+            }
+
+            if (errorText.Contains("Failed to read YouTube keys", StringComparison.OrdinalIgnoreCase) ||
+                errorText.Contains("Failed to parse streams page data", StringComparison.OrdinalIgnoreCase))
+            {
+                return $"{baseMessage}{Environment.NewLine}{Environment.NewLine}" +
+                       "Возможно, YouTube недоступен без VPN в вашем регионе или временно изменился формат страницы.";
+            }
+
+            return $"{baseMessage}{Environment.NewLine}{Environment.NewLine}" +
+                   "Проверьте интернет-соединение и попробуйте снова.";
         }
 
         private async Task MarkAsWatchedAsync(Models.YouTubeVideo video)

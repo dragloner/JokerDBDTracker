@@ -22,14 +22,15 @@ namespace JokerDBDTracker.Services
         {
             var html = await HttpClient.GetStringAsync(streamsUrl, cancellationToken);
 
-            var apiKey = ExtractValueFromHtml(html, "\"INNERTUBE_API_KEY\":\"([^\"]+)\"");
-            var clientVersion = ExtractValueFromHtml(html, "\"INNERTUBE_CLIENT_VERSION\":\"([^\"]+)\"");
-            if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(clientVersion))
+            var initialDataJson = ExtractJsonByMarkers(
+                html,
+                "var ytInitialData = ",
+                "window[\"ytInitialData\"] = ",
+                "window['ytInitialData'] = ");
+            if (string.IsNullOrWhiteSpace(initialDataJson))
             {
-                throw new InvalidOperationException("Failed to read YouTube keys for streams page.");
+                initialDataJson = ExtractJsonByRegexMarker(html, @"ytInitialData\s*=\s*");
             }
-
-            var initialDataJson = ExtractJsonByMarker(html, "var ytInitialData = ");
             if (string.IsNullOrWhiteSpace(initialDataJson))
             {
                 throw new InvalidOperationException("Failed to parse streams page data.");
@@ -45,9 +46,17 @@ namespace JokerDBDTracker.Services
                 continuationToken = ExtractContinuationToken(initialData.RootElement);
             }
 
+            var apiKey = ExtractConfigValueFromHtml(html, "INNERTUBE_API_KEY");
+            var clientVersion = ExtractConfigValueFromHtml(html, "INNERTUBE_CLIENT_VERSION");
             while (!string.IsNullOrWhiteSpace(continuationToken))
             {
                 cancellationToken.ThrowIfCancellationRequested();
+
+                if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(clientVersion))
+                {
+                    // YouTube layout can change and hide continuation config. Keep already parsed videos.
+                    break;
+                }
 
                 using var continuationResponse = await LoadContinuationAsync(
                     apiKey,
@@ -269,10 +278,18 @@ namespace JokerDBDTracker.Services
             }
         }
 
-        private static string ExtractValueFromHtml(string html, string pattern)
+        private static string ExtractConfigValueFromHtml(string html, string key)
         {
-            var match = Regex.Match(html, pattern);
-            return match.Success ? match.Groups[1].Value : string.Empty;
+            var strictPattern = $"\"{Regex.Escape(key)}\":\"([^\"]+)\"";
+            var strictMatch = Regex.Match(html, strictPattern);
+            if (strictMatch.Success)
+            {
+                return strictMatch.Groups[1].Value;
+            }
+
+            var relaxedPattern = $"\"{Regex.Escape(key)}\"\\s*:\\s*\"([^\"]+)\"";
+            var relaxedMatch = Regex.Match(html, relaxedPattern);
+            return relaxedMatch.Success ? relaxedMatch.Groups[1].Value : string.Empty;
         }
 
         private static string ExtractJsonByMarker(string html, string marker)
@@ -285,6 +302,53 @@ namespace JokerDBDTracker.Services
 
             var jsonStart = html.IndexOf('{', markerIndex + marker.Length);
             if (jsonStart < 0)
+            {
+                return string.Empty;
+            }
+
+            return ExtractJsonObjectStartingAt(html, jsonStart);
+        }
+
+        private static string ExtractJsonByMarkers(string html, params string[] markers)
+        {
+            foreach (var marker in markers)
+            {
+                var json = ExtractJsonByMarker(html, marker);
+                if (!string.IsNullOrWhiteSpace(json))
+                {
+                    return json;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private static string ExtractJsonByRegexMarker(string html, string markerPattern)
+        {
+            var match = Regex.Match(html, markerPattern);
+            if (!match.Success)
+            {
+                return string.Empty;
+            }
+
+            var startIndex = match.Index + match.Length;
+            if (startIndex < 0 || startIndex >= html.Length)
+            {
+                return string.Empty;
+            }
+
+            var braceIndex = html.IndexOf('{', startIndex);
+            if (braceIndex < 0)
+            {
+                return string.Empty;
+            }
+
+            return ExtractJsonObjectStartingAt(html, braceIndex);
+        }
+
+        private static string ExtractJsonObjectStartingAt(string html, int jsonStart)
+        {
+            if (jsonStart < 0 || jsonStart >= html.Length || html[jsonStart] != '{')
             {
                 return string.Empty;
             }

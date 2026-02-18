@@ -509,11 +509,37 @@
                                    Foreground="#EDF7FF"
                                    FontSize="44"
                                    FontWeight="ExtraBold"/>
-                        <TextBlock Text="v1.0.2"
-                                   Margin="3,-2,0,0"
-                                   Foreground="#B9CFDF"
-                                   FontSize="14"
-                                   FontWeight="SemiBold"/>
+                        <StackPanel Margin="3,-2,0,0" Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock x:Name="AppVersionText"
+                                       Text="v1.1.0"
+                                       Foreground="#B9CFDF"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock x:Name="UpdateStatusText"
+                                       Margin="12,0,0,0"
+                                       Text="● Проверка обновлений..."
+                                       Foreground="#E2C17A"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                            <Button x:Name="UpdateProgramButton"
+                                    Margin="12,0,0,0"
+                                    Padding="10,4"
+                                    FontSize="13"
+                                    FontWeight="Bold"
+                                    Content="Обновить программу"
+                                    Visibility="Collapsed"
+                                    Click="UpdateProgramButton_Click"/>
+                            <Button x:Name="RestartProgramButton"
+                                    Margin="8,0,0,0"
+                                    Padding="10,4"
+                                    FontSize="13"
+                                    FontWeight="Bold"
+                                    Content="Перезапустить программу"
+                                    Visibility="Collapsed"
+                                    Click="RestartProgramButton_Click"/>
+                        </StackPanel>
                     </StackPanel>
 
                     <Border Grid.Column="1"
@@ -747,13 +773,18 @@
                         Background="#213241"
                         BorderBrush="#5F8099"
                         BorderThickness="1">
-                    <StackPanel>
-                        <TextBlock Text="Рекомендации" Foreground="#EDF7FF" FontWeight="Bold" FontSize="24"/>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Text="Рекомендации" Foreground="#EDF7FF" FontWeight="Bold" FontSize="24"/>
                         <ListBox x:Name="RecommendationsList"
-                                 Margin="0,8,0,0"
-                                 BorderThickness="0"
-                                 Background="Transparent"
-                                 Foreground="#EAD0BF"
+                                 Grid.Row="1"
+                                  Margin="0,8,0,0"
+                                  BorderThickness="0"
+                                  Background="Transparent"
+                                  Foreground="#EAD0BF"
                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                  ScrollViewer.CanContentScroll="True"
                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
@@ -797,7 +828,7 @@
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
-                    </StackPanel>
+                    </Grid>
                 </Border>
             </Grid>
 
@@ -1000,6 +1031,54 @@
             </Border>
 
             <TextBlock x:Name="StatusText" Grid.Row="8" Visibility="Collapsed"/>
+
+            <Grid x:Name="LoadingOverlay"
+                  Grid.RowSpan="9"
+                  Panel.ZIndex="1000"
+                  Background="#40131B22">
+                <Image x:Name="LoadingBackgroundImage"
+                       Stretch="UniformToFill"
+                       Opacity="1.0"/>
+                <Border Background="#4A131B22"/>
+                <Border Width="560"
+                        Padding="28"
+                        CornerRadius="20"
+                        Background="#223747"
+                        BorderBrush="#6E91A9"
+                        BorderThickness="1.2"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center">
+                    <StackPanel>
+                        <TextBlock Text="JokerDBD Tracker"
+                                   Foreground="#EDF7FF"
+                                   FontSize="34"
+                                   FontWeight="ExtraBold"
+                                   HorizontalAlignment="Center"/>
+                        <TextBlock Text="Загрузка приложения"
+                                   Margin="0,8,0,0"
+                                   Foreground="#D1E3F2"
+                                   FontSize="20"
+                                   FontWeight="Bold"
+                                   HorizontalAlignment="Center"/>
+                         <TextBlock x:Name="LoadingStatusText"
+                                    Margin="0,12,0,0"
+                                    Foreground="#BED6E7"
+                                    FontSize="16"
+                                    TextAlignment="Center"
+                                    TextWrapping="Wrap"
+                                    Text=""/>
+                        <ProgressBar Margin="0,18,0,0"
+                                     x:Name="LoadingProgressBar"
+                                     Height="18"
+                                     IsIndeterminate="True"/>
+                        <TextBlock x:Name="LoadingProgressText"
+                                   Margin="0,8,0,0"
+                                   Foreground="#C9DEED"
+                                   FontSize="14"
+                                   TextAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
         </Grid>
     </Border>
 </Window>

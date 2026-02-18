@@ -1,4 +1,3 @@
-using System.IO;
 using System.Windows;
 using System.Windows.Media.Imaging;
 
@@ -120,26 +119,49 @@ namespace JokerDBDTracker
 
         private void ApplyPrestigeIcon()
         {
-            var iconPath = ResolvePrestigeIconPath(_prestige);
-            if (string.IsNullOrWhiteSpace(iconPath) || !File.Exists(iconPath))
+            var iconUri = ResolvePrestigeIconUri(_prestige);
+            if (iconUri is null)
             {
                 PrestigeIconImage.Source = null;
                 return;
             }
 
-            var image = new BitmapImage();
-            image.BeginInit();
-            image.UriSource = new Uri(iconPath, UriKind.Absolute);
-            image.CacheOption = BitmapCacheOption.OnLoad;
-            image.EndInit();
-            image.Freeze();
-            PrestigeIconImage.Source = image;
+            try
+            {
+                var streamInfo = Application.GetResourceStream(iconUri);
+                if (streamInfo?.Stream is null)
+                {
+                    PrestigeIconImage.Source = null;
+                    return;
+                }
+
+                using var resourceStream = streamInfo.Stream;
+                var image = new BitmapImage();
+                image.BeginInit();
+                image.CacheOption = BitmapCacheOption.OnLoad;
+                image.StreamSource = resourceStream;
+                image.EndInit();
+                image.Freeze();
+                PrestigeIconImage.Source = image;
+            }
+            catch
+            {
+                // Missing/corrupt icon should not break app startup.
+                PrestigeIconImage.Source = null;
+            }
         }
 
-        private static string ResolvePrestigeIconPath(int prestige)
+        private static Uri? ResolvePrestigeIconUri(int prestige)
         {
             var stage = Math.Clamp(prestige / 10, 0, 10);
-            return Path.Combine(AppContext.BaseDirectory, "Assets", "PrestigeIcons", $"prestige_{stage}.png");
+            try
+            {
+                return new Uri($"pack://application:,,,/Assets/PrestigeIcons/prestige_{stage}.png", UriKind.Absolute);
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         private static int XpToReachNextLevel(int level)

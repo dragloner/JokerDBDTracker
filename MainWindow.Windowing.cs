@@ -13,7 +13,18 @@ namespace JokerDBDTracker
         {
             ApplyStartupMaximized();
             UpdateMainWindowButtonsState();
-            await LoadVideosAsync();
+            ShowLoadingOverlay(string.Empty, isIndeterminate: true);
+
+            try
+            {
+                var loadVideosTask = LoadVideosAsync();
+                var updateCheckTask = CheckForUpdatesDuringStartupAsync();
+                await Task.WhenAll(loadVideosTask, updateCheckTask);
+            }
+            finally
+            {
+                HideLoadingOverlay();
+            }
         }
 
         private void ApplyStartupMaximized()
@@ -61,15 +72,15 @@ namespace JokerDBDTracker
 
         private void TopHeaderBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            TryBeginWindowDrag(e, 1060);
+            TryBeginWindowDrag(e);
         }
 
         private void MainRootBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            TryBeginWindowDrag(e, 1060);
+            TryBeginWindowDrag(e);
         }
 
-        private void TryBeginWindowDrag(MouseButtonEventArgs e, double minimumRestoreWidth)
+        private void TryBeginWindowDrag(MouseButtonEventArgs e)
         {
             if (e.ChangedButton != MouseButton.Left || IsInteractiveElement(e.OriginalSource as DependencyObject))
             {
@@ -85,15 +96,11 @@ namespace JokerDBDTracker
 
             if (WindowState == WindowState.Maximized)
             {
-                var pointerPosition = e.GetPosition(this);
-                var screenPosition = PointToScreen(pointerPosition);
-                var widthRatio = ActualWidth > 0 ? pointerPosition.X / ActualWidth : 0.5;
-                widthRatio = Math.Clamp(widthRatio, 0.0, 1.0);
-
-                var restoreWidth = RestoreBounds.Width > 0 ? RestoreBounds.Width : Math.Max(minimumRestoreWidth, Width);
-                WindowState = WindowState.Normal;
-                Left = screenPosition.X - restoreWidth * widthRatio;
-                Top = screenPosition.Y - 20;
+                _pendingDragRestoreFromMaximized = true;
+                _pendingDragStartPoint = e.GetPosition(this);
+                CaptureMouse();
+                e.Handled = true;
+                return;
             }
 
             try
@@ -104,6 +111,67 @@ namespace JokerDBDTracker
             catch
             {
                 // Ignore drag interruptions caused by rapid pointer transitions.
+            }
+        }
+
+        private void MainWindow_PreviewMouseMove(object sender, MouseEventArgs e)
+        {
+            if (!_pendingDragRestoreFromMaximized)
+            {
+                return;
+            }
+
+            if (e.LeftButton != MouseButtonState.Pressed)
+            {
+                CancelPendingRestoreDrag();
+                return;
+            }
+
+            var current = e.GetPosition(this);
+            var movedEnough =
+                Math.Abs(current.X - _pendingDragStartPoint.X) >= SystemParameters.MinimumHorizontalDragDistance ||
+                Math.Abs(current.Y - _pendingDragStartPoint.Y) >= SystemParameters.MinimumVerticalDragDistance;
+            if (!movedEnough)
+            {
+                return;
+            }
+
+            var screenPosition = PointToScreen(current);
+            var widthRatio = ActualWidth > 0 ? current.X / ActualWidth : 0.5;
+            widthRatio = Math.Clamp(widthRatio, 0.0, 1.0);
+            var restoreWidth = RestoreBounds.Width > 0 ? RestoreBounds.Width : Math.Max(1060, Width);
+
+            WindowState = WindowState.Normal;
+            Left = screenPosition.X - restoreWidth * widthRatio;
+            Top = screenPosition.Y - 20;
+            CancelPendingRestoreDrag();
+
+            try
+            {
+                DragMove();
+            }
+            catch
+            {
+                // Ignore drag interruptions caused by rapid pointer transitions.
+            }
+        }
+
+        private void MainWindow_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            CancelPendingRestoreDrag();
+        }
+
+        private void CancelPendingRestoreDrag()
+        {
+            if (!_pendingDragRestoreFromMaximized)
+            {
+                return;
+            }
+
+            _pendingDragRestoreFromMaximized = false;
+            if (IsMouseCaptured)
+            {
+                ReleaseMouseCapture();
             }
         }
 
