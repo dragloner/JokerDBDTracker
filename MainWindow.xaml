@@ -511,7 +511,7 @@
                                    FontWeight="ExtraBold"/>
                         <StackPanel Margin="3,-2,0,0" Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock x:Name="AppVersionText"
-                                       Text="v1.1.0"
+                                       Text="v1.1.0.1"
                                        Foreground="#B9CFDF"
                                        FontSize="14"
                                        FontWeight="SemiBold"
@@ -622,6 +622,8 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="12"/>
                     <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="12"/>
+                    <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
                 <Button x:Name="HomeNavButton"
@@ -639,6 +641,11 @@
                         Style="{StaticResource TopNavButtonStyle}"
                         Content="Профиль"
                         Click="ProfileNavButton_Click"/>
+                <Button x:Name="SettingsNavButton"
+                        Grid.Column="6"
+                        Style="{StaticResource TopNavButtonStyle}"
+                        Content="Настройки"
+                        Click="SettingsNavButton_Click"/>
             </Grid>
 
             <TabControl x:Name="TopTabControl"
@@ -651,6 +658,7 @@
                 <TabItem Header="Главная"/>
                 <TabItem Header="Избранное"/>
                 <TabItem Header="Профиль"/>
+                <TabItem Header="Настройки"/>
             </TabControl>
 
             <Grid Grid.Row="4" Grid.RowSpan="3" Margin="0,10,0,0">
@@ -1027,6 +1035,49 @@
                             </StackPanel>
                         </Border>
                     </Grid>
+                </Grid>
+            </Border>
+
+            <Border x:Name="SettingsPanel"
+                    Grid.Row="4"
+                    Grid.RowSpan="3"
+                    Padding="14"
+                    CornerRadius="18"
+                    Background="#213241"
+                    BorderBrush="#5F8099"
+                    BorderThickness="1"
+                    Visibility="Collapsed">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="10"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0"
+                               Text="Настройки"
+                               Foreground="#EDF7FF"
+                               FontSize="30"
+                               FontWeight="Bold"/>
+
+                    <Border Grid.Row="2"
+                            CornerRadius="14"
+                            Background="#2A3D4E"
+                            BorderBrush="#6887A0"
+                            BorderThickness="1"
+                            Padding="14">
+                        <StackPanel>
+                            <TextBlock Text="Раздел в разработке"
+                                       Foreground="#F2FAFF"
+                                       FontSize="22"
+                                       FontWeight="Bold"/>
+                            <TextBlock Margin="0,8,0,0"
+                                       Text="Здесь появятся параметры приложения: автозапуск, язык, масштаб интерфейса, поведение fullscreen и сброс кеша."
+                                       Foreground="#CFE3F1"
+                                       FontSize="17"
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
                 </Grid>
             </Border>
 

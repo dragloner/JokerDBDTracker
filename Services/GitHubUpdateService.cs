@@ -25,7 +25,7 @@ namespace JokerDBDTracker.Services
         static GitHubUpdateService()
         {
             HttpClient.DefaultRequestHeaders.UserAgent.ParseAdd(
-                "JokerDBDTracker/1.1.0 (+https://github.com/dragloner/JokerDBDTracker)");
+                "JokerDBDTracker/1.1.0.1 (+https://github.com/dragloner/JokerDBDTracker)");
             HttpClient.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
             HttpClient.Timeout = TimeSpan.FromSeconds(15);
         }

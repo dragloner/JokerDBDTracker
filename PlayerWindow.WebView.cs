@@ -96,6 +96,11 @@ namespace JokerDBDTracker
 
                 _lastAppliedEffectsSignature = string.Empty;
                 await ApplyEffectsSafelyAsync(force: true);
+                var playbackStarted = await WaitForPlaybackStartAsync();
+                if (playbackStarted)
+                {
+                    SetPlayerLoadingOverlay(visible: false);
+                }
             }
             catch
             {
@@ -127,6 +132,45 @@ namespace JokerDBDTracker
             }
 
             PlayerSurfaceHost.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private async Task<bool> WaitForPlaybackStartAsync()
+        {
+            if (Player.CoreWebView2 is null)
+            {
+                return false;
+            }
+
+            const string playbackStateScript = """
+                (() => {
+                    const video = document.querySelector('video');
+                    if (!video || !Number.isFinite(video.currentTime)) {
+                        return false;
+                    }
+
+                    return video.currentTime > 0.15 || (video.readyState >= 2 && !video.paused);
+                })();
+                """;
+
+            for (var i = 0; i < 60; i++)
+            {
+                try
+                {
+                    var result = await Player.CoreWebView2.ExecuteScriptAsync(playbackStateScript);
+                    if (string.Equals(result, "true", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+                catch
+                {
+                    // Ignore transient WebView2 script errors during page bootstrap.
+                }
+
+                await Task.Delay(100);
+            }
+
+            return false;
         }
 
         private async Task RecoverLockedVideoAsync()

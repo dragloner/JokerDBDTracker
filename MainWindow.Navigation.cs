@@ -8,6 +8,7 @@ namespace JokerDBDTracker
     {
         private bool IsFavoritesTabSelected() => TopTabControl.SelectedIndex == 1;
         private bool IsProfileTabSelected() => TopTabControl.SelectedIndex == 2;
+        private bool IsSettingsTabSelected() => TopTabControl.SelectedIndex == 3;
 
         private void SelectTopTab(int index)
         {
@@ -24,6 +25,7 @@ namespace JokerDBDTracker
             ApplyTopNavState(HomeNavButton, TopTabControl.SelectedIndex == 0);
             ApplyTopNavState(FavoritesNavButton, TopTabControl.SelectedIndex == 1);
             ApplyTopNavState(ProfileNavButton, TopTabControl.SelectedIndex == 2);
+            ApplyTopNavState(SettingsNavButton, TopTabControl.SelectedIndex == 3);
 
             void ApplyTopNavState(Button button, bool selected)
             {
@@ -50,15 +52,17 @@ namespace JokerDBDTracker
             UpdateTopNavButtonsVisualState();
 
             var profileMode = IsProfileTabSelected();
+            var settingsMode = IsSettingsTabSelected();
             var favoritesMode = IsFavoritesTabSelected();
-            StreamsPanel.Visibility = profileMode ? Visibility.Collapsed : Visibility.Visible;
-            RecommendationsPanel.Visibility = profileMode || favoritesMode ? Visibility.Collapsed : Visibility.Visible;
-            HomeSummaryPanel.Visibility = profileMode || favoritesMode ? Visibility.Collapsed : Visibility.Visible;
+            StreamsPanel.Visibility = profileMode || settingsMode ? Visibility.Collapsed : Visibility.Visible;
+            RecommendationsPanel.Visibility = profileMode || settingsMode || favoritesMode ? Visibility.Collapsed : Visibility.Visible;
+            HomeSummaryPanel.Visibility = profileMode || settingsMode || favoritesMode ? Visibility.Collapsed : Visibility.Visible;
             ProfilePanel.Visibility = profileMode ? Visibility.Visible : Visibility.Collapsed;
-            RecommendationsColumn.Width = profileMode || favoritesMode
+            SettingsPanel.Visibility = settingsMode ? Visibility.Visible : Visibility.Collapsed;
+            RecommendationsColumn.Width = profileMode || settingsMode || favoritesMode
                 ? new GridLength(0)
                 : new GridLength(420);
-            MainColumnsSpacer.Width = profileMode || favoritesMode
+            MainColumnsSpacer.Width = profileMode || settingsMode || favoritesMode
                 ? new GridLength(0)
                 : new GridLength(12);
 
@@ -66,7 +70,7 @@ namespace JokerDBDTracker
             {
                 RefreshProfile();
             }
-            else
+            else if (!settingsMode)
             {
                 RefreshVisibleVideos();
                 RefreshRecommendations();
@@ -87,6 +91,11 @@ namespace JokerDBDTracker
         private void ProfileNavButton_Click(object sender, RoutedEventArgs e)
         {
             SelectTopTab(2);
+        }
+
+        private void SettingsNavButton_Click(object sender, RoutedEventArgs e)
+        {
+            SelectTopTab(3);
         }
     }
 }
