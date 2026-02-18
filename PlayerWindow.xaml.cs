@@ -10,6 +10,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
+using Microsoft.Win32;
 using Microsoft.Web.WebView2.Core;
 using JokerDBDTracker.Models;
 using JokerDBDTracker.Services;
@@ -39,6 +40,7 @@ namespace JokerDBDTracker
         private bool _halfHourBonusGranted;
         private bool _hourBonusGranted;
         private readonly DispatcherTimer _effectsApplyDebounceTimer = new();
+        private readonly DispatcherTimer _resizeSettleDebounceTimer = new();
         private readonly WatchHistoryService _watchHistoryPersistService = new();
         private int _lastPersistedPlaybackSeconds;
         private DateTime _lastPlaybackPersistUtc = DateTime.MinValue;
@@ -48,8 +50,10 @@ namespace JokerDBDTracker
         private static readonly SemaphoreSlim PlaybackPersistLock = new(1, 1);
         private const int PlaybackPersistIntervalSeconds = 10;
         private const int EffectRefreshTickInterval = 3;
+        private const int ResizeSettleDelayMilliseconds = 180;
         private const int HalfHourWatchBonusXp = 25;
         private const int OneHourWatchBonusXp = 60;
+        private bool _isResizeInteractionInProgress;
 
         private sealed class EffectSettings
         {
@@ -102,12 +106,17 @@ namespace JokerDBDTracker
 
             Loaded += PlayerWindow_Loaded;
             Closing += PlayerWindow_Closing;
+            Closed += PlayerWindow_Closed;
             StateChanged += PlayerWindow_StateChanged;
+            SizeChanged += PlayerWindow_SizeChanged;
+            LocationChanged += PlayerWindow_LocationChanged;
 
             _positionTimer.Interval = TimeSpan.FromSeconds(2);
             _positionTimer.Tick += PositionTimer_Tick;
             _effectsApplyDebounceTimer.Interval = TimeSpan.FromMilliseconds(70);
             _effectsApplyDebounceTimer.Tick += EffectsApplyDebounceTimer_Tick;
+            _resizeSettleDebounceTimer.Interval = TimeSpan.FromMilliseconds(ResizeSettleDelayMilliseconds);
+            _resizeSettleDebounceTimer.Tick += ResizeSettleDebounceTimer_Tick;
         }
 
         private async void PlayerWindow_Loaded(object sender, RoutedEventArgs e)
@@ -117,6 +126,7 @@ namespace JokerDBDTracker
             UpdateWindowSizeButtonState();
             UpdateStrengthSlidersEnabledState();
             UpdateEffectDetailsVisibility(animate: false);
+            SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
 
             try
             {
@@ -513,6 +523,11 @@ namespace JokerDBDTracker
                 return;
             }
 
+            RestoreWindowAfterPlayerFullscreen();
+        }
+
+        private void RestoreWindowAfterPlayerFullscreen()
+        {
             ResizeMode = _resizeModeBeforePlayerFullscreen == ResizeMode.NoResize
                 ? ResizeMode.CanResize
                 : _resizeModeBeforePlayerFullscreen;
@@ -521,6 +536,52 @@ namespace JokerDBDTracker
                 : _windowStateBeforePlayerFullscreen;
             RequestApplyEffects(immediate: true);
             TriggerEffectsReapplyBurst();
+        }
+
+        private async Task ExitEmbeddedPlayerFullscreenAsync()
+        {
+            if (!_isPlayerElementFullScreen || Player.CoreWebView2 is null)
+            {
+                return;
+            }
+
+            try
+            {
+                const string exitFullscreenScript = """
+                    (() => {
+                        try {
+                            const doc = document;
+                            if (doc.fullscreenElement && doc.exitFullscreen) {
+                                doc.exitFullscreen();
+                            }
+                        } catch {
+                            // no-op
+                        }
+
+                        try {
+                            const button = document.querySelector('.ytp-fullscreen-button');
+                            const player = document.getElementById('movie_player');
+                            if (button && player && typeof player.isFullscreen === 'function' && player.isFullscreen()) {
+                                button.click();
+                            }
+                        } catch {
+                            // no-op
+                        }
+                    })();
+                    """;
+                await Player.CoreWebView2.ExecuteScriptAsync(exitFullscreenScript);
+                await Task.Delay(60);
+            }
+            catch
+            {
+                // If web script fails, fallback to local window restore.
+            }
+
+            if (_isPlayerElementFullScreen)
+            {
+                _isPlayerElementFullScreen = false;
+                RestoreWindowAfterPlayerFullscreen();
+            }
         }
 
         private void PulseTopmost()
@@ -561,6 +622,24 @@ namespace JokerDBDTracker
                 Top = 0;
                 Width = SystemParameters.PrimaryScreenWidth;
                 Height = SystemParameters.PrimaryScreenHeight;
+                return;
+            }
+
+            var leftPx = monitorInfo.rcMonitor.left;
+            var topPx = monitorInfo.rcMonitor.top;
+            var rightPx = monitorInfo.rcMonitor.right;
+            var bottomPx = monitorInfo.rcMonitor.bottom;
+
+            if (PresentationSource.FromVisual(this) is HwndSource source &&
+                source.CompositionTarget is not null)
+            {
+                var transform = source.CompositionTarget.TransformFromDevice;
+                var topLeftDip = transform.Transform(new System.Windows.Point(leftPx, topPx));
+                var bottomRightDip = transform.Transform(new System.Windows.Point(rightPx, bottomPx));
+                Left = topLeftDip.X;
+                Top = topLeftDip.Y;
+                Width = Math.Max(1, bottomRightDip.X - topLeftDip.X);
+                Height = Math.Max(1, bottomRightDip.Y - topLeftDip.Y);
                 return;
             }
 
@@ -614,7 +693,14 @@ namespace JokerDBDTracker
                 {
                     _lastXpSampleUtc = nowUtc;
                     _lastMeasuredTime = current;
-                    await ApplyEffectsSafelyAsync();
+                    if (_isResizeInteractionInProgress)
+                    {
+                        RequestApplyEffects(immediate: false);
+                    }
+                    else
+                    {
+                        await ApplyEffectsSafelyAsync();
+                    }
                     UpdateCursedAchievementState(current, duration);
                     return;
                 }
@@ -648,7 +734,7 @@ namespace JokerDBDTracker
 
                 var activeEffects = GetActiveEffectsCount();
                 var shakeEnabled = Fx11.IsChecked == true;
-                if (activeEffects > 0 && !shakeEnabled)
+                if (!_isResizeInteractionInProgress && activeEffects > 0 && !shakeEnabled)
                 {
                     _effectRefreshCounter++;
                     if (_effectRefreshCounter >= EffectRefreshTickInterval)
@@ -1116,8 +1202,14 @@ namespace JokerDBDTracker
             WindowState = WindowState.Minimized;
         }
 
-        private void ToggleWindowSizeButton_Click(object sender, RoutedEventArgs e)
+        private async void ToggleWindowSizeButton_Click(object sender, RoutedEventArgs e)
         {
+            if (_isPlayerElementFullScreen)
+            {
+                await ExitEmbeddedPlayerFullscreenAsync();
+                return;
+            }
+
             WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
         }
 
@@ -1126,6 +1218,50 @@ namespace JokerDBDTracker
             UpdateWindowSizeButtonState();
             RequestApplyEffects(immediate: true);
             TriggerEffectsReapplyBurst();
+        }
+
+        private void PlayerWindow_LocationChanged(object? sender, EventArgs e)
+        {
+            if (_isPlayerElementFullScreen)
+            {
+                ApplyFullMonitorBounds();
+            }
+        }
+
+        private void SystemEvents_DisplaySettingsChanged(object? sender, EventArgs e)
+        {
+            if (!_isPlayerElementFullScreen)
+            {
+                return;
+            }
+
+            Dispatcher.BeginInvoke(() =>
+            {
+                if (_isPlayerElementFullScreen)
+                {
+                    ApplyFullMonitorBounds();
+                    RequestApplyEffects(immediate: false);
+                }
+            }, DispatcherPriority.Background);
+        }
+
+        private void PlayerWindow_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            if (!IsLoaded || _isPlayerElementFullScreen)
+            {
+                return;
+            }
+
+            _isResizeInteractionInProgress = true;
+            _resizeSettleDebounceTimer.Stop();
+            _resizeSettleDebounceTimer.Start();
+        }
+
+        private void ResizeSettleDebounceTimer_Tick(object? sender, EventArgs e)
+        {
+            _resizeSettleDebounceTimer.Stop();
+            _isResizeInteractionInProgress = false;
+            RequestApplyEffects(immediate: false);
         }
 
         private void TriggerEffectsReapplyBurst()
@@ -1186,6 +1322,14 @@ namespace JokerDBDTracker
         {
             if (e.ChangedButton != MouseButton.Left || IsInteractiveElement(e.OriginalSource as DependencyObject))
             {
+                return;
+            }
+
+            if (_isPlayerElementFullScreen)
+            {
+                var pointerPosition = e.GetPosition(this);
+                _ = ExitPlayerFullscreenAndStartDragAsync(pointerPosition, minimumRestoreWidth);
+                e.Handled = true;
                 return;
             }
 
@@ -1265,6 +1409,8 @@ namespace JokerDBDTracker
                 Topmost = false;
                 _positionTimer.Stop();
                 _effectsApplyDebounceTimer.Stop();
+                _resizeSettleDebounceTimer.Stop();
+                SystemEvents.DisplaySettingsChanged -= SystemEvents_DisplaySettingsChanged;
                 if (Player.CoreWebView2 is not null)
                 {
                     Player.CoreWebView2.ContainsFullScreenElementChanged -= CoreWebView2_ContainsFullScreenElementChanged;
@@ -1278,6 +1424,47 @@ namespace JokerDBDTracker
             catch
             {
                 // Ignore teardown errors.
+            }
+        }
+
+        private async Task ExitPlayerFullscreenAndStartDragAsync(System.Windows.Point pointerPosition, double minimumRestoreWidth)
+        {
+            await ExitEmbeddedPlayerFullscreenAsync();
+
+            await Dispatcher.InvokeAsync(() =>
+            {
+                if (WindowState == WindowState.Maximized)
+                {
+                    var screenPosition = PointToScreen(pointerPosition);
+                    var widthRatio = ActualWidth > 0 ? pointerPosition.X / ActualWidth : 0.5;
+                    widthRatio = Math.Clamp(widthRatio, 0.0, 1.0);
+
+                    var restoreWidth = RestoreBounds.Width > 0 ? RestoreBounds.Width : Math.Max(minimumRestoreWidth, Width);
+                    WindowState = WindowState.Normal;
+                    Left = screenPosition.X - restoreWidth * widthRatio;
+                    Top = screenPosition.Y - 20;
+                }
+
+                try
+                {
+                    DragMove();
+                }
+                catch
+                {
+                    // Ignore drag interruptions caused by rapid pointer transitions.
+                }
+            }, DispatcherPriority.Input);
+        }
+
+        private void PlayerWindow_Closed(object? sender, EventArgs e)
+        {
+            try
+            {
+                Player.Dispose();
+            }
+            catch
+            {
+                // Ignore disposal errors.
             }
         }
 

@@ -9,8 +9,8 @@
         ResizeMode="CanResize"
         Width="1480"
         Height="900"
-        MinWidth="980"
-        MinHeight="640"
+        MinWidth="760"
+        MinHeight="460"
         WindowStartupLocation="CenterScreen"
         Background="#131B22"
         Icon="Assets/app.ico"
@@ -18,7 +18,7 @@
 
     <shell:WindowChrome.WindowChrome>
         <shell:WindowChrome CaptionHeight="0"
-                            ResizeBorderThickness="8"
+                            ResizeBorderThickness="12"
                             CornerRadius="0"
                             GlassFrameThickness="0"
                             UseAeroCaptionButtons="False"/>
