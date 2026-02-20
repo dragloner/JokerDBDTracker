@@ -26,6 +26,8 @@ Updated: 2026-02-20
 - [x] Fixed hotkey conflicts and startup race conditions in player.
 - [x] Effect application safety under rapid input.
 - [x] Fullscreen/player layout fixes and monitor-bound behavior.
+- [x] Source tree cleanup (removed empty folders and build artifacts from project workspace).
+- [x] Release packaging cleanup for localization satellite folders (`ru/en` only).
 
 ## `v1.2.1` Quality Follow-up (in progress)
 

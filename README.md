@@ -36,6 +36,8 @@ Current stable release: `v1.2.0.1`
 - Better keybind handling while player is loading.
 - Sound playback fallback fixes (without Windows default error beep).
 - Fullscreen and monitor-bound behavior fixes.
+- Repository structure cleanup (removed empty dev folders).
+- Release packaging cleanup for satellite resource languages (`ru/en`).
 
 ## Install
 
@@ -59,6 +61,11 @@ dotnet build JokerDBDTracker.sln -c Debug
 dotnet build JokerDBDTracker.sln -c Release
 dotnet publish JokerDBDTracker.csproj -c Release -r win-x64
 ```
+
+Notes:
+
+- `bin/` and `obj/` are build artifacts and are not part of source layout.
+- Release publish is configured to keep only required satellite languages.
 
 ## Data and Logs
 
