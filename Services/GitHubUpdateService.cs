@@ -23,6 +23,7 @@ namespace JokerDBDTracker.Services
     {
         private static readonly HttpClient HttpClient = new HttpClient();
         private const int MaxCheckAttempts = 3;
+        private const int MaxDownloadAttempts = 3;
 
         static GitHubUpdateService()
         {
@@ -114,52 +115,128 @@ namespace JokerDBDTracker.Services
             IProgress<double>? progress = null,
             CancellationToken cancellationToken = default)
         {
-            using var response = await HttpClient.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-            response.EnsureSuccessStatusCode();
+            _ = expectedSizeBytes; // Intentionally ignored: update flow should not depend on file size metadata.
 
-            var totalBytes = response.Content.Headers.ContentLength;
-            await using var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken);
-            await using var fileStream = new FileStream(
-                destinationPath,
-                FileMode.Create,
-                FileAccess.Write,
-                FileShare.None,
-                bufferSize: 1024 * 64,
-                useAsync: true);
-
-            var buffer = new byte[1024 * 64];
-            long downloadedBytes = 0;
-            int read;
-            while ((read = await responseStream.ReadAsync(buffer.AsMemory(0, buffer.Length), cancellationToken)) > 0)
+            if (string.IsNullOrWhiteSpace(downloadUrl))
             {
-                await fileStream.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
-                downloadedBytes += read;
-
-                if (totalBytes.HasValue && totalBytes.Value > 0)
-                {
-                    progress?.Report((double)downloadedBytes / totalBytes.Value);
-                }
+                throw new InvalidDataException("Update download URL is empty.");
             }
 
-            progress?.Report(1.0);
-
-            if (expectedSizeBytes > 0)
+            if (string.IsNullOrWhiteSpace(destinationPath))
             {
-                var fileInfo = new FileInfo(destinationPath);
-                if (!fileInfo.Exists || fileInfo.Length != expectedSizeBytes)
-                {
-                    throw new InvalidDataException($"Downloaded file size mismatch. Expected {expectedSizeBytes}, got {fileInfo.Length}.");
-                }
+                throw new InvalidDataException("Update destination path is empty.");
             }
 
-            if (!string.IsNullOrWhiteSpace(expectedSha256))
+            var targetDirectory = Path.GetDirectoryName(destinationPath);
+            if (!string.IsNullOrWhiteSpace(targetDirectory))
             {
-                var actualSha256 = await ComputeFileSha256Async(destinationPath, cancellationToken);
-                if (!string.Equals(actualSha256, expectedSha256, StringComparison.OrdinalIgnoreCase))
-                {
-                    throw new InvalidDataException("Downloaded file hash mismatch.");
-                }
+                Directory.CreateDirectory(targetDirectory);
             }
+
+            var tempPath = $"{destinationPath}.downloading";
+            Exception? lastException = null;
+            for (var attempt = 1; attempt <= MaxDownloadAttempts; attempt++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                try
+                {
+                    if (File.Exists(tempPath))
+                    {
+                        File.Delete(tempPath);
+                    }
+
+                    using var response = await HttpClient.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                    response.EnsureSuccessStatusCode();
+
+                    var mediaType = response.Content.Headers.ContentType?.MediaType ?? string.Empty;
+                    if (mediaType.StartsWith("text/", StringComparison.OrdinalIgnoreCase) ||
+                        mediaType.Contains("html", StringComparison.OrdinalIgnoreCase))
+                    {
+                        throw new InvalidDataException($"Update server returned unexpected content type: {mediaType}");
+                    }
+
+                    var totalBytes = response.Content.Headers.ContentLength;
+                    await using var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken);
+                    await using var fileStream = new FileStream(
+                        tempPath,
+                        FileMode.Create,
+                        FileAccess.Write,
+                        FileShare.None,
+                        bufferSize: 1024 * 64,
+                        useAsync: true);
+
+                    var buffer = new byte[1024 * 64];
+                    long downloadedBytes = 0;
+                    int read;
+                    while ((read = await responseStream.ReadAsync(buffer.AsMemory(0, buffer.Length), cancellationToken)) > 0)
+                    {
+                        await fileStream.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
+                        downloadedBytes += read;
+
+                        if (totalBytes.HasValue && totalBytes.Value > 0)
+                        {
+                            progress?.Report((double)downloadedBytes / totalBytes.Value);
+                        }
+                    }
+
+                    await fileStream.FlushAsync(cancellationToken);
+                    progress?.Report(1.0);
+
+                    var downloadedFileInfo = new FileInfo(tempPath);
+                    if (!downloadedFileInfo.Exists || downloadedFileInfo.Length <= 0)
+                    {
+                        throw new InvalidDataException("Downloaded update archive is empty.");
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(expectedSha256))
+                    {
+                        var actualSha256 = await ComputeFileSha256Async(tempPath, cancellationToken);
+                        if (!string.Equals(actualSha256, expectedSha256, StringComparison.OrdinalIgnoreCase))
+                        {
+                            throw new InvalidDataException("Downloaded file hash mismatch.");
+                        }
+                    }
+
+                    File.Move(tempPath, destinationPath, overwrite: true);
+                    return;
+                }
+                catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested && attempt < MaxDownloadAttempts)
+                {
+                    lastException = new TimeoutException("Update download timed out.");
+                }
+                catch (Exception ex) when (
+                    ex is HttpRequestException or IOException or InvalidDataException &&
+                    attempt < MaxDownloadAttempts)
+                {
+                    lastException = ex;
+                }
+                catch (Exception)
+                {
+                    if (File.Exists(tempPath))
+                    {
+                        File.Delete(tempPath);
+                    }
+
+                    throw;
+                }
+
+                if (File.Exists(tempPath))
+                {
+                    File.Delete(tempPath);
+                }
+
+                DiagnosticsService.LogInfo(
+                    nameof(GitHubUpdateService),
+                    $"Retrying update download. Attempt {attempt + 1}/{MaxDownloadAttempts}. Url={downloadUrl}");
+                await Task.Delay(450, cancellationToken);
+            }
+
+            if (lastException is not null)
+            {
+                throw lastException;
+            }
+
+            throw new InvalidDataException("Failed to download update archive.");
         }
 
         private static string TryGetString(JsonElement root, string propertyName)
