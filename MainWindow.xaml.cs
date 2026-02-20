@@ -145,10 +145,22 @@ namespace JokerDBDTracker
 
         private async Task CheckForUpdatesDuringStartupAsync()
         {
-            var updateInfo = await _updateService.CheckForUpdateAsync(
-                GitHubRepoOwner,
-                GitHubRepoName,
-                GetCurrentAppVersion());
+            GitHubUpdateInfo updateInfo;
+            try
+            {
+                updateInfo = await _updateService.CheckForUpdateAsync(
+                    GitHubRepoOwner,
+                    GitHubRepoName,
+                    GetCurrentAppVersion());
+            }
+            catch (Exception ex)
+            {
+                DiagnosticsService.LogException("CheckForUpdatesDuringStartupAsync", ex);
+                updateInfo = new GitHubUpdateInfo
+                {
+                    IsCheckSuccessful = false
+                };
+            }
             _lastUpdateInfo = updateInfo;
 
             if (UpdateStatusText is null || UpdateProgramButton is null)

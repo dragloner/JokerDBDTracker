@@ -23,54 +23,77 @@ namespace JokerDBDTracker
         {
             try
             {
-                _appSettings = await _settingsService.LoadAsync();
-            }
-            catch
-            {
-                _appSettings = new AppSettingsData();
-            }
+                try
+                {
+                    _appSettings = await _settingsService.LoadAsync();
+                }
+                catch
+                {
+                    _appSettings = new AppSettingsData();
+                }
 
-            PositionWindowToOwnerMonitor();
-            ApplyStartupMaximizedWindowed();
-            AnimatePlayerWindowEntrance();
-            VideoTitleText.Text = _video.Title;
-            ApplyPlayerLocalization();
-            UpdateDynamicBindHints();
-            RegisterGlobalHotkeys();
-            UpdateWindowSizeButtonState();
-            UpdateStrengthSlidersEnabledState();
-            UpdateEffectDetailsVisibility(animate: false);
-            SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
-            SetPlayerLoadingOverlay(visible: true, PT("Подготовка YouTube...", "Preparing YouTube..."));
-            SetPlayerSurfaceVisible(false);
+                PositionWindowToOwnerMonitor();
+                ApplyStartupMaximizedWindowed();
+                AnimatePlayerWindowEntrance();
+                VideoTitleText.Text = _video.Title;
+                ApplyPlayerLocalization();
+                UpdateDynamicBindHints();
+                RegisterGlobalHotkeys();
+                UpdateWindowSizeButtonState();
+                UpdateStrengthSlidersEnabledState();
+                UpdateEffectDetailsVisibility(animate: false);
+                SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
+                _isPlayerNavigationInProgress = true;
+                _isPlayerRuntimeReady = false;
+                SetPlayerInteractionsEnabled(false);
+                SetPlayerLoadingOverlay(visible: true, PT("Подготовка YouTube...", "Preparing YouTube..."));
+                SetPlayerSurfaceVisible(false);
 
-            try
-            {
-                var userDataFolder = await Task.Run(ResolveWebViewUserDataFolder);
-                var environment = await CoreWebView2Environment.CreateAsync(userDataFolder: userDataFolder);
-                await Player.EnsureCoreWebView2Async(environment);
+                try
+                {
+                    var userDataFolder = await Task.Run(ResolveWebViewUserDataFolder);
+                    var environment = await CoreWebView2Environment.CreateAsync(userDataFolder: userDataFolder);
+                    await Player.EnsureCoreWebView2Async(environment);
 
-                Player.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
-                Player.CoreWebView2.Settings.IsStatusBarEnabled = false;
-                Player.CoreWebView2.Settings.AreDevToolsEnabled = false;
-                Player.CoreWebView2.Settings.IsZoomControlEnabled = true;
-                Player.CoreWebView2.Settings.UserAgent = DesktopChromeUserAgent;
-                await Player.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(
-                    BuildEarlyKioskBootstrapScript(_video.VideoId));
-                Player.CoreWebView2.ContainsFullScreenElementChanged += CoreWebView2_ContainsFullScreenElementChanged;
-                Player.CoreWebView2.NavigationStarting += CoreWebView2_NavigationStarting;
-                Player.CoreWebView2.NewWindowRequested += CoreWebView2_NewWindowRequested;
-                Player.CoreWebView2.NavigationCompleted += CoreWebView2_NavigationCompleted;
-                Player.CoreWebView2.Navigate(BuildLockedWatchUrl(_startSeconds));
-                _positionTimer.Start();
+                    Player.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
+                    Player.CoreWebView2.Settings.IsStatusBarEnabled = false;
+                    Player.CoreWebView2.Settings.AreDevToolsEnabled = false;
+                    Player.CoreWebView2.Settings.IsZoomControlEnabled = false;
+                    Player.CoreWebView2.Settings.UserAgent = DesktopChromeUserAgent;
+                    Player.ZoomFactor = 1.0;
+                    await Player.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(
+                        BuildEarlyKioskBootstrapScript(_video.VideoId));
+                    Player.CoreWebView2.ContainsFullScreenElementChanged += CoreWebView2_ContainsFullScreenElementChanged;
+                    Player.CoreWebView2.NavigationStarting += CoreWebView2_NavigationStarting;
+                    Player.CoreWebView2.NewWindowRequested += CoreWebView2_NewWindowRequested;
+                    Player.CoreWebView2.NavigationCompleted += CoreWebView2_NavigationCompleted;
+                    Player.CoreWebView2.WebMessageReceived += CoreWebView2_WebMessageReceived;
+                    Player.CoreWebView2.Navigate(BuildLockedWatchUrl(_startSeconds));
+                    _positionTimer.Start();
+                }
+                catch (Exception ex)
+                {
+                    DiagnosticsService.LogException("PlayerWindow_Loaded.WebViewInit", ex);
+                    _isPlayerNavigationInProgress = false;
+                    _isPlayerRuntimeReady = false;
+                    SetPlayerInteractionsEnabled(false);
+                    MessageBox.Show(
+                        $"{PT("Не удалось инициализировать плеер:", "Failed to initialize player:")}{Environment.NewLine}{ex.Message}",
+                        PT("Ошибка плеера", "Player error"),
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                }
             }
             catch (Exception ex)
             {
+                DiagnosticsService.LogException("PlayerWindow_Loaded", ex);
                 MessageBox.Show(
-                    $"{PT("Не удалось инициализировать плеер:", "Failed to initialize player:")}{Environment.NewLine}{ex.Message}",
+                    $"{PT("Произошла ошибка при запуске плеера:", "Player startup failed:")}{Environment.NewLine}{ex.Message}{Environment.NewLine}{Environment.NewLine}" +
+                    $"{PT("Лог ошибок:", "Error log:")} {DiagnosticsService.GetLogFilePath()}",
                     PT("Ошибка плеера", "Player error"),
                     MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                    MessageBoxImage.Warning);
+                Close();
             }
         }
 
@@ -82,6 +105,15 @@ namespace JokerDBDTracker
 
         private void CoreWebView2_NavigationStarting(object? sender, CoreWebView2NavigationStartingEventArgs e)
         {
+            _isPlayerNavigationInProgress = true;
+            _isPlayerRuntimeReady = false;
+            unchecked
+            {
+                _playerNavigationVersion++;
+            }
+            _lastXpSampleUtc = null;
+            _lastMeasuredTime = -1;
+            SetPlayerInteractionsEnabled(false);
             SetPlayerLoadingOverlay(visible: true, PT("Загрузка видео...", "Loading video..."));
             SetPlayerSurfaceVisible(false);
             if (IsAllowedPlayerNavigation(e.Uri))
@@ -95,6 +127,12 @@ namespace JokerDBDTracker
 
         private async void CoreWebView2_NavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
         {
+            if (_isPlayerClosing)
+            {
+                return;
+            }
+
+            var navigationVersion = _playerNavigationVersion;
             if (!e.IsSuccess || Player.CoreWebView2 is null)
             {
                 _navigationCompletedFailureCount++;
@@ -108,23 +146,63 @@ namespace JokerDBDTracker
                 SetPlayerLoadingOverlay(visible: true, PT(
                     "Не удалось загрузить плеер. Проверьте интернет и попробуйте снова.",
                     "Failed to load player. Check internet connection and try again."));
+                SetPlayerInteractionsEnabled(false);
                 return;
             }
 
             _navigationCompletedFailureCount = 0;
             try
             {
+                Player.ZoomFactor = 1.0;
                 SetPlayerLoadingOverlay(visible: true, PT("Загрузка видео...", "Loading video..."));
-                await Player.CoreWebView2.ExecuteScriptAsync(BuildKioskModeScript(_video.VideoId));
+                var bootstrapResult = await ExecuteWebScriptWithTimeoutAsync(
+                    BuildKioskModeScript(
+                        _video.VideoId,
+                        ReadConfiguredKey(_appSettings.HideEffectsPanelBind, Key.H)),
+                    timeoutMs: 2500,
+                    operation: "CoreWebView2_NavigationCompleted.Bootstrap");
+                if (_isPlayerClosing || navigationVersion != _playerNavigationVersion)
+                {
+                    return;
+                }
+
+                if (bootstrapResult is null)
+                {
+                    SetPlayerLoadingOverlay(visible: true, PT(
+                        "Плеер не ответил во время запуска. Попробуйте открыть видео снова.",
+                        "Player did not respond during startup. Try opening this video again."));
+                    SetPlayerSurfaceVisible(false);
+                    SetPlayerInteractionsEnabled(false);
+                    return;
+                }
+
                 SetPlayerSurfaceVisible(true);
 
                 _lastAppliedEffectsSignature = string.Empty;
                 await ApplyEffectsSafelyAsync(force: true);
-                var playbackStarted = await WaitForPlaybackStartAsync();
-                if (playbackStarted)
+                if (_isPlayerClosing || navigationVersion != _playerNavigationVersion)
                 {
-                    SetPlayerLoadingOverlay(visible: false);
+                    return;
                 }
+
+                var playbackStarted = await WaitForPlaybackStartAsync();
+                if (_isPlayerClosing || navigationVersion != _playerNavigationVersion)
+                {
+                    return;
+                }
+
+                if (!playbackStarted)
+                {
+                    DiagnosticsService.LogInfo(
+                        "PlayerStartup",
+                        "Playback readiness probe timed out; releasing controls to avoid startup deadlock.");
+                }
+
+                _isPlayerNavigationInProgress = false;
+                _isPlayerRuntimeReady = true;
+                SetPlayerInteractionsEnabled(true);
+                SetPlayerLoadingOverlay(visible: false);
+                FlushPendingEffectsApplyRequests();
             }
             catch
             {
@@ -133,7 +211,29 @@ namespace JokerDBDTracker
                     "Ошибка инициализации плеера. Попробуйте открыть видео снова.",
                     "Player initialization error. Try opening this video again."));
                 SetPlayerSurfaceVisible(false);
+                SetPlayerInteractionsEnabled(false);
             }
+        }
+
+        private void CoreWebView2_WebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
+        {
+            if (!CanProcessPlayerCommands())
+            {
+                return;
+            }
+
+            var message = e.TryGetWebMessageAsString();
+            if (!string.Equals(message, "jdbd:toggle-effects-panel", StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            Dispatcher.BeginInvoke(() =>
+            {
+                MarkUserInteraction();
+                var panelToggleKey = ReadConfiguredKey(_appSettings.HideEffectsPanelBind, Key.H);
+                TryHandleEffectsPanelToggleKey(panelToggleKey);
+            }, DispatcherPriority.Input);
         }
 
         private void SetPlayerLoadingOverlay(bool visible, string? text = null)
@@ -160,6 +260,77 @@ namespace JokerDBDTracker
             PlayerSurfaceHost.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
         }
 
+        private void SetPlayerInteractionsEnabled(bool enabled)
+        {
+            var canEnable = enabled && !_isPlayerClosing;
+            if (ToggleEffectsPanelButton is not null)
+            {
+                ToggleEffectsPanelButton.IsEnabled = canEnable;
+            }
+
+            if (EffectsPanel is not null)
+            {
+                EffectsPanel.IsEnabled = canEnable;
+            }
+
+            if (WindowSizeButton is not null && !_isPlayerElementFullScreen)
+            {
+                WindowSizeButton.IsEnabled = canEnable;
+            }
+        }
+
+        private bool CanProcessPlayerCommands()
+        {
+            return !_isPlayerClosing &&
+                   !_isPlayerNavigationInProgress &&
+                   _isPlayerRuntimeReady &&
+                   Player.CoreWebView2 is not null;
+        }
+
+        private void FlushPendingEffectsApplyRequests()
+        {
+            if (!_pendingEffectsApply && !_pendingEffectsApplyForce)
+            {
+                return;
+            }
+
+            var force = _pendingEffectsApplyForce;
+            _pendingEffectsApply = false;
+            _pendingEffectsApplyForce = false;
+            RequestApplyEffects(immediate: true, force: force);
+        }
+
+        private async Task<string?> ExecuteWebScriptWithTimeoutAsync(string script, int timeoutMs, string operation)
+        {
+            if (_isPlayerClosing || Player.CoreWebView2 is null)
+            {
+                return null;
+            }
+
+            try
+            {
+                var scriptTask = Player.CoreWebView2.ExecuteScriptAsync(script);
+                var completedTask = await Task.WhenAny(scriptTask, Task.Delay(timeoutMs));
+                if (completedTask != scriptTask)
+                {
+                    if ((DateTime.UtcNow - _lastWebScriptTimeoutLogUtc).TotalSeconds >= 5)
+                    {
+                        _lastWebScriptTimeoutLogUtc = DateTime.UtcNow;
+                        DiagnosticsService.LogInfo("WebViewTimeout", $"{operation} exceeded {timeoutMs} ms.");
+                    }
+
+                    return null;
+                }
+
+                return await scriptTask;
+            }
+            catch (Exception ex)
+            {
+                DiagnosticsService.LogException(operation, ex);
+                return null;
+            }
+        }
+
         private async Task<bool> WaitForPlaybackStartAsync()
         {
             if (Player.CoreWebView2 is null)
@@ -182,7 +353,16 @@ namespace JokerDBDTracker
             {
                 try
                 {
-                    var result = await Player.CoreWebView2.ExecuteScriptAsync(playbackStateScript);
+                    var result = await ExecuteWebScriptWithTimeoutAsync(
+                        playbackStateScript,
+                        timeoutMs: 800,
+                        operation: "WaitForPlaybackStartAsync");
+                    if (result is null)
+                    {
+                        await Task.Delay(100);
+                        continue;
+                    }
+
                     if (string.Equals(result, "true", StringComparison.OrdinalIgnoreCase))
                     {
                         return true;
@@ -201,7 +381,7 @@ namespace JokerDBDTracker
 
         private async Task RecoverLockedVideoAsync()
         {
-            if (Player.CoreWebView2 is null || _isRecoveringBlockedNavigation)
+            if (Player.CoreWebView2 is null || _isRecoveringBlockedNavigation || _isPlayerClosing)
             {
                 return;
             }
@@ -281,35 +461,56 @@ namespace JokerDBDTracker
             }
         }
 
-        private static string BuildKioskModeScript(string videoId)
+        private static string BuildKioskModeScript(string videoId, Key panelToggleKey)
         {
             var safeVideoId = videoId.Replace("\\", "\\\\").Replace("'", "\\'");
+            var (panelToggleKeyVariants, panelToggleCodeVariants) = BuildKeyboardEventVariants(panelToggleKey);
+            var panelToggleKeyJson = JsonSerializer.Serialize(panelToggleKeyVariants);
+            var panelToggleCodeJson = JsonSerializer.Serialize(panelToggleCodeVariants);
             return $$"""
                 (() => {
                     const expectedVideoId = '{{safeVideoId}}';
-                    const installScrollLock = () => {
-                        if (window.__jdbdScrollLockInstalled) {
+                    const panelToggleKeys = new Set({{panelToggleKeyJson}});
+                    const panelToggleCodes = new Set({{panelToggleCodeJson}});
+                    const isPanelToggleKey = (event) => {
+                        if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+                            return false;
+                        }
+
+                        const key = (event.key || '').toUpperCase();
+                        const code = event.code || '';
+                        return panelToggleKeys.has(key) || panelToggleCodes.has(code);
+                    };
+
+                    const installPanelToggleBridge = () => {
+                        if (window.__jdbdPanelToggleBridgeInstalled) {
                             return;
                         }
 
-                        window.__jdbdScrollLockInstalled = true;
-                        const preventScroll = (event) => {
-                            event.preventDefault();
-                        };
-
-                        const blockedKeys = new Set([
-                            'ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '
-                        ]);
-
-                        document.addEventListener('wheel', preventScroll, { passive: false, capture: true });
-                        document.addEventListener('touchmove', preventScroll, { passive: false, capture: true });
+                        window.__jdbdPanelToggleBridgeInstalled = true;
                         document.addEventListener('keydown', (event) => {
-                            if (blockedKeys.has(event.key)) {
+                            if (isPanelToggleKey(event)) {
                                 event.preventDefault();
+                                event.stopImmediatePropagation();
+                                event.stopPropagation();
+                                if (!event.repeat) {
+                                    try {
+                                        window.chrome?.webview?.postMessage('jdbd:toggle-effects-panel');
+                                    } catch {
+                                        // no-op
+                                    }
+                                }
                             }
                         }, { capture: true });
+                    };
 
-                        document.addEventListener('click', (event) => {
+                    const installForeignWatchGuard = () => {
+                        if (window.__jdbdForeignWatchGuardInstalled) {
+                            return;
+                        }
+
+                        window.__jdbdForeignWatchGuardInstalled = true;
+                        const blockForeignWatchClick = (event) => {
                             const link = event.target && event.target.closest ? event.target.closest('a[href*="/watch"]') : null;
                             if (!link) {
                                 return;
@@ -326,10 +527,104 @@ namespace JokerDBDTracker
                                 event.preventDefault();
                                 event.stopPropagation();
                             }
-                        }, { capture: true });
+                        };
+
+                        document.addEventListener('click', blockForeignWatchClick, { capture: true });
+                        document.addEventListener('auxclick', blockForeignWatchClick, { capture: true });
+                        document.addEventListener('mousedown', blockForeignWatchClick, { capture: true });
                     };
 
-                    const applyKioskMode = () => {
+                    const applyImmersiveVideoLayout = () => {
+                        if (!location.hostname.endsWith('youtube.com')) {
+                            return;
+                        }
+
+                        const ensureLayoutStyle = () => {
+                            if (document.getElementById('jdbd-immersive-style')) {
+                                return;
+                            }
+
+                            const style = document.createElement('style');
+                            style.id = 'jdbd-immersive-style';
+                            style.textContent = `
+                                html, body, ytd-app, #content, #page-manager, ytd-watch-flexy, #columns, #primary, #primary-inner {
+                                    margin: 0 !important;
+                                    padding: 0 !important;
+                                    background: #000 !important;
+                                    overflow: hidden !important;
+                                    height: 100% !important;
+                                }
+
+                                #columns {
+                                    max-width: none !important;
+                                    width: 100% !important;
+                                    height: 100% !important;
+                                }
+
+                                #primary {
+                                    width: 100% !important;
+                                    max-width: none !important;
+                                    height: 100% !important;
+                                }
+
+                                #primary-inner {
+                                    width: 100% !important;
+                                    height: 100vh !important;
+                                }
+
+                                #player, #ytd-player, #player-container, #player-container-outer, #player-container-inner,
+                                #player-theater-container, #full-bleed-container, #movie_player,
+                                .html5-video-player, .html5-video-container {
+                                    width: 100% !important;
+                                    max-width: none !important;
+                                    height: 100% !important;
+                                    max-height: none !important;
+                                }
+
+                                #player, #ytd-player, #player-container, #player-container-outer, #player-container-inner,
+                                #player-theater-container, #full-bleed-container {
+                                    min-height: 100vh !important;
+                                }
+
+                                .html5-main-video, video {
+                                    width: 100% !important;
+                                    height: 100% !important;
+                                    max-height: none !important;
+                                    object-fit: contain !important;
+                                    left: 0 !important;
+                                    top: 0 !important;
+                                }
+
+                                #secondary, #secondary-inner, #related,
+                                #below, #comments, ytd-comments,
+                                ytd-watch-metadata, ytd-watch-info-text,
+                                #description, #description-inline-expander, #description-inner,
+                                ytd-text-inline-expander, ytd-engagement-panel-section-list-renderer, #panels,
+                                #chat, #chat-container, ytd-live-chat-frame,
+                                ytd-merch-shelf-renderer, ytd-reel-shelf-renderer,
+                                ytd-watch-next-secondary-results-renderer, ytd-watch-next-feed-renderer,
+                                #end, #meta, #guide, ytd-mini-guide-renderer, tp-yt-app-drawer,
+                                ytd-masthead, #masthead-container, #header,
+                                #columns > :not(#primary) {
+                                    display: none !important;
+                                    visibility: hidden !important;
+                                    pointer-events: none !important;
+                                }
+                            `;
+                            (document.head || document.documentElement).appendChild(style);
+                        };
+
+                        ensureLayoutStyle();
+
+                        const flexy = document.querySelector('ytd-watch-flexy');
+                        if (flexy) {
+                            flexy.setAttribute('theater', '');
+                            flexy.removeAttribute('is-two-columns_');
+                            flexy.removeAttribute('is-two-columns');
+                        }
+                    };
+
+                    const enforceExpectedVideoId = () => {
                         const current = new URL(location.href);
                         if (!current.hostname.endsWith('youtube.com')) {
                             return;
@@ -343,91 +638,16 @@ namespace JokerDBDTracker
                                 return;
                             }
                         }
-
-                        const player = document.getElementById('movie_player') || document.querySelector('.html5-video-player');
-                        if (!player) {
-                            return;
-                        }
-
-                        document.documentElement.style.setProperty('overflow', 'hidden', 'important');
-                        document.documentElement.style.setProperty('background', '#000', 'important');
-                        document.documentElement.style.setProperty('margin', '0', 'important');
-                        document.documentElement.style.setProperty('padding', '0', 'important');
-
-                        document.body.style.setProperty('margin', '0', 'important');
-                        document.body.style.setProperty('padding', '0', 'important');
-                        document.body.style.setProperty('overflow', 'hidden', 'important');
-                        document.body.style.setProperty('background', '#000', 'important');
-
-                        for (const scrollRoot of ['ytd-app', '#content', '#page-manager', 'ytd-watch-flexy', '#columns']) {
-                            const node = document.querySelector(scrollRoot);
-                            if (!node) {
-                                continue;
-                            }
-
-                            node.style.setProperty('overflow', 'hidden', 'important');
-                            node.scrollTop = 0;
-                        }
-                        window.scrollTo(0, 0);
-
-                        const hideSelectors = [
-                            'ytd-masthead',
-                            '#masthead-container',
-                            '#secondary',
-                            '#secondary-inner',
-                            '#related',
-                            '#below',
-                            '#comments',
-                            'ytd-comments',
-                            'ytd-watch-metadata',
-                            'ytd-watch-info-text',
-                            '#description',
-                            '#description-inline-expander',
-                            '#description-inner',
-                            'ytd-text-inline-expander',
-                            'ytd-engagement-panel-section-list-renderer',
-                            '#panels',
-                            'ytd-watch-flexy[engagement-panel-visible]',
-                            '#chat',
-                            '#chat-container',
-                            '#guide',
-                            'ytd-mini-guide-renderer',
-                            'tp-yt-app-drawer',
-                            'ytd-reel-shelf-renderer',
-                            'ytd-watch-next-secondary-results-renderer',
-                            'ytd-watch-next-feed-renderer',
-                            '#end',
-                            '#meta',
-                            '#columns > :not(#primary)'
-                        ];
-                        for (const selector of hideSelectors) {
-                            for (const element of document.querySelectorAll(selector)) {
-                                element.style.setProperty('display', 'none', 'important');
-                            }
-                        }
-
-                        const flexy = document.querySelector('ytd-watch-flexy');
-                        if (flexy) {
-                            flexy.removeAttribute('is-two-columns_');
-                            flexy.setAttribute('theater', '');
-                            flexy.style.setProperty('height', '100vh', 'important');
-                            flexy.style.setProperty('max-height', '100vh', 'important');
-                            flexy.style.setProperty('overflow', 'hidden', 'important');
-                        }
-
-                        const primary = document.querySelector('#primary');
-                        if (primary) {
-                            primary.style.setProperty('max-height', '100vh', 'important');
-                            primary.style.setProperty('overflow', 'hidden', 'important');
-                        }
                     };
 
-                    installScrollLock();
-                    applyKioskMode();
-                    const observer = new MutationObserver(applyKioskMode);
+                    installPanelToggleBridge();
+                    installForeignWatchGuard();
+                    enforceExpectedVideoId();
+                    applyImmersiveVideoLayout();
+                    const observer = new MutationObserver(() => {
+                        applyImmersiveVideoLayout();
+                    });
                     observer.observe(document.documentElement, { childList: true, subtree: true });
-                    setTimeout(applyKioskMode, 250);
-                    setTimeout(applyKioskMode, 1000);
                 })();
                 """;
         }
@@ -438,35 +658,41 @@ namespace JokerDBDTracker
             return $$"""
                 (() => {
                     const expectedVideoId = '{{safeVideoId}}';
-                    const hiddenSelectors = [
-                        '#secondary',
-                        '#secondary-inner',
-                        '#related',
-                        '#below',
-                        '#comments',
-                        'ytd-comments',
-                        '#chat',
-                        '#chat-container',
-                        'ytd-watch-metadata',
-                        'ytd-watch-info-text',
-                        '#description',
-                        '#description-inline-expander',
-                        '#description-inner',
-                        'ytd-engagement-panel-section-list-renderer',
-                        '#panels'
-                    ];
+                    if (window.__jdbdEarlyWatchGuardInstalled) {
+                        return;
+                    }
 
-                    const ensureEarlyStyle = () => {
-                        if (document.getElementById('jdbd-early-kiosk-style')) {
+                    window.__jdbdEarlyWatchGuardInstalled = true;
+
+                    const ensureEarlyImmersiveStyle = () => {
+                        if (document.getElementById('jdbd-early-immersive-style')) {
                             return;
                         }
 
                         const style = document.createElement('style');
-                        style.id = 'jdbd-early-kiosk-style';
+                        style.id = 'jdbd-early-immersive-style';
                         style.textContent = `
-                            html, body { overflow: hidden !important; background: #000 !important; margin: 0 !important; padding: 0 !important; }
-                            ${hiddenSelectors.join(', ')} { display: none !important; visibility: hidden !important; pointer-events: none !important; }
-                            #columns, #primary { max-height: 100vh !important; overflow: hidden !important; }
+                            html, body, ytd-app, #content, #page-manager, ytd-watch-flexy, #columns, #primary, #primary-inner {
+                                overflow: hidden !important;
+                                height: 100% !important;
+                            }
+
+                            #primary-inner {
+                                height: 100vh !important;
+                            }
+
+                            #secondary, #secondary-inner, #related,
+                            #below, #comments, ytd-comments,
+                            ytd-watch-metadata, ytd-watch-info-text,
+                            #description, #description-inline-expander, #description-inner,
+                            ytd-engagement-panel-section-list-renderer, #panels,
+                            #chat, #chat-container, ytd-live-chat-frame,
+                            ytd-masthead, #masthead-container, #header,
+                            #columns > :not(#primary) {
+                                display: none !important;
+                                visibility: hidden !important;
+                                pointer-events: none !important;
+                            }
                         `;
                         (document.head || document.documentElement).appendChild(style);
                     };
@@ -501,12 +727,52 @@ namespace JokerDBDTracker
                         }
                     };
 
-                    ensureEarlyStyle();
+                    ensureEarlyImmersiveStyle();
                     document.addEventListener('click', blockForeignWatchClick, true);
                     document.addEventListener('auxclick', blockForeignWatchClick, true);
                     document.addEventListener('mousedown', blockForeignWatchClick, true);
                 })();
                 """;
+        }
+
+        private static (string[] Keys, string[] Codes) BuildKeyboardEventVariants(Key key)
+        {
+            if (key >= Key.A && key <= Key.Z)
+            {
+                var letter = key.ToString().ToUpperInvariant();
+                return ([letter], [$"Key{letter}"]);
+            }
+
+            if (key >= Key.D0 && key <= Key.D9)
+            {
+                var digit = ((int)(key - Key.D0)).ToString();
+                return ([digit], [$"Digit{digit}"]);
+            }
+
+            if (key >= Key.NumPad0 && key <= Key.NumPad9)
+            {
+                var digit = ((int)(key - Key.NumPad0)).ToString();
+                return ([digit], [$"Numpad{digit}"]);
+            }
+
+            if (key >= Key.F1 && key <= Key.F24)
+            {
+                var functionKey = key.ToString().ToUpperInvariant();
+                return ([functionKey], [functionKey]);
+            }
+
+            return key switch
+            {
+                Key.Space => ([" "], ["Space"]),
+                Key.Tab => (["TAB"], ["Tab"]),
+                Key.Enter => (["ENTER"], ["Enter", "NumpadEnter"]),
+                Key.Escape => (["ESCAPE", "ESC"], ["Escape"]),
+                Key.Left => (["ARROWLEFT"], ["ArrowLeft"]),
+                Key.Right => (["ARROWRIGHT"], ["ArrowRight"]),
+                Key.Up => (["ARROWUP"], ["ArrowUp"]),
+                Key.Down => (["ARROWDOWN"], ["ArrowDown"]),
+                _ => ([key.ToString().ToUpperInvariant()], [key.ToString()])
+            };
         }
 
         private bool IsAllowedPlayerNavigation(string? uriText)

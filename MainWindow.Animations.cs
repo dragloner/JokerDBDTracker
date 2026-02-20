@@ -21,7 +21,7 @@ namespace JokerDBDTracker
             {
                 To = toOpacity,
                 Duration = TimeSpan.FromMilliseconds(durationMs),
-                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
             };
             animation.Completed += (_, _) => tcs.TrySetResult(true);
             BeginAnimation(OpacityProperty, animation);
@@ -41,8 +41,8 @@ namespace JokerDBDTracker
             {
                 From = 0,
                 To = 1,
-                Duration = TimeSpan.FromMilliseconds(180),
-                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+                Duration = TimeSpan.FromMilliseconds(260),
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
             };
             element.BeginAnimation(UIElement.OpacityProperty, animation);
         }
@@ -54,9 +54,9 @@ namespace JokerDBDTracker
                 return;
             }
 
-            MainRootBorder.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(0.93, 1, TimeSpan.FromMilliseconds(160))
+            MainRootBorder.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(0.96, 1, TimeSpan.FromMilliseconds(240))
             {
-                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
             });
 
             MainRootBorder.RenderTransformOrigin = new Point(0.5, 0.5);
@@ -67,13 +67,13 @@ namespace JokerDBDTracker
                 MainRootBorder.RenderTransform = scale;
             }
 
-            scale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(0.988, 1, TimeSpan.FromMilliseconds(170))
+            scale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(0.994, 1, TimeSpan.FromMilliseconds(250))
             {
-                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
             });
-            scale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(0.988, 1, TimeSpan.FromMilliseconds(170))
+            scale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(0.994, 1, TimeSpan.FromMilliseconds(250))
             {
-                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
             });
         }
 
@@ -97,19 +97,19 @@ namespace JokerDBDTracker
                         MainRootBorder.RenderTransform = scale;
                     }
 
-                    var scaleDuration = TimeSpan.FromMilliseconds(190);
-                    var scaleEase = new CubicEase { EasingMode = EasingMode.EaseIn };
-                    scale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(1, 0.958, scaleDuration)
+                    var scaleDuration = TimeSpan.FromMilliseconds(320);
+                    var scaleEase = new CubicEase { EasingMode = EasingMode.EaseInOut };
+                    scale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(1, 0.972, scaleDuration)
                     {
                         EasingFunction = scaleEase
                     });
-                    scale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(1, 0.958, scaleDuration)
+                    scale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(1, 0.972, scaleDuration)
                     {
                         EasingFunction = scaleEase
                     });
                 }
 
-                await AnimateWindowOpacityAsync(0.0, 190);
+                await AnimateWindowOpacityAsync(0.0, 320);
             }
             catch
             {

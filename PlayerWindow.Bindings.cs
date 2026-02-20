@@ -1,9 +1,9 @@
-﻿using System.Media;
-using System.IO;
+﻿using System.IO;
 using System.Windows.Media;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using JokerDBDTracker.Services;
 
 namespace JokerDBDTracker
 {
@@ -28,6 +28,12 @@ namespace JokerDBDTracker
         {
             MarkUserInteraction();
             var key = e.Key == Key.System ? e.SystemKey : e.Key;
+            if (ShouldSuppressDuplicateAppKeybind(key))
+            {
+                e.Handled = true;
+                return;
+            }
+
             if (TryHandleAppKeybind(key))
             {
                 e.Handled = true;
@@ -36,6 +42,11 @@ namespace JokerDBDTracker
 
         private bool TryHandleAppKeybind(Key key)
         {
+            if (!CanProcessPlayerCommands())
+            {
+                return false;
+            }
+
             if (Keyboard.Modifiers != ModifierKeys.None)
             {
                 return false;
@@ -59,6 +70,16 @@ namespace JokerDBDTracker
             var nextState = checkBox.IsChecked != true;
             checkBox.IsChecked = nextState;
             return true;
+        }
+
+        private bool ShouldSuppressDuplicateAppKeybind(Key key)
+        {
+            var now = DateTime.UtcNow;
+            var isDuplicate = _lastProcessedAppKeybind == key &&
+                              (now - _lastProcessedAppKeybindUtc).TotalMilliseconds <= 130;
+            _lastProcessedAppKeybind = key;
+            _lastProcessedAppKeybindUtc = now;
+            return isDuplicate;
         }
 
         private void MarkUserInteraction()
@@ -117,53 +138,26 @@ namespace JokerDBDTracker
 
             return fallback;
         }
-
         private void PlaySoundEffect(SoundEffectKind kind)
         {
             try
             {
                 var audioResourceUri = ResolveSoundEffectResourceUri(kind);
-                if (audioResourceUri is not null)
+                if (audioResourceUri is null)
                 {
-                    PlayAudioFile(audioResourceUri, kind);
+                    ReportSoundPlaybackFailure("Sound asset not found.");
                     return;
                 }
 
-                PlayFallbackSoundEffect(kind);
+                PlayAudioFile(audioResourceUri);
             }
-            catch
+            catch (Exception ex)
             {
-                try
-                {
-                    SystemSounds.Exclamation.Play();
-                }
-                catch
-                {
-                    // Optional sound.
-                }
+                ReportSoundPlaybackFailure(ex.Message);
             }
         }
 
-        private static void PlayFallbackSoundEffect(SoundEffectKind kind)
-        {
-            switch (kind)
-            {
-                case SoundEffectKind.AuraFarm:
-                    SystemSounds.Asterisk.Play();
-                    break;
-                case SoundEffectKind.Laugh:
-                    SystemSounds.Hand.Play();
-                    break;
-                case SoundEffectKind.PsiRadiation:
-                    SystemSounds.Exclamation.Play();
-                    break;
-                case SoundEffectKind.Respect:
-                    SystemSounds.Asterisk.Play();
-                    break;
-            }
-        }
-
-        private static Uri? ResolveSoundEffectResourceUri(SoundEffectKind kind)
+        private Uri? ResolveSoundEffectResourceUri(SoundEffectKind kind)
         {
             var fileName = kind switch
             {
@@ -191,10 +185,43 @@ namespace JokerDBDTracker
                 return new Uri(externalAssetsPath, UriKind.Absolute);
             }
 
-            return new Uri($"pack://application:,,,/Assets/Sounds/{fileName}", UriKind.Absolute);
+            var cachedBundledPath = MaterializeBundledSoundToCache(fileName);
+            return string.IsNullOrWhiteSpace(cachedBundledPath)
+                ? null
+                : new Uri(cachedBundledPath, UriKind.Absolute);
         }
 
-        private void PlayAudioFile(Uri resourceUri, SoundEffectKind kind)
+        private static string? MaterializeBundledSoundToCache(string fileName)
+        {
+            try
+            {
+                var cacheDirectory = Path.Combine(AppStoragePaths.GetCurrentLocalAppDataDirectory(), "SoundCache");
+                Directory.CreateDirectory(cacheDirectory);
+                var cachedFilePath = Path.Combine(cacheDirectory, fileName);
+                if (File.Exists(cachedFilePath) && new FileInfo(cachedFilePath).Length > 0)
+                {
+                    return cachedFilePath;
+                }
+
+                var packUri = new Uri($"pack://application:,,,/Assets/Sounds/{fileName}", UriKind.Absolute);
+                var resource = Application.GetResourceStream(packUri);
+                if (resource?.Stream is null)
+                {
+                    return null;
+                }
+
+                using var sourceStream = resource.Stream;
+                using var targetStream = new FileStream(cachedFilePath, FileMode.Create, FileAccess.Write, FileShare.Read);
+                sourceStream.CopyTo(targetStream);
+                return cachedFilePath;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private void PlayAudioFile(Uri resourceUri)
         {
             var player = new MediaPlayer();
             player.Open(resourceUri);
@@ -209,11 +236,32 @@ namespace JokerDBDTracker
             {
                 player.Close();
                 _activeSoundPlayers.Remove(player);
-                PlayFallbackSoundEffect(kind);
+                ReportSoundPlaybackFailure("MediaPlayer failed to decode sound.");
             };
 
             _activeSoundPlayers.Add(player);
             player.Play();
+        }
+
+        private void ReportSoundPlaybackFailure(string details)
+        {
+            DiagnosticsService.LogInfo("SoundPlayback", details);
+            if (_hasShownSoundPlaybackWarning)
+            {
+                return;
+            }
+
+            _hasShownSoundPlaybackWarning = true;
+            Dispatcher.BeginInvoke(() =>
+            {
+                MessageBox.Show(
+                    PT(
+                        "Не удалось воспроизвести звуковые эффекты. Проверьте целостность файлов релиза.",
+                        "Failed to play sound effects. Check release files integrity."),
+                    PT("Звук", "Sound"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            });
         }
 
         private void StopAllSoundEffects()
@@ -342,4 +390,5 @@ namespace JokerDBDTracker
         }
     }
 }
+
 

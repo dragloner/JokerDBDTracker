@@ -21,7 +21,7 @@ namespace JokerDBDTracker
     {
         private async void PositionTimer_Tick(object? sender, EventArgs e)
         {
-            if (Player.CoreWebView2 is null)
+            if (Player.CoreWebView2 is null || _isPlayerClosing || _isPlayerNavigationInProgress)
             {
                 return;
             }
@@ -44,7 +44,15 @@ namespace JokerDBDTracker
                     })();
                     """;
 
-                var raw = await Player.CoreWebView2.ExecuteScriptAsync(script);
+                var raw = await ExecuteWebScriptWithTimeoutAsync(
+                    script,
+                    timeoutMs: 1200,
+                    operation: "PositionTimer_Tick.ReadPlaybackState");
+                if (string.IsNullOrWhiteSpace(raw))
+                {
+                    return;
+                }
+
                 using var document = JsonDocument.Parse(raw);
                 var current = document.RootElement.GetProperty("current").GetDouble();
                 var duration = document.RootElement.GetProperty("duration").GetDouble();

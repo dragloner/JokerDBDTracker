@@ -1,48 +1,58 @@
-# JokerDBDTracker
+﻿# JokerDBDTracker
 
-Жесткий трекер стримов JokerDBD для тех, кто не хочет еб*ться с кучей вкладок и вечно терять, что уже смотрел.
+Desktop WPF tracker for JokerDBD streams with built-in player, progress system, quests, XP, prestige, and visual/audio effects.
 
-## Что это за тема
+Current stable release: `v1.2.0.1`
 
-`JokerDBDTracker` — это WPF-приложение под Windows, где ты смотришь записи стримов JokerDBD в одном месте, с прогрессом, XP, квестами и кастомными эффектами.
+## Highlights
 
-Коротко: поставил, запустил, кайфуешь со стримов без бардака.
+- Unified stream catalog with favorites and watched state.
+- Embedded YouTube player with immersive mode and effect panel.
+- Profile progression: XP, levels, prestige, achievements.
+- Daily and weekly quests with claimable rewards.
+- RU/EN localization.
+- Settings MVP:
+  - language
+  - startup behavior
+  - UI scale
+  - fullscreen behavior
+  - cache reset
 
-## Почему это кайф
+## Release Scope
 
-- Все стримы в одном окне.
-- Встроенный плеер, без вечной беготни по браузеру.
-- Отметки просмотренного и избранное.
-- Профиль с XP, уровнями и престижем.
-- Ежедневные и еженедельные задания с `Claim XP`.
-- Саунд-эффекты на биндах и кнопках.
-- Нормальные настройки: язык, автозапуск, масштаб UI, fullscreen-поведение и т.д.
+### `v1.2.0`
 
-## Версия `v1.2.0`
+- Core UX upgrade and UI cleanup.
+- XP economy rebalance and session bonuses.
+- Quest system expansion (daily/weekly + timers + claim flow).
+- Prestige icon set with fallback behavior.
+- Player sound effects and keybind support.
 
-- Прокачан UX и визуал.
-- Доработан прогресс и начисление XP.
-- Добавлены/улучшены квесты и таймеры обновления.
-- Полированная локализация RU/EN.
-- Фиксы стабильности плеера, биндов и интерфейса.
+### `v1.2.0.1` (stability patch)
 
-## Установка
+- Startup/runtime crash handling with local diagnostics logging.
+- Player reliability fixes for WebView2 startup/navigation race conditions.
+- Safer effect application pipeline under heavy key spam.
+- Better keybind handling while player is loading.
+- Sound playback fallback fixes (without Windows default error beep).
+- Fullscreen and monitor-bound behavior fixes.
 
-1. Открой релизы:  
-   `https://github.com/dragloner/JokerDBDTracker/releases`
-2. Скачай актуальный архив `win-x64`.
-3. Распакуй в удобную папку.
-4. Запусти `JokerDBDTracker.exe`.
+## Install
 
-## Сборка из исходников
+1. Open releases: `https://github.com/dragloner/JokerDBDTracker/releases`
+2. Download latest `win-x64` build.
+3. Extract to any writable folder.
+4. Run `JokerDBDTracker.exe`.
 
-Требуется:
+## Build From Source
 
-- `.NET SDK` (актуальный для проекта)
+Requirements:
+
 - Windows 10/11
-- WebView2 Runtime
+- .NET SDK (matching project target)
+- Microsoft Edge WebView2 Runtime
 
-Команды:
+Commands:
 
 ```powershell
 dotnet build JokerDBDTracker.sln -c Debug
@@ -50,14 +60,15 @@ dotnet build JokerDBDTracker.sln -c Release
 dotnet publish JokerDBDTracker.csproj -c Release -r win-x64
 ```
 
+## Data and Logs
+
+- App data: `%APPDATA%\\JokerDBDTracker`
+- Diagnostics log: `%LOCALAPPDATA%\\JokerDBDTracker\\Logs\\app.log`
+
 ## Roadmap
 
-План обновлений смотри в `ROADMAP.md`.
+See `ROADMAP.md`.
 
-## Автор
+## Maintainer
 
 `dragloner`
-
----
-
-Если где-то баг, лаг или что-то пошло по пизде — кидай issue в репу, починим.

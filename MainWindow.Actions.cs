@@ -26,7 +26,7 @@ namespace JokerDBDTracker
 
                 try
                 {
-                    await AnimateWindowOpacityAsync(0.0, 140);
+                    await AnimateWindowOpacityAsync(0.0, 220);
                     Hide();
                     player.ShowDialog();
                 }
@@ -48,7 +48,7 @@ namespace JokerDBDTracker
                     }
 
                     Activate();
-                    await AnimateWindowOpacityAsync(1.0, 180);
+                    await AnimateWindowOpacityAsync(1.0, 260);
                 }
 
                 video.LastPlaybackSeconds = player.LastPlaybackSeconds;

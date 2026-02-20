@@ -65,17 +65,24 @@ namespace JokerDBDTracker.Services
 
         private void MigrateLegacyHistoryIfNeeded()
         {
-            if (File.Exists(_historyPath))
+            try
             {
-                return;
-            }
+                if (File.Exists(_historyPath))
+                {
+                    return;
+                }
 
-            if (!File.Exists(_legacyHistoryPath))
+                if (!File.Exists(_legacyHistoryPath))
+                {
+                    return;
+                }
+
+                File.Copy(_legacyHistoryPath, _historyPath, overwrite: false);
+            }
+            catch (Exception ex)
             {
-                return;
+                DiagnosticsService.LogException("MigrateLegacyHistoryIfNeeded", ex);
             }
-
-            File.Copy(_legacyHistoryPath, _historyPath, overwrite: false);
         }
 
         public async Task<WatchHistoryData> LoadAsync(CancellationToken cancellationToken = default)

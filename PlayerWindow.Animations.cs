@@ -17,19 +17,19 @@ namespace JokerDBDTracker
 
             MainRootGrid.Opacity = 0;
             MainRootGrid.RenderTransformOrigin = new Point(0.5, 0.5);
-            MainRootGrid.RenderTransform = new ScaleTransform(0.985, 0.985);
+            MainRootGrid.RenderTransform = new ScaleTransform(0.992, 0.992);
 
-            var opacity = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(180))
+            var opacity = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(260))
             {
-                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
             };
             MainRootGrid.BeginAnimation(UIElement.OpacityProperty, opacity);
 
             if (MainRootGrid.RenderTransform is ScaleTransform scale)
             {
-                var scaleAnimation = new DoubleAnimation(0.985, 1, TimeSpan.FromMilliseconds(200))
+                var scaleAnimation = new DoubleAnimation(0.992, 1, TimeSpan.FromMilliseconds(300))
                 {
-                    EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+                    EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
                 };
                 scale.BeginAnimation(ScaleTransform.ScaleXProperty, scaleAnimation);
                 scale.BeginAnimation(ScaleTransform.ScaleYProperty, scaleAnimation);
@@ -43,9 +43,9 @@ namespace JokerDBDTracker
                 return;
             }
 
-            MainRootGrid.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(0.92, 1, TimeSpan.FromMilliseconds(160))
+            MainRootGrid.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(0.96, 1, TimeSpan.FromMilliseconds(240))
             {
-                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
             });
 
             MainRootGrid.RenderTransformOrigin = new Point(0.5, 0.5);
@@ -56,13 +56,13 @@ namespace JokerDBDTracker
                 MainRootGrid.RenderTransform = scale;
             }
 
-            scale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(0.986, 1, TimeSpan.FromMilliseconds(170))
+            scale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(0.994, 1, TimeSpan.FromMilliseconds(250))
             {
-                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
             });
-            scale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(0.986, 1, TimeSpan.FromMilliseconds(170))
+            scale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(0.994, 1, TimeSpan.FromMilliseconds(250))
             {
-                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
             });
         }
 
@@ -86,22 +86,22 @@ namespace JokerDBDTracker
                         MainRootGrid.RenderTransform = scale;
                     }
 
-                    var scaleDuration = TimeSpan.FromMilliseconds(190);
-                    var scaleEase = new CubicEase { EasingMode = EasingMode.EaseIn };
-                    scale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(1, 0.955, scaleDuration)
+                    var scaleDuration = TimeSpan.FromMilliseconds(340);
+                    var scaleEase = new CubicEase { EasingMode = EasingMode.EaseInOut };
+                    scale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(1, 0.970, scaleDuration)
                     {
                         EasingFunction = scaleEase
                     });
-                    scale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(1, 0.955, scaleDuration)
+                    scale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(1, 0.970, scaleDuration)
                     {
                         EasingFunction = scaleEase
                     });
                 }
 
                 var tcs = new TaskCompletionSource<bool>();
-                var opacityAnimation = new DoubleAnimation(Opacity, 0.0, TimeSpan.FromMilliseconds(190))
+                var opacityAnimation = new DoubleAnimation(Opacity, 0.0, TimeSpan.FromMilliseconds(340))
                 {
-                    EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+                    EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
                 };
                 opacityAnimation.Completed += (_, _) => tcs.TrySetResult(true);
                 BeginAnimation(OpacityProperty, opacityAnimation);

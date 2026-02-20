@@ -53,7 +53,7 @@ namespace JokerDBDTracker
         {
             UpdateStrengthSlidersEnabledState();
             UpdateEffectDetailsVisibility(animate: true);
-            RequestApplyEffects(immediate: true);
+            RequestApplyEffects(immediate: false);
         }
 
         private void StrengthSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -75,6 +75,14 @@ namespace JokerDBDTracker
         private void RequestApplyEffects(bool immediate, bool force = false)
         {
             _effectRefreshCounter = 0;
+            if (!CanProcessPlayerCommands())
+            {
+                _pendingEffectsApply = true;
+                _pendingEffectsApplyForce |= force;
+                _effectsApplyDebounceTimer.Stop();
+                return;
+            }
+
             if (immediate)
             {
                 _effectsApplyDebounceTimer.Stop();
@@ -89,6 +97,13 @@ namespace JokerDBDTracker
 
         private async Task ApplyEffectsSafelyAsync(bool force = false)
         {
+            if (!CanProcessPlayerCommands())
+            {
+                _pendingEffectsApply = true;
+                _pendingEffectsApplyForce |= force;
+                return;
+            }
+
             if (_isApplyingEffects)
             {
                 _pendingEffectsApply = true;
@@ -166,7 +181,7 @@ namespace JokerDBDTracker
 
         private async Task ApplyEffectsAsync(bool forceApply)
         {
-            if (Player.CoreWebView2 is null)
+            if (!CanProcessPlayerCommands())
             {
                 return;
             }
@@ -331,7 +346,15 @@ namespace JokerDBDTracker
                 })();
                 """;
 
-            await Player.CoreWebView2.ExecuteScriptAsync(script);
+            var applyResult = await ExecuteWebScriptWithTimeoutAsync(
+                script,
+                timeoutMs: 1800,
+                operation: "ApplyEffectsAsync");
+            if (applyResult is null)
+            {
+                return;
+            }
+
             _lastAppliedEffectsSignature = settingsJson;
         }
 
@@ -455,8 +478,8 @@ namespace JokerDBDTracker
                     {
                         From = 0,
                         To = 1,
-                        Duration = TimeSpan.FromMilliseconds(180),
-                        EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+                        Duration = TimeSpan.FromMilliseconds(240),
+                        EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
                     });
                 }
                 return;
@@ -468,8 +491,8 @@ namespace JokerDBDTracker
                 {
                     From = 1,
                     To = 0,
-                    Duration = TimeSpan.FromMilliseconds(140),
-                    EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseIn }
+                    Duration = TimeSpan.FromMilliseconds(220),
+                    EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
                 };
                 fade.Completed += (_, _) =>
                 {

@@ -20,7 +20,7 @@ namespace JokerDBDTracker.Services
         static NetworkTimeService()
         {
             HttpClient.DefaultRequestHeaders.UserAgent.Add(
-                new ProductInfoHeaderValue("JokerDBDTracker", "1.2.0"));
+                new ProductInfoHeaderValue("JokerDBDTracker", "1.2.0.1"));
         }
 
         public async Task<DateTime?> GetUtcNowAsync(CancellationToken cancellationToken = default)

@@ -184,7 +184,10 @@ namespace JokerDBDTracker
                         }
                     })();
                     """;
-                await Player.CoreWebView2.ExecuteScriptAsync(exitFullscreenScript);
+                await ExecuteWebScriptWithTimeoutAsync(
+                    exitFullscreenScript,
+                    timeoutMs: 1200,
+                    operation: "ExitEmbeddedPlayerFullscreenAsync");
                 await Task.Delay(60);
             }
             catch
@@ -297,6 +300,11 @@ namespace JokerDBDTracker
                 return;
             }
 
+            if (!CanProcessPlayerCommands())
+            {
+                return;
+            }
+
             WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
         }
 
@@ -342,6 +350,12 @@ namespace JokerDBDTracker
 
             if (e.ClickCount == 2)
             {
+                if (!CanProcessPlayerCommands())
+                {
+                    e.Handled = true;
+                    return;
+                }
+
                 WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
 
                 e.Handled = true;
@@ -391,6 +405,10 @@ namespace JokerDBDTracker
         {
             try
             {
+                _isPlayerClosing = true;
+                _isPlayerNavigationInProgress = false;
+                _isPlayerRuntimeReady = false;
+                SetPlayerInteractionsEnabled(false);
                 _ = PersistPlaybackPositionAsync(force: true);
                 Topmost = false;
                 _positionTimer.Stop();
@@ -406,6 +424,7 @@ namespace JokerDBDTracker
                     Player.CoreWebView2.NavigationStarting -= CoreWebView2_NavigationStarting;
                     Player.CoreWebView2.NewWindowRequested -= CoreWebView2_NewWindowRequested;
                     Player.CoreWebView2.NavigationCompleted -= CoreWebView2_NavigationCompleted;
+                    Player.CoreWebView2.WebMessageReceived -= CoreWebView2_WebMessageReceived;
                     Player.CoreWebView2.Stop();
                     Player.CoreWebView2.Navigate("about:blank");
                 }

@@ -68,12 +68,20 @@ namespace JokerDBDTracker
         private DateTime _lastUserInteractionUtc = DateTime.UtcNow;
         private int _navigationCompletedFailureCount;
         private bool _isPlayerMinimizeAnimating;
+        private bool _hasShownSoundPlaybackWarning;
         private readonly Dictionary<int, Key> _registeredHotkeys = [];
         private HwndSource? _hotkeySource;
         private int _nextHotkeyId = 4000;
         private bool _effectsPanelExpandedBeforePlayerFullscreen = true;
         private Thickness _playerHostMarginBeforeFullscreen = new Thickness(0, 8, 0, 8);
         private CornerRadius _playerHostCornerRadiusBeforeFullscreen = new CornerRadius(10);
+        private bool _isPlayerClosing;
+        private bool _isPlayerNavigationInProgress;
+        private bool _isPlayerRuntimeReady;
+        private int _playerNavigationVersion;
+        private DateTime _lastWebScriptTimeoutLogUtc = DateTime.MinValue;
+        private Key _lastProcessedAppKeybind = Key.None;
+        private DateTime _lastProcessedAppKeybindUtc = DateTime.MinValue;
 
         private sealed class EffectSettings
         {

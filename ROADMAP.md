@@ -1,69 +1,81 @@
-# JokerDBDTracker Roadmap
+﻿# JokerDBDTracker Roadmap
 
-Обновлено: 2026-02-20
+Updated: 2026-02-20
 
-## v1.2.0 (Core UX + прогресс) - статус: выполнено/закрывается
+## `v1.2.0` Core UX + Progress (released)
 
-- [x] Sound effects на бинды + кнопки в панели плеера.
-- [x] XP fix и усиленные бонусы за активный просмотр/сессии/прогресс.
-- [x] Prestige icons + fallback.
-- [x] UI upgrade (чистка интерфейса, единый стиль, плавные анимации).
-- [x] Settings (MVP): автозапуск, язык, масштаб UI, fullscreen поведение, сброс кеша.
-- [x] Квесты daily/weekly с таймерами обновления.
-- [x] Claim XP логика для квестов.
-- [x] Фиксы локализации RU/EN (включая битую кодировку).
-- [x] Фикс статуса обновлений при смене языка (без ложного re-check).
-- [x] Фикс системного Windows-звука при переключении визуальных эффектов.
+- [x] Sound effects on keybinds and panel buttons.
+- [x] XP rebalance for active watching.
+- [x] Additional XP bonuses (session/time/activity based).
+- [x] Prestige icons with fallback behavior.
+- [x] UI cleanup and unified style.
+- [x] Settings MVP:
+  - startup behavior
+  - language
+  - UI scale
+  - fullscreen behavior
+  - cache reset
+- [x] Daily and weekly quests with timers and claim flow.
+- [x] Localization pass (RU/EN).
 
-## v1.2.1 (Stability Patch)
+## `v1.2.0.1` Stability Patch (released)
 
-- [ ] Финальный smoke-test релиза по всем экранам.
-- [ ] Добивка остаточных UI/локализационных хвостов (если найдутся в runtime).
-- [ ] Полный regression-pass: профиль, квесты, эффекты, апдейтер, сохранения.
+- [x] Crash handlers + diagnostics log pipeline.
+- [x] Player startup/navigation fail-safe behavior.
+- [x] Improved sound playback reliability across machines.
+- [x] Fixed hotkey conflicts and startup race conditions in player.
+- [x] Effect application safety under rapid input.
+- [x] Fullscreen/player layout fixes and monitor-bound behavior.
 
-## v1.3.0 (Прогресс и удержание)
+## `v1.2.1` Quality Follow-up (in progress)
 
-- [ ] Календарь просмотров: heatmap активности.
-- [ ] Переход к стримам по дате.
-- [ ] Система целей: недельные/месячные цели по просмотру и XP.
-- [ ] Награды за выполнение целей (минималистичный блок в профиле).
-- [ ] Доп. XP-бонусы: за цели и streak multipliers.
-- [ ] Новая вкладка в Избранном: `Таймкоды`.
-- [ ] Сохранение текущего таймкода с пользовательским названием.
-- [ ] Список сохраненных таймкодов по видео с быстрым переходом к позиции.
-- [ ] Редактирование/удаление таймкодов.
+- [ ] Final full regression pass:
+  - profile persistence
+  - quests reset/claim flow
+  - player controls/effects/hotkeys
+  - GitHub updater behavior
+- [ ] Extra runtime telemetry for non-fatal player script timeouts.
+- [ ] Final cleanup of minor UI edge cases found in release testing.
 
-## v1.4.0 (Данные и надежность)
+## `v1.3.0` Progress and Retention
 
-- [ ] Экспорт/импорт профиля: история, достижения, избранное, XP, престиж.
-- [ ] Backup в 1 клик.
-- [ ] Offline-устойчивость: кеш списка стримов.
-- [ ] Режим "работа из кеша" при проблемах YouTube.
-- [ ] Понятный индикатор online/offline.
+- [ ] Watch calendar (activity heatmap).
+- [ ] Date-based stream navigation.
+- [ ] Weekly/monthly goals with rewards.
+- [ ] Additional progression multipliers for consistency.
+- [ ] New Favorites sub-tab: `Timecodes`.
+- [ ] Save current playback timecode with custom title.
+- [ ] Quick jump, edit, and delete for saved timecodes.
 
-## v1.5.0 (Персонализация)
+## `v1.4.0` Data and Reliability
 
-- [ ] Темы: Light/Dark/Custom.
-- [ ] Акцентные цвета.
-- [ ] Компактный/стандартный режим карточек.
-- [ ] Плотность списка/элементов.
-- [ ] UI-пресеты (быстрое переключение).
+- [ ] Profile export/import (history, achievements, favorites, XP, prestige).
+- [ ] One-click backup.
+- [ ] Stream list local cache and offline mode.
+- [ ] Clear online/offline state indication.
 
-## v1.6.0 (Социальные функции)
+## `v1.5.0` Personalization
 
-- [ ] Coop "Watch Together" (MVP): комната, код/ссылка, sync play/pause/позиции.
-- [ ] Базовый чат/реакции (опционально).
+- [ ] Theme system (Light/Dark/Custom).
+- [ ] Accent colors.
+- [ ] Compact/standard card density modes.
+- [ ] UI preset packs.
 
-## v1.7.0 (Монетизация и кастом)
+## `v1.6.0` Social Features
 
-- [ ] Донат за кастомизацию.
-- [ ] Донат-паки саундэффектов.
-- [ ] Донат-стили/темы/визуал профиля.
-- [ ] Прозрачный экран "Что дает донат" без P2W влияния на core.
+- [ ] Coop Watch Together MVP (room + invite + sync play/pause/time).
+- [ ] Optional lightweight room chat/reactions.
 
-## Технические приоритеты (каждый релиз)
+## `v1.7.0` Monetization and Customization
 
-- [ ] Anti-lag полировка.
-- [ ] Совместимость и безопасность профиля между версиями.
-- [ ] Fail-safe для YouTube/GitHub/coop.
-- [ ] Локальная телеметрия ошибок + экспорт отчета кнопкой.
+- [ ] Donation-based cosmetic packs (no P2W core impact).
+- [ ] Extra sound packs.
+- [ ] Profile visual styles/themes.
+- [ ] Transparent donation value page.
+
+## Cross-release Technical Priorities
+
+- [ ] Anti-lag polish after each release.
+- [ ] Backward-compatible profile schema updates.
+- [ ] Fail-safe handling for YouTube/GitHub/network actions.
+- [ ] Local error telemetry with exportable diagnostic report.

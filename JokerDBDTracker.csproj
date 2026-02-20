@@ -10,10 +10,10 @@
     <RootNamespace>JokerDBDTracker</RootNamespace>
     <Product>JokerDBD Tracker</Product>
     <Title>JokerDBD Tracker</Title>
-    <Version>1.2.0</Version>
-    <AssemblyVersion>1.2.0</AssemblyVersion>
-    <FileVersion>1.2.0</FileVersion>
-    <InformationalVersion>1.2.0</InformationalVersion>
+    <Version>1.2.0.1</Version>
+    <AssemblyVersion>1.2.0.1</AssemblyVersion>
+    <FileVersion>1.2.0.1</FileVersion>
+    <InformationalVersion>1.2.0.1</InformationalVersion>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <Company>dragloner</Company>
     <Authors>dragloner</Authors>
@@ -31,7 +31,7 @@
     <SelfContained>true</SelfContained>
     <PublishSingleFile>false</PublishSingleFile>
     <PublishTrimmed>false</PublishTrimmed>
-    <PublishReadyToRun>true</PublishReadyToRun>
+    <PublishReadyToRun>false</PublishReadyToRun>
     <PublishReadyToRunComposite>false</PublishReadyToRunComposite>
   </PropertyGroup>
 
@@ -39,6 +39,7 @@
     <Resource Include="Assets\app.ico" />
     <Resource Include="Assets\loading-screen.jpg" Condition="Exists('Assets\loading-screen.jpg')" />
     <Resource Include="Assets\PrestigeIcons\*.png" />
+    <Resource Include="Assets\Sounds\*.mp3" />
     <Content Include="Assets\Sounds\*.mp3">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

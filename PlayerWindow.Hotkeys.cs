@@ -59,7 +59,6 @@ namespace JokerDBDTracker
         {
             var keys = new HashSet<Key>
             {
-                ReadConfiguredKey(_appSettings.HideEffectsPanelBind, Key.H),
                 ReadConfiguredKey(_appSettings.AuraFarmSoundBind, Key.Y),
                 ReadConfiguredKey(_appSettings.LaughSoundBind, Key.U),
                 ReadConfiguredKey(_appSettings.PsiSoundBind, Key.I),
@@ -104,6 +103,12 @@ namespace JokerDBDTracker
             }
 
             MarkUserInteraction();
+            if (ShouldSuppressDuplicateAppKeybind(key))
+            {
+                handled = true;
+                return IntPtr.Zero;
+            }
+
             if (TryHandleAppKeybind(key))
             {
                 handled = true;

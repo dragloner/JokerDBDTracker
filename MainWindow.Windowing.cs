@@ -4,6 +4,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using JokerDBDTracker.Services;
 
 namespace JokerDBDTracker
 {
@@ -24,6 +25,16 @@ namespace JokerDBDTracker
                 await Task.WhenAll(loadVideosTask, updateCheckTask);
                 StartQuestRolloverMonitoring();
                 _questUiRefreshTimer.Start();
+            }
+            catch (Exception ex)
+            {
+                DiagnosticsService.LogException("MainWindow_Loaded", ex);
+                MessageBox.Show(
+                    $"{T("Произошла ошибка инициализации приложения:", "App initialization failed:")}{Environment.NewLine}{ex.Message}{Environment.NewLine}{Environment.NewLine}" +
+                    $"{T("Лог ошибок:", "Error log:")} {DiagnosticsService.GetLogFilePath()}",
+                    T("Ошибка", "Error"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
             }
             finally
             {
