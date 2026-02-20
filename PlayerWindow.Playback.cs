@@ -98,9 +98,11 @@ namespace JokerDBDTracker
                 if (canCreditXp)
                 {
                     var creditedSeconds = Math.Min(elapsedWallSeconds, _positionTimer.Interval.TotalSeconds + 1.0);
-                    var multiplier = 1.0 + GetActiveEffectsCount() * 0.08;
-                    _watchXpBuffer += (creditedSeconds / 10.0) * multiplier;
+                    var effectsMultiplier = 1.0 + GetActiveEffectsCount() * 0.05;
+                    var activeViewerMultiplier = IsActiveViewer(nowUtc) ? 1.08 : 1.0;
+                    _watchXpBuffer += creditedSeconds * 1.05 * effectsMultiplier * activeViewerMultiplier;
                     _eligibleWatchSeconds += creditedSeconds;
+                    EligibleWatchSeconds = (int)Math.Floor(_eligibleWatchSeconds);
                     UpdateEffectSessionStats();
                     TryApplyLongWatchBonuses();
                 }
@@ -161,6 +163,17 @@ namespace JokerDBDTracker
                 _watchXpBuffer += OneHourWatchBonusXp;
                 _hourBonusGranted = true;
             }
+
+            if (!_ninetyMinuteBonusGranted && _eligibleWatchSeconds >= 90 * 60)
+            {
+                _watchXpBuffer += NinetyMinutesWatchBonusXp;
+                _ninetyMinuteBonusGranted = true;
+            }
+        }
+
+        private bool IsActiveViewer(DateTime nowUtc)
+        {
+            return IsActive && (nowUtc - _lastUserInteractionUtc).TotalSeconds <= 20;
         }
 
         private async Task PersistPlaybackPositionAsync(bool force)

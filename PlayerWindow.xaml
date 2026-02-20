@@ -11,7 +11,7 @@
         Height="900"
         MinWidth="760"
         MinHeight="460"
-        WindowStartupLocation="CenterScreen"
+        WindowStartupLocation="Manual"
         Background="#131B22"
         Icon="Assets/app.ico"
         FontFamily="Bahnschrift SemiCondensed">
@@ -37,7 +37,8 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
+                        <Border x:Name="Root"
+                                Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
                                 CornerRadius="18"
@@ -45,6 +46,24 @@
                             <ContentPresenter HorizontalAlignment="Center"
                                               VerticalAlignment="Center"/>
                         </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="Opacity" Value="0.96"/>
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#9CC7E2"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Root" Property="Opacity" Value="0.9"/>
+                                <Setter TargetName="Root" Property="RenderTransformOrigin" Value="0.5,0.5"/>
+                                <Setter TargetName="Root" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <ScaleTransform ScaleX="0.985" ScaleY="0.985"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Root" Property="Opacity" Value="0.55"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
@@ -368,7 +387,8 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <Button Grid.Column="0"
+                <Button x:Name="BackToListButton"
+                        Grid.Column="0"
                         Content="Назад к списку"
                         Style="{StaticResource BackButtonStyle}"
                         Click="BackButton_Click"/>
@@ -409,7 +429,7 @@
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="10"/>
+                <ColumnDefinition x:Name="EffectsSplitterColumn" Width="10"/>
                 <ColumnDefinition x:Name="EffectsColumn" Width="420"/>
             </Grid.ColumnDefinitions>
 
@@ -420,34 +440,44 @@
                     </Border>
                     <Border x:Name="PlayerLoadingOverlay"
                             Panel.ZIndex="20"
-                            Background="#FF0F161D"
+                            Background="#D50B1118"
                             Visibility="Visible"
                             IsHitTestVisible="True">
-                        <Border Width="420"
-                                Padding="20"
-                                Background="#263B4B"
-                                BorderBrush="#6D91A9"
-                                BorderThickness="1"
-                                CornerRadius="14"
+                        <Border Width="460"
+                                Padding="2"
+                                CornerRadius="18"
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Center">
-                            <StackPanel>
-                                <TextBlock Text="Загрузка плеера"
-                                           Foreground="#EDF7FF"
-                                           FontSize="28"
-                                           FontWeight="Bold"
-                                           HorizontalAlignment="Center"/>
-                                <TextBlock x:Name="PlayerLoadingText"
-                                           Margin="0,8,0,0"
-                                           Text="Подготовка YouTube..."
-                                           Foreground="#CFE3F1"
-                                           FontSize="17"
-                                           TextAlignment="Center"
-                                           TextWrapping="Wrap"/>
-                                <ProgressBar Margin="0,14,0,0"
-                                             Height="16"
-                                             IsIndeterminate="True"/>
-                            </StackPanel>
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                    <GradientStop Color="#86A7CEE6" Offset="0"/>
+                                    <GradientStop Color="#5D6E93A8" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <Border Padding="24"
+                                    CornerRadius="16"
+                                    Background="#D81E2D3B"
+                                    BorderBrush="#5A8FB0C9"
+                                    BorderThickness="1">
+                                <StackPanel>
+                                    <TextBlock x:Name="PlayerLoadingHeaderText"
+                                               Text="Загрузка плеера"
+                                               Foreground="#EDF7FF"
+                                               FontSize="30"
+                                               FontWeight="Bold"
+                                               HorizontalAlignment="Center"/>
+                                    <TextBlock x:Name="PlayerLoadingText"
+                                               Margin="0,10,0,0"
+                                               Text="Подготовка YouTube..."
+                                               Foreground="#CFE3F1"
+                                               FontSize="16"
+                                               TextAlignment="Center"
+                                               TextWrapping="Wrap"/>
+                                    <ProgressBar Margin="0,14,0,0"
+                                                 Height="14"
+                                                 IsIndeterminate="True"/>
+                                </StackPanel>
+                            </Border>
                         </Border>
                     </Border>
                 </Grid>
@@ -466,29 +496,69 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="10"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock Grid.Row="0"
+                    <TextBlock x:Name="EffectsHeaderText"
+                               Grid.Row="0"
                                Text="Эффекты плеера"
                                Foreground="#EDF7FF"
                                FontWeight="Bold"
                                FontSize="30"/>
 
-                    <TextBlock Grid.Row="1"
-                               Margin="0,6,0,8"
-                               Text="Включайте эффекты и настраивайте силу прямо под каждым эффектом."
-                               TextWrapping="Wrap"
-                               Foreground="#CFE3F1"
-                               FontSize="18"/>
+                    <StackPanel Grid.Row="1" Margin="0,6,0,8">
+                        <TextBlock x:Name="EffectsHintText"
+                                   Text="Включайте эффекты и настраивайте силу прямо под каждым эффектом."
+                                   TextWrapping="Wrap"
+                                   Foreground="#CFE3F1"
+                                   FontSize="18"/>
+                        <TextBlock x:Name="BindsHintText"
+                                   Margin="0,4,0,0"
+                                   Text="Бинды: 1-0 / F1-F10 = эффекты 1-10, Q-T / F11-F12 + ZXC = 11-15."
+                                   TextWrapping="Wrap"
+                                   Foreground="#8FC4E4"
+                                   FontSize="14"/>
+                    </StackPanel>
 
-                    <Button Grid.Row="2"
+                    <Button x:Name="ResetEffectsButton"
+                            Grid.Row="2"
                             Content="Сбросить все эффекты"
                             Style="{StaticResource EffectButtonStyle}"
                             Click="ResetEffectsButton_Click"/>
 
-                    <ScrollViewer Grid.Row="4" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <UniformGrid Grid.Row="3"
+                                 Margin="0,10,0,0"
+                                 Rows="2"
+                                 Columns="2">
+                        <Button x:Name="AuraFarmSoundButton"
+                                Margin="0,0,6,6"
+                                Padding="12,8"
+                                FontSize="14"
+                                Content="1. Aura Farm Sound"
+                                Click="AuraFarmSoundButton_Click"/>
+                        <Button x:Name="LaughSoundButton"
+                                Margin="6,0,0,6"
+                                Padding="12,8"
+                                FontSize="14"
+                                Content="2. Laugh Sound"
+                                Click="LaughSoundButton_Click"/>
+                        <Button x:Name="PsiSoundButton"
+                                Margin="0,6,6,0"
+                                Padding="12,8"
+                                FontSize="14"
+                                Content="3. Psi Radiation"
+                                Click="PsiSoundButton_Click"/>
+                        <Button x:Name="RespectSoundButton"
+                                Margin="6,6,0,0"
+                                Padding="12,8"
+                                FontSize="14"
+                                Content="4. +Respect Don Mafia"
+                                Click="RespectSoundButton_Click"/>
+                    </UniformGrid>
+
+                    <ScrollViewer Grid.Row="5" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <StackPanel>
                             <CheckBox x:Name="Fx1" Content="1. Без цвета" Style="{StaticResource EffectCheckBoxStyle}" Checked="EffectToggle_Changed" Unchecked="EffectToggle_Changed"/>
                             <CheckBox x:Name="Fx2" Content="2. Сепия" Style="{StaticResource EffectCheckBoxStyle}" Checked="EffectToggle_Changed" Unchecked="EffectToggle_Changed"/>

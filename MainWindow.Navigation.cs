@@ -8,7 +8,8 @@ namespace JokerDBDTracker
     {
         private bool IsFavoritesTabSelected() => TopTabControl.SelectedIndex == 1;
         private bool IsProfileTabSelected() => TopTabControl.SelectedIndex == 2;
-        private bool IsSettingsTabSelected() => TopTabControl.SelectedIndex == 3;
+        private bool IsQuestsTabSelected() => TopTabControl.SelectedIndex == 3;
+        private bool IsSettingsTabSelected() => TopTabControl.SelectedIndex == 4;
 
         private void SelectTopTab(int index)
         {
@@ -24,8 +25,8 @@ namespace JokerDBDTracker
         {
             ApplyTopNavState(HomeNavButton, TopTabControl.SelectedIndex == 0);
             ApplyTopNavState(FavoritesNavButton, TopTabControl.SelectedIndex == 1);
-            ApplyTopNavState(ProfileNavButton, TopTabControl.SelectedIndex == 2);
-            ApplyTopNavState(SettingsNavButton, TopTabControl.SelectedIndex == 3);
+            ApplyTopNavState(ProfileNavButton, TopTabControl.SelectedIndex == 2 || TopTabControl.SelectedIndex == 3);
+            ApplyTopNavState(SettingsNavButton, TopTabControl.SelectedIndex == 4);
 
             void ApplyTopNavState(Button button, bool selected)
             {
@@ -52,17 +53,19 @@ namespace JokerDBDTracker
             UpdateTopNavButtonsVisualState();
 
             var profileMode = IsProfileTabSelected();
+            var questsMode = IsQuestsTabSelected();
             var settingsMode = IsSettingsTabSelected();
             var favoritesMode = IsFavoritesTabSelected();
-            StreamsPanel.Visibility = profileMode || settingsMode ? Visibility.Collapsed : Visibility.Visible;
-            RecommendationsPanel.Visibility = profileMode || settingsMode || favoritesMode ? Visibility.Collapsed : Visibility.Visible;
-            HomeSummaryPanel.Visibility = profileMode || settingsMode || favoritesMode ? Visibility.Collapsed : Visibility.Visible;
+            StreamsPanel.Visibility = profileMode || questsMode || settingsMode ? Visibility.Collapsed : Visibility.Visible;
+            RecommendationsPanel.Visibility = profileMode || questsMode || settingsMode || favoritesMode ? Visibility.Collapsed : Visibility.Visible;
+            HomeSummaryPanel.Visibility = profileMode || questsMode || settingsMode || favoritesMode ? Visibility.Collapsed : Visibility.Visible;
             ProfilePanel.Visibility = profileMode ? Visibility.Visible : Visibility.Collapsed;
+            QuestsPanel.Visibility = questsMode ? Visibility.Visible : Visibility.Collapsed;
             SettingsPanel.Visibility = settingsMode ? Visibility.Visible : Visibility.Collapsed;
-            RecommendationsColumn.Width = profileMode || settingsMode || favoritesMode
+            RecommendationsColumn.Width = profileMode || questsMode || settingsMode || favoritesMode
                 ? new GridLength(0)
                 : new GridLength(420);
-            MainColumnsSpacer.Width = profileMode || settingsMode || favoritesMode
+            MainColumnsSpacer.Width = profileMode || questsMode || settingsMode || favoritesMode
                 ? new GridLength(0)
                 : new GridLength(12);
 
@@ -70,11 +73,28 @@ namespace JokerDBDTracker
             {
                 RefreshProfile();
             }
+            else if (questsMode)
+            {
+                RefreshQuestsPage();
+            }
             else if (!settingsMode)
             {
                 RefreshVisibleVideos();
                 RefreshRecommendations();
                 RefreshHomeSummary();
+            }
+
+            foreach (var panel in new FrameworkElement[]
+                     {
+                         StreamsPanel,
+                         RecommendationsPanel,
+                         HomeSummaryPanel,
+                         ProfilePanel,
+                         QuestsPanel,
+                         SettingsPanel
+                     })
+            {
+                AnimatePanelEntrance(panel);
             }
         }
 
@@ -95,7 +115,8 @@ namespace JokerDBDTracker
 
         private void SettingsNavButton_Click(object sender, RoutedEventArgs e)
         {
-            SelectTopTab(3);
+            SelectTopTab(4);
         }
+
     }
 }

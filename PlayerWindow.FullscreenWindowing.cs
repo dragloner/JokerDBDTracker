@@ -19,6 +19,29 @@ namespace JokerDBDTracker
 {
     public partial class PlayerWindow : Window
     {
+        private void PositionWindowToOwnerMonitor()
+        {
+            if (Owner is null)
+            {
+                return;
+            }
+
+            System.Windows.Rect ownerBounds = Owner.WindowState == WindowState.Minimized
+                ? Owner.RestoreBounds
+                : new System.Windows.Rect(Owner.Left, Owner.Top, Owner.ActualWidth, Owner.ActualHeight);
+
+            if (ownerBounds.Width < 10 || ownerBounds.Height < 10)
+            {
+                return;
+            }
+
+            WindowState = WindowState.Normal;
+            Left = ownerBounds.Left;
+            Top = ownerBounds.Top;
+            Width = Math.Max(MinWidth, ownerBounds.Width);
+            Height = Math.Max(MinHeight, ownerBounds.Height);
+        }
+
         private void ApplyStartupMaximizedWindowed()
         {
             Topmost = false;
@@ -52,6 +75,8 @@ namespace JokerDBDTracker
                 _windowStateBeforePlayerFullscreen = WindowState;
                 _resizeModeBeforePlayerFullscreen = ResizeMode;
                 _mainRootMarginBeforePlayerFullscreen = MainRootGrid.Margin;
+                _playerHostMarginBeforeFullscreen = PlayerHostBorder.Margin;
+                _playerHostCornerRadiusBeforeFullscreen = PlayerHostBorder.CornerRadius;
                 ApplyPlayerFullscreenChrome(isFullscreen: true);
                 ResizeMode = ResizeMode.NoResize;
                 WindowState = WindowState.Normal;
@@ -88,6 +113,44 @@ namespace JokerDBDTracker
             {
                 MainRootGrid.Margin = isFullscreen ? new Thickness(0) : _mainRootMarginBeforePlayerFullscreen;
             }
+
+            if (PlayerHostBorder is not null)
+            {
+                PlayerHostBorder.Margin = isFullscreen ? new Thickness(0) : _playerHostMarginBeforeFullscreen;
+                PlayerHostBorder.CornerRadius = isFullscreen ? new CornerRadius(0) : _playerHostCornerRadiusBeforeFullscreen;
+            }
+
+            if (isFullscreen)
+            {
+                _effectsPanelExpandedBeforePlayerFullscreen = _effectsPanelExpanded;
+                _effectsPanelExpanded = false;
+                if (EffectsPanel is not null)
+                {
+                    EffectsPanel.BeginAnimation(UIElement.OpacityProperty, null);
+                    EffectsPanel.Opacity = 0;
+                    EffectsPanel.Visibility = Visibility.Collapsed;
+                }
+
+                if (EffectsColumn is not null)
+                {
+                    EffectsColumn.Width = new GridLength(0);
+                }
+
+                if (EffectsSplitterColumn is not null)
+                {
+                    EffectsSplitterColumn.Width = new GridLength(0);
+                }
+
+                if (ToggleEffectsPanelButton is not null)
+                {
+                    ToggleEffectsPanelButton.Content = PT("Показать эффекты", "Show effects");
+                }
+
+                return;
+            }
+
+            _effectsPanelExpanded = _effectsPanelExpandedBeforePlayerFullscreen;
+            ApplyEffectsPanelLayout();
         }
 
         private async Task ExitEmbeddedPlayerFullscreenAsync()
@@ -220,8 +283,9 @@ namespace JokerDBDTracker
             Close();
         }
 
-        private void MinimizeButton_Click(object sender, RoutedEventArgs e)
+        private async void MinimizeButton_Click(object sender, RoutedEventArgs e)
         {
+            await AnimatePlayerMinimizeAsync();
             WindowState = WindowState.Minimized;
         }
 
@@ -332,7 +396,10 @@ namespace JokerDBDTracker
                 _positionTimer.Stop();
                 _effectsApplyDebounceTimer.Stop();
                 _resizeSettleDebounceTimer.Stop();
+                StopAllSoundEffects();
                 SystemEvents.DisplaySettingsChanged -= SystemEvents_DisplaySettingsChanged;
+                UnregisterGlobalHotkeys();
+                _hotkeySource?.RemoveHook(HotkeyWndProc);
                 if (Player.CoreWebView2 is not null)
                 {
                     Player.CoreWebView2.ContainsFullScreenElementChanged -= CoreWebView2_ContainsFullScreenElementChanged;

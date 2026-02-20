@@ -1,4 +1,5 @@
-using System.Windows;
+﻿using System.Windows;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 namespace JokerDBDTracker
@@ -12,10 +13,25 @@ namespace JokerDBDTracker
             public bool IsUnlocked { get; init; }
         }
 
+        private sealed class ProfileQuest
+        {
+            public required string ClaimKey { get; init; }
+            public required string Title { get; init; }
+            public required string Description { get; init; }
+            public required string StatusText { get; init; }
+            public required string ProgressText { get; init; }
+            public required string RewardText { get; init; }
+            public required string ClaimButtonText { get; init; }
+            public required string StatusGlyph { get; init; }
+            public required Brush StatusColor { get; init; }
+            public bool IsClaimVisible { get; init; }
+            public bool IsClaimEnabled { get; init; }
+        }
+
         private void UpdateStreakText()
         {
             var streak = CalculateWatchStreakDays();
-            ProfileStreakText.Text = $"🔥 Стрик: {streak} дн.";
+            ProfileStreakText.Text = T($"Серия: {streak} дн.", $"Streak: {streak} days");
         }
 
         private int CalculateWatchStreakDays()
@@ -27,7 +43,6 @@ namespace JokerDBDTracker
 
             var allDays = _watchedDays.OrderByDescending(d => d).ToList();
             var latest = allDays[0];
-
             var streak = 1;
             for (var i = 1; i < allDays.Count; i++)
             {
@@ -47,27 +62,7 @@ namespace JokerDBDTracker
         private void RefreshProfile()
         {
             var streakDays = CalculateWatchStreakDays();
-            var achievements = new List<ProfileAchievement>
-            {
-                BuildAchievement("Первый просмотр", "Открой любой стрим хотя бы один раз.", _watchHistory.Count >= 1),
-                BuildAchievement("10 стримов", "Посмотри десять разных стримов.", _watchHistory.Count >= 10),
-                BuildAchievement("25 стримов", "Посмотри 25 разных стримов.", _watchHistory.Count >= 25),
-                BuildAchievement("50 стримов", "Посмотри 50 разных стримов.", _watchHistory.Count >= 50),
-                BuildAchievement("Стрик 3 дня", "Заходи и смотри стримы три дня подряд.", streakDays >= 3),
-                BuildAchievement("Стрик 7 дней", "Смотри стримы семь дней подряд.", streakDays >= 7),
-                BuildAchievement("Избранное x5", "Добавь пять стримов в избранное.", _favoriteVideoIds.Count >= 5),
-                BuildAchievement("Избранное x15", "Добавь 15 стримов в избранное.", _favoriteVideoIds.Count >= 15),
-                BuildAchievement("Эффекты x3", "Посмотри 3 сессии с любыми эффектами.", _effectSessionsAny >= 3),
-                BuildAchievement("Эффекты x15", "Посмотри 15 сессий с включенными эффектами.", _effectSessionsAny >= 15),
-                BuildAchievement("5 эффектов сразу", "Сделай 5 сессий, где было включено 5+ эффектов.", _effectSessionsFivePlus >= 5),
-                BuildAchievement("10 эффектов сразу", "Сделай 3 сессии, где было включено 10+ эффектов.", _effectSessionsTenPlus >= 3),
-                BuildAchievement("Сильное размытие", "Посмотри 3 сессии с сильным размытием (75%+).", _effectSessionsStrongBlur >= 3),
-                BuildAchievement("Сильное красное свечение", "Посмотри 3 сессии с сильным красным свечением (75%+).", _effectSessionsStrongRedGlow >= 3),
-                BuildAchievement("Сильное фиолетовое свечение", "Посмотри 3 сессии с сильным фиолетовым свечением (75%+).", _effectSessionsStrongVioletGlow >= 3),
-                BuildAchievement("Сильная тряска", "Посмотри 3 сессии с сильной тряской кадра (75%+).", _effectSessionsStrongShake >= 3),
-                BuildAchievement("Мастер cursed", "Пройди полный стрим с 15 cursed-эффектами.", _unlockedAchievements.Contains(AchievementCursed15))
-            };
-            AchievementsList.ItemsSource = achievements;
+            AchievementsList.ItemsSource = BuildAchievements(streakDays);
 
             var recent = _allVideos
                 .Where(v => v.LastViewedAtUtc.HasValue)
@@ -88,12 +83,107 @@ namespace JokerDBDTracker
 
             PrestigeValueText.Text = _prestige.ToString();
             ApplyPrestigeIcon();
-            ProfileLevelText.Text = $"Уровень: {level}/{MaxLevel}";
-            ProfileXpText.Text = $"XP до следующего уровня: {xpToNextLevel}";
-            ProfileTodayText.Text = $"Сегодня: {DateTime.Now:yyyy-MM-dd}";
+            ProfileLevelText.Text = T($"Уровень: {level}/{MaxLevel}", $"Level: {level}/{MaxLevel}");
+            ProfileXpText.Text = T($"XP до следующего уровня: {xpToNextLevel}", $"XP to next level: {xpToNextLevel}");
+            var today = GetTrustedToday();
+            _watchedSecondsByDay.TryGetValue(today, out var todayWatchSeconds);
+            var todayGoalPercent = Math.Min(100, (int)Math.Round((todayWatchSeconds / (double)(45 * 60)) * 100));
+            var localNow = GetTrustedLocalNow();
+            ProfileTodayText.Text = T(
+                $"Сегодня: {localNow:yyyy-MM-dd} • цель дня {todayGoalPercent}%",
+                $"Today: {localNow:yyyy-MM-dd} • daily goal {todayGoalPercent}%");
             ProfileXpProgress.Maximum = requiredInLevel;
             ProfileXpProgress.Value = clampedCurrentLevelXp;
             PrestigeButton.IsEnabled = level >= MaxLevel && _prestige < MaxPrestige;
+        }
+
+        private List<ProfileAchievement> BuildAchievements(int streakDays)
+        {
+            return
+            [
+                BuildAchievement(T("Первый просмотр", "First watch"), T("Открой любой стрим хотя бы один раз.", "Open any stream at least once."), _watchHistory.Count >= 1),
+                BuildAchievement(T("10 стримов", "10 streams"), T("Посмотри 10 разных стримов.", "Watch ten different streams."), _watchHistory.Count >= 10),
+                BuildAchievement(T("25 стримов", "25 streams"), T("Посмотри 25 разных стримов.", "Watch 25 different streams."), _watchHistory.Count >= 25),
+                BuildAchievement(T("50 стримов", "50 streams"), T("Посмотри 50 разных стримов.", "Watch 50 different streams."), _watchHistory.Count >= 50),
+                BuildAchievement(T("Серия 3 дня", "3-day streak"), T("Смотри стримы 3 дня подряд.", "Watch streams 3 days in a row."), streakDays >= 3),
+                BuildAchievement(T("Серия 7 дней", "7-day streak"), T("Смотри стримы 7 дней подряд.", "Watch streams 7 days in a row."), streakDays >= 7),
+                BuildAchievement(T("Избранное x5", "Favorites x5"), T("Добавь 5 стримов в избранное.", "Add five streams to favorites."), _favoriteVideoIds.Count >= 5),
+                BuildAchievement(T("Избранное x15", "Favorites x15"), T("Добавь 15 стримов в избранное.", "Add 15 streams to favorites."), _favoriteVideoIds.Count >= 15),
+                BuildAchievement(T("Эффекты x3", "Effects x3"), T("Сделай 3 сессии с любыми эффектами.", "Watch 3 sessions with any effects."), _effectSessionsAny >= 3),
+                BuildAchievement(T("Эффекты x15", "Effects x15"), T("Сделай 15 сессий с включенными эффектами.", "Watch 15 sessions with enabled effects."), _effectSessionsAny >= 15),
+                BuildAchievement(T("5 эффектов разом", "5 effects at once"), T("Сделай 5 сессий с 5+ эффектами.", "Do 5 sessions with 5+ effects enabled."), _effectSessionsFivePlus >= 5),
+                BuildAchievement(T("10 эффектов разом", "10 effects at once"), T("Сделай 3 сессии с 10+ эффектами.", "Do 3 sessions with 10+ effects enabled."), _effectSessionsTenPlus >= 3),
+                BuildAchievement(T("Сильное размытие", "Heavy blur"), T("Сделай 3 сессии с сильным размытием (75%+).", "Watch 3 sessions with strong blur (75%+)."), _effectSessionsStrongBlur >= 3),
+                BuildAchievement(T("Сильное красное свечение", "Heavy red glow"), T("Сделай 3 сессии с сильным красным свечением (75%+).", "Watch 3 sessions with strong red glow (75%+)."), _effectSessionsStrongRedGlow >= 3),
+                BuildAchievement(T("Сильное фиолетовое свечение", "Heavy violet glow"), T("Сделай 3 сессии с сильным фиолетовым свечением (75%+).", "Watch 3 sessions with strong violet glow (75%+)."), _effectSessionsStrongVioletGlow >= 3),
+                BuildAchievement(T("Сильная тряска", "Heavy shake"), T("Сделай 3 сессии с сильной тряской (75%+).", "Watch 3 sessions with strong shake (75%+)."), _effectSessionsStrongShake >= 3),
+                BuildAchievement(T("Мастер проклятия", "Cursed master"), T("Досмотри полный стрим с 15 проклятыми эффектами.", "Finish a full stream with all 15 cursed effects."), _unlockedAchievements.Contains(AchievementCursed15))
+            ];
+        }
+
+        private List<ProfileQuest> BuildDailyTasks()
+        {
+            var today = GetTrustedToday();
+            return GetActiveDailyQuestStates(today)
+                .Select(BuildQuestFromState)
+                .ToList();
+        }
+
+        private List<ProfileQuest> BuildWeeklyTasks()
+        {
+            var today = GetTrustedToday();
+            return GetActiveWeeklyQuestStates(today)
+                .Select(BuildQuestFromState)
+                .ToList();
+        }
+
+        private ProfileQuest BuildQuestFromState(QuestState state)
+        {
+            var progressText = state.Unit switch
+            {
+                "sec" => T(
+                    $"Прогресс: {Math.Min(state.Progress, state.Target) / 60}/{Math.Max(1, state.Target / 60)} мин",
+                    $"Progress: {Math.Min(state.Progress, state.Target) / 60}/{Math.Max(1, state.Target / 60)} min"),
+                _ => T(
+                    $"Прогресс: {Math.Min(state.Progress, state.Target)}/{state.Target}",
+                    $"Progress: {Math.Min(state.Progress, state.Target)}/{state.Target}")
+            };
+
+            var statusColor = state.IsRewardClaimed
+                ? BrushFromHex("#8BE6B4")
+                : state.IsCompleted
+                    ? BrushFromHex("#F0D186")
+                    : BrushFromHex("#8FB7CE");
+            var statusGlyph = state.IsRewardClaimed ? "\u2713" : state.IsCompleted ? "\u2605" : "\u25B8";
+            var statusText = state.IsRewardClaimed
+                ? T("Награда уже получена", "Reward already claimed")
+                : state.IsCompleted
+                    ? T("Задание выполнено - нажмите \"Забрать XP\"", "Quest completed - click \"Claim XP\"")
+                    : T("В процессе выполнения", "In progress");
+            var rewardText = state.IsRewardClaimed
+                ? T($"Награда получена: +{state.RewardXp} XP", $"Reward claimed: +{state.RewardXp} XP")
+                : T($"Награда: +{state.RewardXp} XP", $"Reward: +{state.RewardXp} XP");
+            var claimEnabled = state.IsCompleted && !state.IsRewardClaimed;
+            var claimButtonText = state.IsRewardClaimed
+                ? T("Получено", "Claimed")
+                : claimEnabled
+                    ? T("Забрать XP", "Claim XP")
+                    : T("Не выполнено", "Not completed");
+
+            return new ProfileQuest
+            {
+                ClaimKey = state.ClaimKey,
+                Title = state.Title,
+                Description = state.Description,
+                StatusText = statusText,
+                ProgressText = progressText,
+                RewardText = rewardText,
+                ClaimButtonText = claimButtonText,
+                StatusGlyph = statusGlyph,
+                StatusColor = statusColor,
+                IsClaimVisible = true,
+                IsClaimEnabled = claimEnabled
+            };
         }
 
         private void RefreshHomeSummary()
@@ -103,8 +193,12 @@ namespace JokerDBDTracker
             var favoritesCount = _favoriteVideoIds.Count;
             var unwatchedCount = Math.Max(0, totalCount - watchedCount);
 
-            HomeStatsText.Text = $"Стримов: {totalCount} • Просмотрено: {watchedCount} • Избранное: {favoritesCount} • Непросмотрено: {unwatchedCount}";
-            HomeHintText.Text = "Совет: открывай рекомендации слева, чтобы быстрее находить похожие стримы.";
+            HomeStatsText.Text = T(
+                $"Стримы: {totalCount} • Просмотрено: {watchedCount} • Избранное: {favoritesCount} • Непросмотрено: {unwatchedCount}",
+                $"Streams: {totalCount} • Watched: {watchedCount} • Favorites: {favoritesCount} • Unwatched: {unwatchedCount}");
+            HomeHintText.Text = T(
+                "Совет: открой рекомендации слева, чтобы быстрее находить похожие стримы.",
+                "Tip: open recommendations on the left to find similar streams faster.");
         }
 
         private static ProfileAchievement BuildAchievement(string title, string description, bool unlocked)
@@ -120,53 +214,130 @@ namespace JokerDBDTracker
         private void ApplyPrestigeIcon()
         {
             var iconUri = ResolvePrestigeIconUri(_prestige);
-            if (iconUri is null)
-            {
-                PrestigeIconImage.Source = null;
-                return;
-            }
-
             try
             {
-                var streamInfo = Application.GetResourceStream(iconUri);
-                if (streamInfo?.Stream is null)
+                if (iconUri is not null)
                 {
-                    PrestigeIconImage.Source = null;
-                    return;
+                    var streamInfo = Application.GetResourceStream(iconUri);
+                    if (streamInfo?.Stream is not null)
+                    {
+                        using var resourceStream = streamInfo.Stream;
+                        var image = new BitmapImage();
+                        image.BeginInit();
+                        image.CacheOption = BitmapCacheOption.OnLoad;
+                        image.StreamSource = resourceStream;
+                        image.EndInit();
+                        image.Freeze();
+                        PrestigeIconImage.Source = image;
+                        return;
+                    }
                 }
 
-                using var resourceStream = streamInfo.Stream;
-                var image = new BitmapImage();
-                image.BeginInit();
-                image.CacheOption = BitmapCacheOption.OnLoad;
-                image.StreamSource = resourceStream;
-                image.EndInit();
-                image.Freeze();
-                PrestigeIconImage.Source = image;
+                PrestigeIconImage.Source = CreateGeneratedPrestigeIcon(_prestige);
             }
             catch
             {
-                // Missing/corrupt icon should not break app startup.
-                PrestigeIconImage.Source = null;
+                PrestigeIconImage.Source = CreateGeneratedPrestigeIcon(_prestige);
             }
         }
 
         private static Uri? ResolvePrestigeIconUri(int prestige)
         {
             var stage = Math.Clamp(prestige / 10, 0, 10);
+            for (var distance = 0; distance <= 10; distance++)
+            {
+                var lowerStage = stage - distance;
+                if (lowerStage >= 0)
+                {
+                    var lowerUri = new Uri($"pack://application:,,,/Assets/PrestigeIcons/prestige_{lowerStage}.png", UriKind.Absolute);
+                    if (HasResource(lowerUri))
+                    {
+                        return lowerUri;
+                    }
+                }
+
+                if (distance == 0)
+                {
+                    continue;
+                }
+
+                var upperStage = stage + distance;
+                if (upperStage <= 10)
+                {
+                    var upperUri = new Uri($"pack://application:,,,/Assets/PrestigeIcons/prestige_{upperStage}.png", UriKind.Absolute);
+                    if (HasResource(upperUri))
+                    {
+                        return upperUri;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private static BitmapSource CreateGeneratedPrestigeIcon(int prestige)
+        {
+            const int size = 172;
+            var stage = Math.Clamp(prestige / 10, 0, 10);
+            var colorShift = stage / 10.0;
+            var outer = Color.FromRgb(
+                (byte)(72 + colorShift * 130),
+                (byte)(102 + colorShift * 80),
+                (byte)(140 + colorShift * 55));
+            var inner = Color.FromRgb(
+                (byte)(30 + colorShift * 60),
+                (byte)(58 + colorShift * 55),
+                (byte)(92 + colorShift * 50));
+
+            var visual = new DrawingVisual();
+            using (var drawingContext = visual.RenderOpen())
+            {
+                drawingContext.DrawEllipse(
+                    new RadialGradientBrush(inner, outer),
+                    new Pen(new SolidColorBrush(Color.FromRgb(195, 226, 247)), 6),
+                    new Point(size / 2.0, size / 2.0),
+                    size * 0.45,
+                    size * 0.45);
+
+                drawingContext.DrawEllipse(
+                    Brushes.Transparent,
+                    new Pen(new SolidColorBrush(Color.FromArgb(175, 255, 255, 255)), 2),
+                    new Point(size / 2.0, size / 2.0),
+                    size * 0.33,
+                    size * 0.33);
+            }
+
+            var bitmap = new RenderTargetBitmap(size, size, 96, 96, PixelFormats.Pbgra32);
+            bitmap.Render(visual);
+            bitmap.Freeze();
+            return bitmap;
+        }
+
+        private static bool HasResource(Uri uri)
+        {
             try
             {
-                return new Uri($"pack://application:,,,/Assets/PrestigeIcons/prestige_{stage}.png", UriKind.Absolute);
+                var streamInfo = Application.GetResourceStream(uri);
+                if (streamInfo?.Stream is null)
+                {
+                    return false;
+                }
+
+                using (streamInfo.Stream)
+                {
+                    return true;
+                }
             }
             catch
             {
-                return null;
+                return false;
             }
         }
 
         private static int XpToReachNextLevel(int level)
         {
-            return 220 + (level - 1) * 35 + (level - 1) * (level - 1) * 4;
+            var n = Math.Max(0, level - 1);
+            return 80 + (int)Math.Round(n * 1.2 + n * n * 0.015);
         }
 
         private static int TotalXpForLevel(int level)
@@ -217,3 +388,5 @@ namespace JokerDBDTracker
         }
     }
 }
+
+

@@ -429,6 +429,11 @@ namespace JokerDBDTracker
 
         private void ToggleEffectsPanelButton_Click(object sender, RoutedEventArgs e)
         {
+            ToggleEffectsPanelState();
+        }
+
+        private void ToggleEffectsPanelState()
+        {
             _effectsPanelExpanded = !_effectsPanelExpanded;
             ApplyEffectsPanelLayout();
             RequestApplyEffects(immediate: true);
@@ -441,14 +446,49 @@ namespace JokerDBDTracker
             {
                 EffectsPanel.Visibility = Visibility.Visible;
                 EffectsColumn.Width = new GridLength(420);
-                ToggleEffectsPanelButton.Content = "Скрыть эффекты";
+                EffectsSplitterColumn.Width = new GridLength(10);
+                ToggleEffectsPanelButton.Content = PT("Скрыть эффекты", "Hide effects");
+                if (_appSettings.AnimationsEnabled)
+                {
+                    EffectsPanel.Opacity = 0;
+                    EffectsPanel.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation
+                    {
+                        From = 0,
+                        To = 1,
+                        Duration = TimeSpan.FromMilliseconds(180),
+                        EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+                    });
+                }
                 return;
             }
 
-            EffectsPanel.Visibility = Visibility.Collapsed;
-            EffectsColumn.Width = new GridLength(0);
-            ToggleEffectsPanelButton.Content = "Показать эффекты";
+            if (_appSettings.AnimationsEnabled)
+            {
+                var fade = new DoubleAnimation
+                {
+                    From = 1,
+                    To = 0,
+                    Duration = TimeSpan.FromMilliseconds(140),
+                    EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseIn }
+                };
+                fade.Completed += (_, _) =>
+                {
+                    EffectsPanel.Visibility = Visibility.Collapsed;
+                    EffectsSplitterColumn.Width = new GridLength(0);
+                    EffectsColumn.Width = new GridLength(0);
+                };
+                EffectsPanel.BeginAnimation(UIElement.OpacityProperty, fade);
+            }
+            else
+            {
+                EffectsPanel.Visibility = Visibility.Collapsed;
+                EffectsSplitterColumn.Width = new GridLength(0);
+                EffectsColumn.Width = new GridLength(0);
+            }
+
+            ToggleEffectsPanelButton.Content = PT("Показать эффекты", "Show effects");
         }
 
     }
 }
+

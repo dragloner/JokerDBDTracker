@@ -21,13 +21,27 @@ namespace JokerDBDTracker
     {
         private async void PlayerWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            try
+            {
+                _appSettings = await _settingsService.LoadAsync();
+            }
+            catch
+            {
+                _appSettings = new AppSettingsData();
+            }
+
+            PositionWindowToOwnerMonitor();
             ApplyStartupMaximizedWindowed();
+            AnimatePlayerWindowEntrance();
             VideoTitleText.Text = _video.Title;
+            ApplyPlayerLocalization();
+            UpdateDynamicBindHints();
+            RegisterGlobalHotkeys();
             UpdateWindowSizeButtonState();
             UpdateStrengthSlidersEnabledState();
             UpdateEffectDetailsVisibility(animate: false);
             SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
-            SetPlayerLoadingOverlay(visible: true, "Подготовка YouTube...");
+            SetPlayerLoadingOverlay(visible: true, PT("Подготовка YouTube...", "Preparing YouTube..."));
             SetPlayerSurfaceVisible(false);
 
             try
@@ -53,8 +67,8 @@ namespace JokerDBDTracker
             catch (Exception ex)
             {
                 MessageBox.Show(
-                    $"Не удалось инициализировать плеер:{Environment.NewLine}{ex.Message}",
-                    "Ошибка плеера",
+                    $"{PT("Не удалось инициализировать плеер:", "Failed to initialize player:")}{Environment.NewLine}{ex.Message}",
+                    PT("Ошибка плеера", "Player error"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
@@ -68,7 +82,7 @@ namespace JokerDBDTracker
 
         private void CoreWebView2_NavigationStarting(object? sender, CoreWebView2NavigationStartingEventArgs e)
         {
-            SetPlayerLoadingOverlay(visible: true, "Загрузка видео...");
+            SetPlayerLoadingOverlay(visible: true, PT("Загрузка видео...", "Loading video..."));
             SetPlayerSurfaceVisible(false);
             if (IsAllowedPlayerNavigation(e.Uri))
             {
@@ -83,14 +97,24 @@ namespace JokerDBDTracker
         {
             if (!e.IsSuccess || Player.CoreWebView2 is null)
             {
-                SetPlayerLoadingOverlay(visible: true, "Не удалось загрузить плеер. Проверьте интернет и попробуйте снова.");
-                SetPlayerSurfaceVisible(false);
+                _navigationCompletedFailureCount++;
+                if (_navigationCompletedFailureCount <= 2)
+                {
+                    SetPlayerLoadingOverlay(visible: true, PT("Повторная попытка загрузки плеера...", "Retrying player load..."));
+                    _ = RecoverLockedVideoAsync();
+                    return;
+                }
+
+                SetPlayerLoadingOverlay(visible: true, PT(
+                    "Не удалось загрузить плеер. Проверьте интернет и попробуйте снова.",
+                    "Failed to load player. Check internet connection and try again."));
                 return;
             }
 
+            _navigationCompletedFailureCount = 0;
             try
             {
-                SetPlayerLoadingOverlay(visible: true, "Загрузка видео...");
+                SetPlayerLoadingOverlay(visible: true, PT("Загрузка видео...", "Loading video..."));
                 await Player.CoreWebView2.ExecuteScriptAsync(BuildKioskModeScript(_video.VideoId));
                 SetPlayerSurfaceVisible(true);
 
@@ -105,7 +129,9 @@ namespace JokerDBDTracker
             catch
             {
                 // Ignore transient script failures during YouTube page bootstrap.
-                SetPlayerLoadingOverlay(visible: true, "Ошибка инициализации плеера. Попробуйте открыть видео снова.");
+                SetPlayerLoadingOverlay(visible: true, PT(
+                    "Ошибка инициализации плеера. Попробуйте открыть видео снова.",
+                    "Player initialization error. Try opening this video again."));
                 SetPlayerSurfaceVisible(false);
             }
         }
@@ -208,10 +234,7 @@ namespace JokerDBDTracker
 
         private static string ResolveWebViewUserDataFolder()
         {
-            var stableFolder = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                AppStoragePaths.CurrentFolderName,
-                "YouTube_Profile");
+            var stableFolder = AppStoragePaths.GetWebViewProfileDirectory();
             Directory.CreateDirectory(stableFolder);
 
             var legacyFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "YouTube_Profile");

@@ -6,6 +6,7 @@ using System.Windows.Threading;
 using System.Diagnostics;
 using System.Reflection;
 using System.IO;
+using System.IO.Compression;
 using JokerDBDTracker.Models;
 using JokerDBDTracker.Services;
 
@@ -18,8 +19,10 @@ namespace JokerDBDTracker
         private const int MaxRecentStreamsInProfile = 5;
         private const int MaxLevel = 100;
         private const int MaxPrestige = 100;
-        private const int XpFirstWatch = 120;
-        private const int XpAchievement = 800;
+        private const int XpFirstWatch = 900;
+        private const int XpAchievement = 3500;
+        private const double WatchSessionXpMultiplier = 1.30;
+        private const double QuestRewardXpMultiplier = 1.40;
 
         private readonly ObservableCollection<YouTubeVideo> _videos = [];
         private readonly List<YouTubeVideo> _allVideos = [];
@@ -29,6 +32,7 @@ namespace JokerDBDTracker
         private readonly HashSet<string> _favoriteVideoIds = new(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _unlockedAchievements = new(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _firstViewRewardedVideoIds = new(StringComparer.OrdinalIgnoreCase);
+        private bool _isHistoryLoadedSuccessfully;
         private int _totalXp;
         private int _prestige;
         private int _prestigeXp;
@@ -50,6 +54,7 @@ namespace JokerDBDTracker
         private GitHubUpdateInfo? _lastUpdateInfo;
         private bool _isDownloadingUpdate;
         private CancellationTokenSource? _updateDownloadCts;
+        private bool _updateButtonOpensReleasePage;
 
         private bool _suppressSelectionEvents;
         private bool _isOpeningVideo;
@@ -57,6 +62,20 @@ namespace JokerDBDTracker
         private string _searchText = string.Empty;
         private bool _pendingDragRestoreFromMaximized;
         private Point _pendingDragStartPoint;
+        private bool _isMainMinimizeAnimating;
+        private readonly NetworkTimeService _networkTimeService = new();
+        private DateTime _internetUtcAtSync;
+        private DateTime _localUtcAtSync;
+        private bool _hasInternetTime;
+        private readonly DispatcherTimer _networkTimeSyncTimer = new();
+        private readonly DispatcherTimer _questRolloverTimer = new();
+        private readonly DispatcherTimer _questUiRefreshTimer = new();
+        private DateOnly _lastQuestRefreshDay;
+        private string _lastQuestRefreshWeekKey = string.Empty;
+        private DateOnly? _activeDailyQuestDate;
+        private readonly List<string> _activeDailyQuestIds = [];
+        private string _activeWeeklyQuestWeekKey = string.Empty;
+        private readonly List<string> _activeWeeklyQuestIds = [];
         private static readonly Brush TopNavSelectedBackground = BrushFromHex("#E4EEF6");
         private static readonly Brush TopNavSelectedForeground = BrushFromHex("#173041");
         private static readonly Brush TopNavSelectedBorder = BrushFromHex("#8FB4CD");
@@ -68,16 +87,24 @@ namespace JokerDBDTracker
         {
             InitializeComponent();
             WindowBoundsHelper.Attach(this);
+            InitializeSettingsUi();
             VideoList.ItemsSource = _videos;
             UpdateTopNavButtonsVisualState();
             StateChanged += MainWindow_StateChanged;
             Closed += MainWindow_Closed;
             UpdateMainWindowButtonsState();
             Loaded += MainWindow_Loaded;
+            PreviewKeyDown += MainWindow_PreviewKeyDown;
             PreviewMouseMove += MainWindow_PreviewMouseMove;
             PreviewMouseLeftButtonUp += MainWindow_PreviewMouseLeftButtonUp;
             _searchDebounceTimer.Interval = TimeSpan.FromMilliseconds(180);
             _searchDebounceTimer.Tick += SearchDebounceTimer_Tick;
+            _networkTimeSyncTimer.Interval = TimeSpan.FromMinutes(5);
+            _networkTimeSyncTimer.Tick += NetworkTimeSyncTimer_Tick;
+            _questRolloverTimer.Interval = TimeSpan.FromSeconds(15);
+            _questRolloverTimer.Tick += QuestRolloverTimer_Tick;
+            _questUiRefreshTimer.Interval = TimeSpan.FromSeconds(1);
+            _questUiRefreshTimer.Tick += QuestUiRefreshTimer_Tick;
             UpdateVersionText();
             InitializeLoadingBackgroundImage();
         }
@@ -131,8 +158,9 @@ namespace JokerDBDTracker
 
             if (!updateInfo.IsCheckSuccessful)
             {
-                UpdateStatusText.Text = "● Не удалось проверить обновления";
+                UpdateStatusText.Text = T("● Не удалось проверить обновления", "● Failed to check updates");
                 UpdateStatusText.Foreground = BrushFromHex("#E4C487");
+                _updateButtonOpensReleasePage = false;
                 UpdateProgramButton.Visibility = Visibility.Collapsed;
                 RestartProgramButton.Visibility = Visibility.Collapsed;
                 return;
@@ -144,15 +172,22 @@ namespace JokerDBDTracker
 
             if (updateInfo.IsUpdateAvailable)
             {
-                UpdateStatusText.Text = $"● Доступно обновление {updateInfo.LatestVersionText}";
+                UpdateStatusText.Text = T($"● Доступно обновление {updateInfo.LatestVersionText}", $"● Update available {updateInfo.LatestVersionText}");
                 UpdateStatusText.Foreground = BrushFromHex("#F0B56E");
+                var hasDirectInstaller = !string.IsNullOrWhiteSpace(updateInfo.DownloadAssetUrl) &&
+                                         !string.IsNullOrWhiteSpace(updateInfo.DownloadAssetName);
+                _updateButtonOpensReleasePage = !hasDirectInstaller;
+                UpdateProgramButton.Content = hasDirectInstaller
+                    ? T("Обновить программу", "Update app")
+                    : T("Открыть релиз", "Open release");
                 UpdateProgramButton.Visibility = Visibility.Visible;
                 RestartProgramButton.Visibility = Visibility.Collapsed;
                 return;
             }
 
-            UpdateStatusText.Text = "● Установлено последнее обновление";
+            UpdateStatusText.Text = T("● Установлено последнее обновление", "● You are up to date");
             UpdateStatusText.Foreground = BrushFromHex("#82D7AA");
+            _updateButtonOpensReleasePage = false;
             UpdateProgramButton.Visibility = Visibility.Collapsed;
             RestartProgramButton.Visibility = Visibility.Collapsed;
         }
@@ -161,6 +196,12 @@ namespace JokerDBDTracker
         {
             if (_isDownloadingUpdate)
             {
+                return;
+            }
+
+            if (_updateButtonOpensReleasePage)
+            {
+                OpenReleasePageInBrowser();
                 return;
             }
 
@@ -180,7 +221,7 @@ namespace JokerDBDTracker
             try
             {
                 UpdateProgramButton.IsEnabled = false;
-                ShowLoadingOverlay("Скачивание обновления...", isIndeterminate: false);
+                ShowLoadingOverlay(T("Скачивание обновления...", "Downloading update..."), isIndeterminate: false);
 
                 var updatesFolder = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -198,21 +239,31 @@ namespace JokerDBDTracker
 
                     var clamped = Math.Clamp(value, 0, 1);
                     LoadingProgressBar.Value = clamped * 100;
-                    LoadingProgressText.Text = $"Загрузка обновления: {clamped * 100:0}%";
+                    LoadingProgressText.Text = T($"Загрузка обновления: {clamped * 100:0}%", $"Update download: {clamped * 100:0}%");
                 });
 
                 _updateDownloadCts = new CancellationTokenSource();
                 await _updateService.DownloadAssetAsync(
                     _lastUpdateInfo.DownloadAssetUrl,
                     destinationPath,
+                    _lastUpdateInfo.DownloadAssetSizeBytes,
+                    _lastUpdateInfo.DownloadAssetSha256,
                     progress,
                     _updateDownloadCts.Token);
-                LaunchDownloadedUpdate(destinationPath);
+                if (!string.Equals(Path.GetExtension(destinationPath), ".zip", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException(
+                        T(
+                            $"Ожидается portable zip-архив для обновления, но получен файл: {Path.GetFileName(destinationPath)}",
+                            $"Expected portable ZIP update archive, but got: {Path.GetFileName(destinationPath)}"));
+                }
+
+                ShowLoadingOverlay(T("Подготовка обновления...", "Preparing update..."), isIndeterminate: true);
+                StartPortableSelfUpdate(destinationPath);
 
                 HideLoadingOverlay();
-                UpdateStatusText.Text = "● Обновление загружено. Завершите установку и перезапустите программу";
-                UpdateStatusText.Foreground = BrushFromHex("#E2C17A");
-                RestartProgramButton.Visibility = Visibility.Visible;
+                Application.Current.Shutdown();
+                return;
             }
             catch (OperationCanceledException)
             {
@@ -222,8 +273,8 @@ namespace JokerDBDTracker
             {
                 HideLoadingOverlay();
                 MessageBox.Show(
-                    $"Не удалось скачать или запустить обновление:{Environment.NewLine}{ex.Message}",
-                    "Обновление",
+                    $"{T("Не удалось скачать или запустить обновление:", "Failed to download or apply update:")}{Environment.NewLine}{ex.Message}",
+                    T("Обновление", "Update"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
             }
@@ -256,37 +307,147 @@ namespace JokerDBDTracker
             catch (Exception ex)
             {
                 MessageBox.Show(
-                    $"Не удалось перезапустить программу:{Environment.NewLine}{ex.Message}",
-                    "Перезапуск",
+                    $"{T("Не удалось перезапустить программу:", "Failed to restart app:")}{Environment.NewLine}{ex.Message}",
+                    T("Перезапуск", "Restart"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
             }
         }
 
-        private void LaunchDownloadedUpdate(string updatePath)
+        private void StartPortableSelfUpdate(string zipPath)
         {
-            var extension = Path.GetExtension(updatePath).ToLowerInvariant();
-            var startInfo = extension switch
+            var currentExePath = Environment.ProcessPath;
+            if (string.IsNullOrWhiteSpace(currentExePath))
             {
-                ".msi" => new ProcessStartInfo
-                {
-                    FileName = "msiexec",
-                    Arguments = $"/i \"{updatePath}\"",
-                    UseShellExecute = true
-                },
-                ".exe" => new ProcessStartInfo
-                {
-                    FileName = updatePath,
-                    UseShellExecute = true
-                },
-                _ => new ProcessStartInfo
-                {
-                    FileName = _latestReleaseUrl,
-                    UseShellExecute = true
-                }
-            };
+                throw new InvalidOperationException(T(
+                    "Не удалось определить путь к текущему исполняемому файлу.",
+                    "Unable to resolve current executable path."));
+            }
 
-            Process.Start(startInfo);
+            var installDirectory = AppContext.BaseDirectory;
+            if (string.IsNullOrWhiteSpace(installDirectory) || !Directory.Exists(installDirectory))
+            {
+                throw new InvalidOperationException(T(
+                    "Не удалось определить папку установки приложения.",
+                    "Unable to resolve application install directory."));
+            }
+
+            var updatesFolder = Path.GetDirectoryName(zipPath) ?? Path.GetTempPath();
+            var extractRoot = Path.Combine(updatesFolder, $"update_extract_{Guid.NewGuid():N}");
+            Directory.CreateDirectory(extractRoot);
+            ExtractZipSafely(zipPath, extractRoot);
+
+            var exeName = Path.GetFileName(currentExePath);
+            var stagedRoot = ResolveStagedRoot(extractRoot, exeName);
+            if (string.IsNullOrWhiteSpace(stagedRoot))
+            {
+                throw new InvalidOperationException(
+                    T($"В архиве обновления не найден исполняемый файл {exeName}.", $"Executable {exeName} was not found in update archive."));
+            }
+
+            var scriptPath = Path.Combine(updatesFolder, $"apply_update_{Guid.NewGuid():N}.ps1");
+            var scriptContent = BuildApplyUpdateScript(
+                parentProcessId: Environment.ProcessId,
+                sourceDirectory: stagedRoot,
+                targetDirectory: installDirectory,
+                executableName: exeName);
+            File.WriteAllText(scriptPath, scriptContent);
+
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "powershell",
+                Arguments = $"-NoProfile -ExecutionPolicy Bypass -File \"{scriptPath}\"",
+                UseShellExecute = true,
+                WindowStyle = ProcessWindowStyle.Hidden
+            });
+        }
+
+        private static string ResolveStagedRoot(string extractedDirectory, string executableName)
+        {
+            if (File.Exists(Path.Combine(extractedDirectory, executableName)))
+            {
+                return extractedDirectory;
+            }
+
+            var directChildMatch = Directory.EnumerateDirectories(extractedDirectory)
+                .FirstOrDefault(dir => File.Exists(Path.Combine(dir, executableName)));
+            if (!string.IsNullOrWhiteSpace(directChildMatch))
+            {
+                return directChildMatch;
+            }
+
+            var deepMatch = Directory.EnumerateFiles(extractedDirectory, executableName, SearchOption.AllDirectories)
+                .Select(Path.GetDirectoryName)
+                .FirstOrDefault(dir => !string.IsNullOrWhiteSpace(dir));
+            return deepMatch ?? string.Empty;
+        }
+
+        private static void ExtractZipSafely(string zipPath, string destinationDirectory)
+        {
+            var fullDestination = Path.GetFullPath(destinationDirectory);
+            using var archive = ZipFile.OpenRead(zipPath);
+            foreach (var entry in archive.Entries)
+            {
+                if (string.IsNullOrEmpty(entry.FullName))
+                {
+                    continue;
+                }
+
+                var targetPath = Path.GetFullPath(Path.Combine(fullDestination, entry.FullName));
+                if (!targetPath.StartsWith(fullDestination, StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException($"Unsafe path inside update archive: {entry.FullName}");
+                }
+
+                if (entry.FullName.EndsWith("/", StringComparison.Ordinal) ||
+                    entry.FullName.EndsWith("\\", StringComparison.Ordinal))
+                {
+                    Directory.CreateDirectory(targetPath);
+                    continue;
+                }
+
+                var targetDir = Path.GetDirectoryName(targetPath);
+                if (!string.IsNullOrWhiteSpace(targetDir))
+                {
+                    Directory.CreateDirectory(targetDir);
+                }
+
+                entry.ExtractToFile(targetPath, overwrite: true);
+            }
+        }
+
+        private static string BuildApplyUpdateScript(int parentProcessId, string sourceDirectory, string targetDirectory, string executableName)
+        {
+            static string Esc(string value) => value.Replace("'", "''");
+            return $@"$ErrorActionPreference = 'Stop'
+$parentPid = {parentProcessId}
+$source = '{Esc(sourceDirectory)}'
+$target = '{Esc(targetDirectory)}'
+$exeName = '{Esc(executableName)}'
+
+for ($i = 0; $i -lt 240; $i++) {{
+    try {{
+        Get-Process -Id $parentPid -ErrorAction Stop | Out-Null
+        Start-Sleep -Milliseconds 250
+    }} catch {{
+        break
+    }}
+}}
+
+if (!(Test-Path $source) -or !(Test-Path $target)) {{
+    exit 1
+}}
+
+$robocopyResult = & robocopy $source $target /E /R:2 /W:1 /NFL /NDL /NJH /NJS /NP
+$exitCode = $LASTEXITCODE
+if ($exitCode -ge 8) {{
+    exit $exitCode
+}}
+
+$updatedExe = Join-Path $target $exeName
+if (Test-Path $updatedExe) {{
+    Start-Process -FilePath $updatedExe
+}}";
         }
 
         private void OpenReleasePageInBrowser()
@@ -313,7 +474,7 @@ namespace JokerDBDTracker
 
             if (LoadingProgressText is not null)
             {
-                LoadingProgressText.Text = isIndeterminate ? string.Empty : "Загрузка обновления: 0%";
+                LoadingProgressText.Text = isIndeterminate ? string.Empty : T("Загрузка обновления: 0%", "Update download: 0%");
             }
 
             if (LoadingOverlay is not null)
@@ -335,6 +496,9 @@ namespace JokerDBDTracker
             try
             {
                 _searchDebounceTimer.Stop();
+                _networkTimeSyncTimer.Stop();
+                _questRolloverTimer.Stop();
+                _questUiRefreshTimer.Stop();
                 _updateDownloadCts?.Cancel();
             }
             catch

@@ -44,6 +44,8 @@ namespace JokerDBDTracker
         private readonly DispatcherTimer _effectsApplyDebounceTimer = new();
         private readonly DispatcherTimer _resizeSettleDebounceTimer = new();
         private readonly WatchHistoryService _watchHistoryPersistService = new();
+        private readonly AppSettingsService _settingsService = new();
+        private AppSettingsData _appSettings = new();
         private int _lastPersistedPlaybackSeconds;
         private DateTime _lastPlaybackPersistUtc = DateTime.MinValue;
         private bool _isPersistingPlayback;
@@ -55,12 +57,23 @@ namespace JokerDBDTracker
         private const int PlaybackPersistIntervalSeconds = 10;
         private const int EffectRefreshTickInterval = 3;
         private const int ResizeSettleDelayMilliseconds = 180;
-        private const int HalfHourWatchBonusXp = 25;
-        private const int OneHourWatchBonusXp = 60;
+        private const int HalfHourWatchBonusXp = 1100;
+        private const int OneHourWatchBonusXp = 2300;
+        private const int NinetyMinutesWatchBonusXp = 3800;
         private bool _isResizeInteractionInProgress;
         private bool _pendingDragRestoreFromMaximized;
         private Point _pendingDragStartPoint;
         private bool _shouldStartDragAfterExitingPlayerFullscreen;
+        private bool _ninetyMinuteBonusGranted;
+        private DateTime _lastUserInteractionUtc = DateTime.UtcNow;
+        private int _navigationCompletedFailureCount;
+        private bool _isPlayerMinimizeAnimating;
+        private readonly Dictionary<int, Key> _registeredHotkeys = [];
+        private HwndSource? _hotkeySource;
+        private int _nextHotkeyId = 4000;
+        private bool _effectsPanelExpandedBeforePlayerFullscreen = true;
+        private Thickness _playerHostMarginBeforeFullscreen = new Thickness(0, 8, 0, 8);
+        private CornerRadius _playerHostCornerRadiusBeforeFullscreen = new CornerRadius(10);
 
         private sealed class EffectSettings
         {
@@ -79,6 +92,7 @@ namespace JokerDBDTracker
         }
 
         public int LastPlaybackSeconds { get; private set; }
+        public int EligibleWatchSeconds { get; private set; }
         public bool CursedMasterUnlocked { get; private set; }
         public int WatchXpEarned { get; private set; }
         public bool WatchedWithAnyEffects { get; private set; }
@@ -114,6 +128,8 @@ namespace JokerDBDTracker
             Loaded += PlayerWindow_Loaded;
             Closing += PlayerWindow_Closing;
             Closed += PlayerWindow_Closed;
+            Activated += PlayerWindow_Activated;
+            Deactivated += PlayerWindow_Deactivated;
             StateChanged += PlayerWindow_StateChanged;
             SizeChanged += PlayerWindow_SizeChanged;
 
@@ -125,6 +141,8 @@ namespace JokerDBDTracker
             _resizeSettleDebounceTimer.Tick += ResizeSettleDebounceTimer_Tick;
             PreviewMouseMove += PlayerWindow_PreviewMouseMove;
             PreviewMouseLeftButtonUp += PlayerWindow_PreviewMouseLeftButtonUp;
+            PreviewMouseDown += PlayerWindow_PreviewMouseDown;
+            PreviewKeyDown += PlayerWindow_PreviewKeyDown;
         }
 
     }

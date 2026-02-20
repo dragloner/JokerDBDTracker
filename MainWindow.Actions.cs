@@ -26,6 +26,7 @@ namespace JokerDBDTracker
 
                 try
                 {
+                    await AnimateWindowOpacityAsync(0.0, 140);
                     Hide();
                     player.ShowDialog();
                 }
@@ -36,12 +37,18 @@ namespace JokerDBDTracker
                         Show();
                     }
 
+                    if (AreAnimationsEnabled)
+                    {
+                        Opacity = 0;
+                    }
+
                     if (WindowState == WindowState.Minimized)
                     {
                         WindowState = WindowState.Normal;
                     }
 
                     Activate();
+                    await AnimateWindowOpacityAsync(1.0, 180);
                 }
 
                 video.LastPlaybackSeconds = player.LastPlaybackSeconds;
@@ -53,11 +60,15 @@ namespace JokerDBDTracker
                     AddXp(XpFirstWatch);
                 }
 
-                AddXp(player.WatchXpEarned);
+                AddXp((int)Math.Round(player.WatchXpEarned * WatchSessionXpMultiplier));
+                ApplySessionXpBonuses(player.EligibleWatchSeconds);
 
                 if (player.WatchedWithAnyEffects)
                 {
                     _effectSessionsAny++;
+                    var today = GetTrustedToday();
+                    _effectSessionsByDay.TryGetValue(today, out var effectSessionsToday);
+                    _effectSessionsByDay[today] = effectSessionsToday + 1;
                 }
 
                 if (player.MaxEnabledEffectsCount >= 5)
@@ -117,8 +128,8 @@ namespace JokerDBDTracker
 
                 Activate();
                 MessageBox.Show(
-                    $"Ошибка при открытии/закрытии плеера:{Environment.NewLine}{ex.Message}",
-                    "Ошибка",
+                    $"{T("Ошибка при открытии/закрытии плеера:", "Error while opening/closing player:")}{Environment.NewLine}{ex.Message}",
+                    T("Ошибка", "Error"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
             }

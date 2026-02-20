@@ -10,10 +10,10 @@
     <RootNamespace>JokerDBDTracker</RootNamespace>
     <Product>JokerDBD Tracker</Product>
     <Title>JokerDBD Tracker</Title>
-    <Version>1.1.0.1</Version>
-    <AssemblyVersion>1.1.0.1</AssemblyVersion>
-    <FileVersion>1.1.0.1</FileVersion>
-    <InformationalVersion>1.1.0.1</InformationalVersion>
+    <Version>1.2.0</Version>
+    <AssemblyVersion>1.2.0</AssemblyVersion>
+    <FileVersion>1.2.0</FileVersion>
+    <InformationalVersion>1.2.0</InformationalVersion>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <Company>dragloner</Company>
     <Authors>dragloner</Authors>
@@ -39,6 +39,9 @@
     <Resource Include="Assets\app.ico" />
     <Resource Include="Assets\loading-screen.jpg" Condition="Exists('Assets\loading-screen.jpg')" />
     <Resource Include="Assets\PrestigeIcons\*.png" />
+    <Content Include="Assets\Sounds\*.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3800.47" />
   </ItemGroup>
 

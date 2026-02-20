@@ -17,9 +17,13 @@ namespace JokerDBDTracker
 
             try
             {
+                await InitializeNetworkClockAsync();
+                await LoadAndApplySettingsAsync();
                 var loadVideosTask = LoadVideosAsync();
                 var updateCheckTask = CheckForUpdatesDuringStartupAsync();
                 await Task.WhenAll(loadVideosTask, updateCheckTask);
+                StartQuestRolloverMonitoring();
+                _questUiRefreshTimer.Start();
             }
             finally
             {
@@ -40,8 +44,9 @@ namespace JokerDBDTracker
             }, DispatcherPriority.Loaded);
         }
 
-        private void MainMinimizeButton_Click(object sender, RoutedEventArgs e)
+        private async void MainMinimizeButton_Click(object sender, RoutedEventArgs e)
         {
+            await AnimateMainMinimizeAsync();
             WindowState = WindowState.Minimized;
         }
 
@@ -58,6 +63,7 @@ namespace JokerDBDTracker
         private void MainWindow_StateChanged(object? sender, EventArgs e)
         {
             UpdateMainWindowButtonsState();
+            AnimateMainStatePulse();
         }
 
         private void UpdateMainWindowButtonsState()

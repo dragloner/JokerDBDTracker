@@ -3,6 +3,7 @@ using System.IO;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Net;
+using System.Security.Cryptography;
 
 namespace JokerDBDTracker.Services
 {
@@ -15,6 +16,7 @@ namespace JokerDBDTracker.Services
         public string DownloadAssetName { get; init; } = string.Empty;
         public string DownloadAssetUrl { get; init; } = string.Empty;
         public long DownloadAssetSizeBytes { get; init; }
+        public string DownloadAssetSha256 { get; init; } = string.Empty;
     }
 
     public sealed class GitHubUpdateService
@@ -25,7 +27,7 @@ namespace JokerDBDTracker.Services
         static GitHubUpdateService()
         {
             HttpClient.DefaultRequestHeaders.UserAgent.ParseAdd(
-                "JokerDBDTracker/1.1.0.1 (+https://github.com/dragloner/JokerDBDTracker)");
+                "JokerDBDTracker/1.2.0 (+https://github.com/dragloner/JokerDBDTracker)");
             HttpClient.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
             HttpClient.Timeout = TimeSpan.FromSeconds(15);
         }
@@ -56,19 +58,21 @@ namespace JokerDBDTracker.Services
                         continue;
                     }
 
-                    var (assetName, assetUrl, assetSizeBytes) = SelectBestAsset(root);
+                    var (assetName, assetUrl, assetSizeBytes, checksumUrl) = SelectBestAsset(root);
+                    var assetSha256 = await TryResolveSha256Async(checksumUrl, assetName, cancellationToken);
                     var isUpdateAvailable = latestVersion > currentVersion;
                     return new GitHubUpdateInfo
                     {
                         IsCheckSuccessful = true,
                         IsUpdateAvailable = isUpdateAvailable,
-                        LatestVersionText = $"{latestVersion.Major}.{latestVersion.Minor}.{latestVersion.Build}",
+                        LatestVersionText = FormatVersion(latestVersion),
                         ReleaseUrl = string.IsNullOrWhiteSpace(htmlUrl)
                             ? $"https://github.com/{owner}/{repository}/releases/latest"
                             : htmlUrl,
                         DownloadAssetName = assetName,
                         DownloadAssetUrl = assetUrl,
-                        DownloadAssetSizeBytes = assetSizeBytes
+                        DownloadAssetSizeBytes = assetSizeBytes,
+                        DownloadAssetSha256 = assetSha256
                     };
                 }
                 catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
@@ -105,6 +109,8 @@ namespace JokerDBDTracker.Services
         public async Task DownloadAssetAsync(
             string downloadUrl,
             string destinationPath,
+            long expectedSizeBytes = 0,
+            string expectedSha256 = "",
             IProgress<double>? progress = null,
             CancellationToken cancellationToken = default)
         {
@@ -136,6 +142,24 @@ namespace JokerDBDTracker.Services
             }
 
             progress?.Report(1.0);
+
+            if (expectedSizeBytes > 0)
+            {
+                var fileInfo = new FileInfo(destinationPath);
+                if (!fileInfo.Exists || fileInfo.Length != expectedSizeBytes)
+                {
+                    throw new InvalidDataException($"Downloaded file size mismatch. Expected {expectedSizeBytes}, got {fileInfo.Length}.");
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(expectedSha256))
+            {
+                var actualSha256 = await ComputeFileSha256Async(destinationPath, cancellationToken);
+                if (!string.Equals(actualSha256, expectedSha256, StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidDataException("Downloaded file hash mismatch.");
+                }
+            }
         }
 
         private static string TryGetString(JsonElement root, string propertyName)
@@ -176,14 +200,15 @@ namespace JokerDBDTracker.Services
             return Version.TryParse(normalized, out var parsed) ? parsed : null;
         }
 
-        private static (string assetName, string assetUrl, long sizeBytes) SelectBestAsset(JsonElement root)
+        private static (string assetName, string assetUrl, long sizeBytes, string checksumUrl) SelectBestAsset(JsonElement root)
         {
             if (!root.TryGetProperty("assets", out var assetsElement) || assetsElement.ValueKind != JsonValueKind.Array)
             {
-                return (string.Empty, string.Empty, 0);
+                return (string.Empty, string.Empty, 0, string.Empty);
             }
 
             var candidates = new List<(string name, string url, long size, int priority)>();
+            var checksumAssets = new List<(string name, string url)>();
             foreach (var asset in assetsElement.EnumerateArray())
             {
                 var name = TryGetString(asset, "name");
@@ -198,13 +223,11 @@ namespace JokerDBDTracker.Services
                 }
 
                 var extension = Path.GetExtension(name).ToLowerInvariant();
-                var priority = extension switch
+                if (extension is ".sha256" or ".sha" or ".txt")
                 {
-                    ".msi" => 300,
-                    ".exe" => 200,
-                    ".zip" => 100,
-                    _ => 0
-                };
+                    checksumAssets.Add((name, url));
+                }
+                var priority = GetPortableAssetPriority(name, extension);
 
                 if (priority == 0)
                 {
@@ -219,9 +242,123 @@ namespace JokerDBDTracker.Services
                 .ThenByDescending(c => c.size)
                 .FirstOrDefault();
 
-            return string.IsNullOrWhiteSpace(selected.name)
-                ? (string.Empty, string.Empty, 0)
-                : (selected.name, selected.url, selected.size);
+            if (string.IsNullOrWhiteSpace(selected.name))
+            {
+                return (string.Empty, string.Empty, 0, string.Empty);
+            }
+
+            var checksumUrl = FindChecksumUrlForAssetName(checksumAssets, selected.name);
+            return (selected.name, selected.url, selected.size, checksumUrl);
+        }
+
+        private static int GetPortableAssetPriority(string assetName, string extension)
+        {
+            if (extension != ".zip")
+            {
+                return 0;
+            }
+
+            var lower = assetName.ToLowerInvariant();
+            var priority = 100;
+
+            if (lower.Contains("win-x64"))
+            {
+                priority += 140;
+            }
+            if (lower.Contains("portable"))
+            {
+                priority += 90;
+            }
+            if (lower.Contains("self-contained"))
+            {
+                priority += 50;
+            }
+            if (lower.Contains("symbols") || lower.Contains("debug"))
+            {
+                priority -= 120;
+            }
+
+            return Math.Max(1, priority);
+        }
+
+        private static string FindChecksumUrlForAssetName(List<(string name, string url)> checksumAssets, string selectedAssetName)
+        {
+            var selectedLower = selectedAssetName.ToLowerInvariant();
+            foreach (var checksumAsset in checksumAssets)
+            {
+                var checksumNameLower = checksumAsset.name.ToLowerInvariant();
+                if (checksumNameLower.Contains(selectedLower) && checksumNameLower.Contains("sha"))
+                {
+                    return checksumAsset.url;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private static async Task<string> TryResolveSha256Async(string checksumUrl, string assetName, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(checksumUrl) || string.IsNullOrWhiteSpace(assetName))
+            {
+                return string.Empty;
+            }
+
+            try
+            {
+                var checksumText = await HttpClient.GetStringAsync(checksumUrl, cancellationToken);
+                var lines = checksumText
+                    .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                if (lines.Length == 0)
+                {
+                    return string.Empty;
+                }
+
+                var assetLower = assetName.ToLowerInvariant();
+                foreach (var line in lines)
+                {
+                    if (!line.Contains(assetLower, StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    var sha = ExtractHexSha256(line);
+                    if (!string.IsNullOrWhiteSpace(sha))
+                    {
+                        return sha;
+                    }
+                }
+
+                return ExtractHexSha256(lines[0]);
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private static string ExtractHexSha256(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return string.Empty;
+            }
+
+            var match = Regex.Match(text, @"\b[A-Fa-f0-9]{64}\b");
+            return match.Success ? match.Value.ToUpperInvariant() : string.Empty;
+        }
+
+        private static async Task<string> ComputeFileSha256Async(string path, CancellationToken cancellationToken)
+        {
+            await using var stream = new FileStream(
+                path,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.Read,
+                bufferSize: 64 * 1024,
+                useAsync: true);
+            using var sha = SHA256.Create();
+            var hash = await sha.ComputeHashAsync(stream, cancellationToken);
+            return Convert.ToHexString(hash);
         }
 
         private static async Task<GitHubUpdateInfo> TryCheckViaLatestReleaseRedirectAsync(
@@ -251,7 +388,7 @@ namespace JokerDBDTracker.Services
                 {
                     IsCheckSuccessful = true,
                     IsUpdateAvailable = version > currentVersion,
-                    LatestVersionText = $"{version.Major}.{version.Minor}.{version.Build}",
+                    LatestVersionText = FormatVersion(version),
                     ReleaseUrl = resolvedUri
                 };
             }
@@ -259,6 +396,21 @@ namespace JokerDBDTracker.Services
             {
                 return new GitHubUpdateInfo { IsCheckSuccessful = false };
             }
+        }
+
+        private static string FormatVersion(Version version)
+        {
+            if (version.Revision > 0)
+            {
+                return $"{version.Major}.{version.Minor}.{version.Build}.{version.Revision}";
+            }
+
+            if (version.Build > 0)
+            {
+                return $"{version.Major}.{version.Minor}.{version.Build}";
+            }
+
+            return $"{version.Major}.{version.Minor}.0";
         }
     }
 }

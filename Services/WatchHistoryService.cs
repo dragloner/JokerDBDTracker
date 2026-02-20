@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Security.Cryptography;
 using System.Text.Json;
 
 namespace JokerDBDTracker.Services
@@ -21,18 +22,44 @@ namespace JokerDBDTracker.Services
         public int EffectSessionsStrongRedGlow { get; set; }
         public int EffectSessionsStrongVioletGlow { get; set; }
         public int EffectSessionsStrongShake { get; set; }
+        public Dictionary<string, int> WatchedSecondsByDay { get; set; } = new(StringComparer.Ordinal);
+        public HashSet<string> DailyGoalRewardedDays { get; set; } = new(StringComparer.Ordinal);
+        public HashSet<string> StreakRewardedDays { get; set; } = new(StringComparer.Ordinal);
+        public HashSet<string> WeeklyWatchDaysRewardedWeeks { get; set; } = new(StringComparer.Ordinal);
+        public HashSet<string> WeeklyWatchHoursRewardedWeeks { get; set; } = new(StringComparer.Ordinal);
+        public Dictionary<string, int> BestSessionSecondsByDay { get; set; } = new(StringComparer.Ordinal);
+        public Dictionary<string, int> EffectSessionsByDay { get; set; } = new(StringComparer.Ordinal);
+        public HashSet<string> RewardedQuestKeys { get; set; } = new(StringComparer.Ordinal);
+        public string ActiveDailyQuestDate { get; set; } = string.Empty;
+        public List<string> ActiveDailyQuestIds { get; set; } = [];
+        public string ActiveWeeklyQuestWeekKey { get; set; } = string.Empty;
+        public List<string> ActiveWeeklyQuestIds { get; set; } = [];
     }
 
     public class WatchHistoryService
     {
         private static readonly SemaphoreSlim FileAccessLock = new(1, 1);
         private readonly string _historyPath;
+        private readonly string _backupPath;
+        private readonly string _legacyHistoryPath;
+
+        private sealed class EncryptedEnvelope
+        {
+            public int Version { get; set; } = 1;
+            public bool Protected { get; set; } = true;
+            public string Payload { get; set; } = string.Empty;
+        }
 
         public WatchHistoryService()
         {
             var appFolder = AppStoragePaths.GetCurrentAppDataDirectory();
             Directory.CreateDirectory(appFolder);
             _historyPath = Path.Combine(appFolder, "watch-history.json");
+            _backupPath = $"{_historyPath}.bak";
+
+            var legacyFolder = AppStoragePaths.GetLegacyAppDataDirectory();
+            Directory.CreateDirectory(legacyFolder);
+            _legacyHistoryPath = Path.Combine(legacyFolder, "watch-history.json");
             MigrateLegacyHistoryIfNeeded();
         }
 
@@ -43,14 +70,12 @@ namespace JokerDBDTracker.Services
                 return;
             }
 
-            var legacyFolder = AppStoragePaths.GetLegacyAppDataDirectory();
-            var legacyHistoryPath = Path.Combine(legacyFolder, "watch-history.json");
-            if (!File.Exists(legacyHistoryPath))
+            if (!File.Exists(_legacyHistoryPath))
             {
                 return;
             }
 
-            File.Copy(legacyHistoryPath, _historyPath, overwrite: false);
+            File.Copy(_legacyHistoryPath, _historyPath, overwrite: false);
         }
 
         public async Task<WatchHistoryData> LoadAsync(CancellationToken cancellationToken = default)
@@ -58,39 +83,47 @@ namespace JokerDBDTracker.Services
             await FileAccessLock.WaitAsync(cancellationToken);
             try
             {
-                if (!File.Exists(_historyPath))
+                var current = await TryLoadPrimaryCurrentAsync(cancellationToken);
+                var legacy = await TryLoadPathOrDefaultAsync(_legacyHistoryPath, cancellationToken);
+
+                if (current is null && legacy is null)
                 {
                     return new WatchHistoryData();
                 }
 
-                await using var stream = new FileStream(
-                    _historyPath,
-                    FileMode.Open,
-                    FileAccess.Read,
-                    FileShare.Read,
-                    bufferSize: 8192,
-                    useAsync: true);
-                using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
-
-                if (document.RootElement.ValueKind == JsonValueKind.Object &&
-                    document.RootElement.TryGetProperty("LastWatchedByVideoId", out _))
+                if (current is null)
                 {
-                    var typed = document.RootElement.Deserialize<WatchHistoryData>();
-                    return typed ?? new WatchHistoryData();
+                    TryCopyFile(_legacyHistoryPath, _historyPath);
+                    return legacy!;
                 }
 
-                // Backward compatibility: old format was Dictionary<string, DateTime>.
-                var oldFormat = document.RootElement.Deserialize<Dictionary<string, DateTime>>() ??
-                                new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
-
-                var migrated = new WatchHistoryData();
-                foreach (var item in oldFormat)
+                if (legacy is null)
                 {
-                    migrated.LastWatchedByVideoId[item.Key] = item.Value;
-                    migrated.WatchedDays.Add(item.Value.ToLocalTime().Date.ToString("yyyy-MM-dd"));
+                    return current;
                 }
 
-                return migrated;
+                if (IsSecondHistoryBetter(current, legacy))
+                {
+                    TryCopyFile(_legacyHistoryPath, _historyPath);
+                    return legacy;
+                }
+
+                if (IsSecondHistoryBetter(legacy, current))
+                {
+                    TryCopyFile(_historyPath, _legacyHistoryPath);
+                    return current;
+                }
+
+                if (TryGetFileWriteTimeUtc(_legacyHistoryPath, out var legacyWrite) &&
+                    TryGetFileWriteTimeUtc(_historyPath, out var currentWrite) &&
+                    legacyWrite > currentWrite)
+                {
+                    TryCopyFile(_legacyHistoryPath, _historyPath);
+                    return legacy;
+                }
+
+                TryCopyFile(_historyPath, _legacyHistoryPath);
+                return current;
             }
             finally
             {
@@ -112,17 +145,226 @@ namespace JokerDBDTracker.Services
                                  bufferSize: 8192,
                                  useAsync: true))
                 {
-                    await JsonSerializer.SerializeAsync(stream, data, cancellationToken: cancellationToken);
+                    var rawPayload = JsonSerializer.SerializeToUtf8Bytes(data);
+                    var encryptedPayload = ProtectedData.Protect(rawPayload, optionalEntropy: null, DataProtectionScope.CurrentUser);
+                    var envelope = new EncryptedEnvelope
+                    {
+                        Version = 1,
+                        Protected = true,
+                        Payload = Convert.ToBase64String(encryptedPayload)
+                    };
+                    await JsonSerializer.SerializeAsync(stream, envelope, cancellationToken: cancellationToken);
                     await stream.FlushAsync(cancellationToken);
                 }
 
+                if (File.Exists(_historyPath))
+                {
+                    File.Copy(_historyPath, _backupPath, overwrite: true);
+                }
+
                 File.Move(tempPath, _historyPath, overwrite: true);
+                TryCopyFile(_historyPath, _legacyHistoryPath);
             }
             finally
             {
                 FileAccessLock.Release();
             }
         }
+
+        private async Task<WatchHistoryData?> TryLoadPrimaryCurrentAsync(CancellationToken cancellationToken)
+        {
+            if (!File.Exists(_historyPath))
+            {
+                if (!File.Exists(_backupPath))
+                {
+                    return null;
+                }
+
+                TryCopyFile(_backupPath, _historyPath);
+            }
+
+            try
+            {
+                return await LoadFromPathAsync(_historyPath, cancellationToken);
+            }
+            catch (JsonException)
+            {
+                if (!File.Exists(_backupPath))
+                {
+                    return null;
+                }
+
+                var recovered = await LoadFromPathAsync(_backupPath, cancellationToken);
+                TryCopyFile(_backupPath, _historyPath);
+                return recovered;
+            }
+            catch (CryptographicException)
+            {
+                return null;
+            }
+            catch (IOException)
+            {
+                if (!File.Exists(_backupPath))
+                {
+                    return null;
+                }
+
+                var recovered = await LoadFromPathAsync(_backupPath, cancellationToken);
+                TryCopyFile(_backupPath, _historyPath);
+                return recovered;
+            }
+        }
+
+        private static async Task<WatchHistoryData?> TryLoadPathOrDefaultAsync(string path, CancellationToken cancellationToken)
+        {
+            if (!File.Exists(path))
+            {
+                return null;
+            }
+
+            try
+            {
+                return await LoadFromPathAsync(path, cancellationToken);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static bool IsSecondHistoryBetter(WatchHistoryData first, WatchHistoryData second)
+        {
+            if (second.Prestige != first.Prestige)
+            {
+                return second.Prestige > first.Prestige;
+            }
+
+            if (second.TotalXp != first.TotalXp)
+            {
+                return second.TotalXp > first.TotalXp;
+            }
+
+            if (second.PrestigeXp != first.PrestigeXp)
+            {
+                return second.PrestigeXp > first.PrestigeXp;
+            }
+
+            if (second.LastWatchedByVideoId.Count != first.LastWatchedByVideoId.Count)
+            {
+                return second.LastWatchedByVideoId.Count > first.LastWatchedByVideoId.Count;
+            }
+
+            if (second.FirstViewRewardedVideoIds.Count != first.FirstViewRewardedVideoIds.Count)
+            {
+                return second.FirstViewRewardedVideoIds.Count > first.FirstViewRewardedVideoIds.Count;
+            }
+
+            return false;
+        }
+
+        private static bool TryGetFileWriteTimeUtc(string path, out DateTime writeTimeUtc)
+        {
+            writeTimeUtc = DateTime.MinValue;
+            try
+            {
+                if (!File.Exists(path))
+                {
+                    return false;
+                }
+
+                writeTimeUtc = File.GetLastWriteTimeUtc(path);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static void TryCopyFile(string sourcePath, string targetPath)
+        {
+            try
+            {
+                if (!File.Exists(sourcePath))
+                {
+                    return;
+                }
+
+                var targetDir = Path.GetDirectoryName(targetPath);
+                if (!string.IsNullOrWhiteSpace(targetDir))
+                {
+                    Directory.CreateDirectory(targetDir);
+                }
+
+                File.Copy(sourcePath, targetPath, overwrite: true);
+            }
+            catch
+            {
+                // Best-effort sync between legacy/current storage locations.
+            }
+        }
+
+        private static async Task<WatchHistoryData> LoadFromPathAsync(string path, CancellationToken cancellationToken)
+        {
+            var payloadBytes = await File.ReadAllBytesAsync(path, cancellationToken);
+            if (payloadBytes.Length == 0)
+            {
+                return new WatchHistoryData();
+            }
+
+            using var document = JsonDocument.Parse(payloadBytes);
+            if (TryParseEncryptedEnvelope(document.RootElement, out var unprotectedJson))
+            {
+                using var unprotectedDoc = JsonDocument.Parse(unprotectedJson);
+                return ParseHistoryRoot(unprotectedDoc.RootElement);
+            }
+
+            return ParseHistoryRoot(document.RootElement);
+        }
+
+        private static bool TryParseEncryptedEnvelope(JsonElement root, out byte[] unprotectedJson)
+        {
+            unprotectedJson = [];
+            if (root.ValueKind != JsonValueKind.Object ||
+                !root.TryGetProperty("Protected", out var protectedFlag) ||
+                protectedFlag.ValueKind != JsonValueKind.True ||
+                !root.TryGetProperty("Payload", out var payloadElement) ||
+                payloadElement.ValueKind != JsonValueKind.String)
+            {
+                return false;
+            }
+
+            var payload = payloadElement.GetString();
+            if (string.IsNullOrWhiteSpace(payload))
+            {
+                return false;
+            }
+
+            var encryptedBytes = Convert.FromBase64String(payload);
+            unprotectedJson = ProtectedData.Unprotect(encryptedBytes, optionalEntropy: null, DataProtectionScope.CurrentUser);
+            return true;
+        }
+
+        private static WatchHistoryData ParseHistoryRoot(JsonElement root)
+        {
+            if (root.ValueKind == JsonValueKind.Object &&
+                root.TryGetProperty("LastWatchedByVideoId", out _))
+            {
+                var typed = root.Deserialize<WatchHistoryData>();
+                return typed ?? new WatchHistoryData();
+            }
+
+            var oldFormat = root.Deserialize<Dictionary<string, DateTime>>() ??
+                            new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
+
+            var migrated = new WatchHistoryData();
+            foreach (var item in oldFormat)
+            {
+                migrated.LastWatchedByVideoId[item.Key] = item.Value;
+                migrated.WatchedDays.Add(item.Value.ToLocalTime().Date.ToString("yyyy-MM-dd"));
+            }
+
+            return migrated;
+        }
     }
 }
-

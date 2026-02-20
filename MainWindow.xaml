@@ -25,448 +25,11 @@
     </shell:WindowChrome.WindowChrome>
 
     <Window.Resources>
-        <LinearGradientBrush x:Key="AppBackground" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#1A2630" Offset="0"/>
-            <GradientStop Color="#203140" Offset="0.52"/>
-            <GradientStop Color="#273C4E" Offset="1"/>
-        </LinearGradientBrush>
-
-        <SolidColorBrush x:Key="{x:Static SystemColors.WindowBrushKey}" Color="#E4EEF6"/>
-        <SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}" Color="#E4EEF6"/>
-        <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#8CB8D4"/>
-        <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="#112233"/>
-
-        <Style TargetType="Button">
-            <Setter Property="Foreground" Value="#F3FAFF"/>
-            <Setter Property="Background" Value="#2F6B8A"/>
-            <Setter Property="Padding" Value="18,10"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="FontSize" Value="18"/>
-            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
-                                CornerRadius="22"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center"
-                                              VerticalAlignment="Center"/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style x:Key="WindowControlButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-            <Setter Property="Width" Value="38"/>
-            <Setter Property="Height" Value="34"/>
-            <Setter Property="Padding" Value="0"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="FontWeight" Value="Normal"/>
-            <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
-            <Setter Property="Background" Value="#2B5D79"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="#6D94AF"/>
-        </Style>
-
-        <Style x:Key="WindowCloseButtonStyle" TargetType="Button" BasedOn="{StaticResource WindowControlButtonStyle}">
-            <Setter Property="Background" Value="#7D3A46"/>
-            <Setter Property="BorderBrush" Value="#B77682"/>
-        </Style>
-
-        <Style TargetType="ComboBox">
-            <Setter Property="Foreground" Value="#173041"/>
-            <Setter Property="Background" Value="#E4EEF6"/>
-            <Setter Property="BorderBrush" Value="#6E91A9"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="10,6"/>
-            <Setter Property="Height" Value="44"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="FontSize" Value="18"/>
-            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-        </Style>
-
-        <Style TargetType="ComboBoxItem">
-            <Setter Property="Foreground" Value="#173041"/>
-            <Setter Property="Background" Value="#F0F6FB"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-            <Setter Property="Padding" Value="10,8"/>
-        </Style>
-
-        <Style TargetType="TextBox">
-            <Setter Property="Foreground" Value="#173041"/>
-            <Setter Property="Background" Value="#E4EEF6"/>
-            <Setter Property="BorderBrush" Value="#6E91A9"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="10,6"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="Height" Value="44"/>
-            <Setter Property="FontSize" Value="18"/>
-            <Setter Property="TextAlignment" Value="Center"/>
-            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-        </Style>
-
-        <Style TargetType="ListBox">
-            <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True"/>
-            <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Recycling"/>
-            <Setter Property="ScrollViewer.CanContentScroll" Value="True"/>
-        </Style>
-
-        <Style TargetType="TabControl">
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="TabControl">
-                        <Grid ClipToBounds="False">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
-                            </Grid.RowDefinitions>
-                            <TabPanel Grid.Row="0"
-                                      IsItemsHost="True"
-                                      Margin="0,0,0,2"
-                                      Background="Transparent"
-                                      ClipToBounds="False"
-                                      KeyboardNavigation.TabIndex="1"/>
-                            <ContentPresenter Grid.Row="1"
-                                              ContentSource="SelectedContent"/>
-                        </Grid>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-
-        <Style TargetType="TabItem">
-            <Setter Property="Foreground" Value="#E6F2FA"/>
-            <Setter Property="Background" Value="#2B4153"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="FontSize" Value="15"/>
-            <Setter Property="Padding" Value="18,8"/>
-            <Setter Property="Margin" Value="0,0,8,0"/>
-            <Setter Property="MinWidth" Value="160"/>
-            <Setter Property="MinHeight" Value="48"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="TabItem">
-                        <Border x:Name="TabRoot"
-                                Background="{TemplateBinding Background}"
-                                BorderBrush="#5E7F98"
-                                BorderThickness="1"
-                                CornerRadius="20"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter ContentSource="Header"
-                                              HorizontalAlignment="Center"
-                                              VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="TabRoot" Property="Background" Value="#E4EEF6"/>
-                                <Setter TargetName="TabRoot" Property="BorderBrush" Value="#8FB4CD"/>
-                                <Setter Property="Foreground" Value="#173041"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style x:Key="VideoItemStyle" TargetType="ListBoxItem">
-            <Setter Property="Margin" Value="0,0,0,12"/>
-            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ListBoxItem">
-                        <Border x:Name="ItemRoot"
-                                Background="#283847"
-                                BorderBrush="#5E7F98"
-                                BorderThickness="1"
-                                CornerRadius="14"
-                                Padding="10">
-                            <ContentPresenter/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ItemRoot" Property="BorderBrush" Value="#95BCD7"/>
-                            </Trigger>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="ItemRoot" Property="Background" Value="#32485B"/>
-                                <Setter TargetName="ItemRoot" Property="BorderBrush" Value="#A7CBE1"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style x:Key="AchievementItemStyle" TargetType="ListBoxItem">
-            <Setter Property="Margin" Value="0,0,0,10"/>
-            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ListBoxItem">
-                        <Border x:Name="AchievementItemRoot"
-                                Background="#2B3D4E"
-                                BorderBrush="#6887A0"
-                                BorderThickness="1"
-                                CornerRadius="12"
-                                Padding="10">
-                            <ContentPresenter/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="AchievementItemRoot" Property="BorderBrush" Value="#95BCD7"/>
-                            </Trigger>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="AchievementItemRoot" Property="BorderBrush" Value="#A7CBE1"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style x:Key="PrestigeButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-            <Setter Property="Background" Value="#5D6B76"/>
-            <Setter Property="Foreground" Value="#D6DEE5"/>
-            <Setter Property="IsEnabled" Value="False"/>
-            <Style.Triggers>
-                <Trigger Property="IsEnabled" Value="True">
-                    <Setter Property="Background" Value="#2FA27E"/>
-                    <Setter Property="Foreground" Value="#F4FFFB"/>
-                </Trigger>
-                <MultiTrigger>
-                    <MultiTrigger.Conditions>
-                        <Condition Property="IsEnabled" Value="True"/>
-                        <Condition Property="IsMouseOver" Value="True"/>
-                    </MultiTrigger.Conditions>
-                    <Setter Property="Background" Value="#39BE93"/>
-                </MultiTrigger>
-            </Style.Triggers>
-        </Style>
-
-        <Style x:Key="TopNavButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-            <Setter Property="Height" Value="62"/>
-            <Setter Property="MinHeight" Value="62"/>
-            <Setter Property="MaxHeight" Value="62"/>
-            <Setter Property="FontSize" Value="30"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="Padding" Value="20,10"/>
-            <Setter Property="Background" Value="#2C4357"/>
-            <Setter Property="Foreground" Value="#EAF6FF"/>
-            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-            <Setter Property="VerticalAlignment" Value="Stretch"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="#6E91A9"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="NavButtonRoot"
-                                Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="24"
-                                SnapsToDevicePixels="True"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center"
-                                              VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="NavButtonRoot" Property="BorderBrush" Value="#A2C5DB"/>
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="NavButtonRoot" Property="Background" Value="#22394C"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style TargetType="ProgressBar">
-            <Setter Property="Height" Value="22"/>
-            <Setter Property="Background" Value="#1D2B38"/>
-            <Setter Property="BorderBrush" Value="#6F92AB"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Foreground" Value="#69C5FF"/>
-            <Setter Property="SnapsToDevicePixels" Value="True"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ProgressBar">
-                        <Border CornerRadius="11"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                Background="{TemplateBinding Background}">
-                            <Grid x:Name="PART_Track" Margin="2" ClipToBounds="True">
-                                <Border CornerRadius="9" Background="#233646"/>
-                                <Border x:Name="PART_Indicator"
-                                        HorizontalAlignment="Left"
-                                        CornerRadius="9"
-                                        Background="{TemplateBinding Foreground}"/>
-                            </Grid>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsIndeterminate" Value="True">
-                                <Setter TargetName="PART_Indicator" Property="Width" Value="60"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style TargetType="Thumb">
-            <Setter Property="Width" Value="12"/>
-            <Setter Property="Height" Value="72"/>
-            <Setter Property="MinHeight" Value="72"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Thumb">
-                        <Border Background="#7FC8F1"
-                                CornerRadius="7"
-                                BorderBrush="#BEE2F8"
-                                BorderThickness="1"/>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style TargetType="ScrollBar">
-            <Setter Property="Background" Value="#1F3241"/>
-            <Setter Property="Width" Value="18"/>
-            <Setter Property="Height" Value="18"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ScrollBar">
-                        <Grid SnapsToDevicePixels="True" Margin="0">
-                            <Border Background="#1D2E3D" CornerRadius="9"/>
-                            <Track x:Name="PART_Track"
-                                   IsDirectionReversed="True"
-                                   Orientation="{TemplateBinding Orientation}"
-                                   Minimum="{TemplateBinding Minimum}"
-                                   Maximum="{TemplateBinding Maximum}"
-                                   Value="{TemplateBinding Value}"
-                                   ViewportSize="NaN"
-                                   Margin="2">
-                                <Track.DecreaseRepeatButton>
-                                    <RepeatButton Background="Transparent"
-                                                  BorderThickness="0"
-                                                  Command="ScrollBar.PageUpCommand"/>
-                                </Track.DecreaseRepeatButton>
-                                <Track.Thumb>
-                                    <Thumb/>
-                                </Track.Thumb>
-                                <Track.IncreaseRepeatButton>
-                                    <RepeatButton Background="Transparent"
-                                                  BorderThickness="0"
-                                                  Command="ScrollBar.PageDownCommand"/>
-                                </Track.IncreaseRepeatButton>
-                            </Track>
-                        </Grid>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="Orientation" Value="Horizontal">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                                <Setter Property="Height" Value="0"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style x:Key="UnifiedScrollThumbStyle" TargetType="Thumb">
-            <Setter Property="Width" Value="10"/>
-            <Setter Property="MinHeight" Value="64"/>
-            <Setter Property="SnapsToDevicePixels" Value="True"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Thumb">
-                        <Border x:Name="ThumbBody"
-                                CornerRadius="6"
-                                BorderThickness="1"
-                                BorderBrush="#BEE3F8">
-                            <Border.Background>
-                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                    <GradientStop Color="#8FD3F7" Offset="0"/>
-                                    <GradientStop Color="#69BDEB" Offset="1"/>
-                                </LinearGradientBrush>
-                            </Border.Background>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ThumbBody" Property="BorderBrush" Value="#D9F0FF"/>
-                            </Trigger>
-                            <Trigger Property="IsDragging" Value="True">
-                                <Setter TargetName="ThumbBody" Property="BorderBrush" Value="#EAF7FF"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style x:Key="UnifiedScrollRepeatButtonStyle" TargetType="RepeatButton">
-            <Setter Property="Focusable" Value="False"/>
-            <Setter Property="IsTabStop" Value="False"/>
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="RepeatButton">
-                        <Border Background="Transparent"/>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style x:Key="UnifiedScrollBarStyle" TargetType="ScrollBar">
-            <Setter Property="Width" Value="18"/>
-            <Setter Property="Background" Value="#213647"/>
-            <Setter Property="Focusable" Value="False"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ScrollBar">
-                        <Grid SnapsToDevicePixels="True" UseLayoutRounding="True">
-                            <Border Background="#22384A" CornerRadius="9"/>
-                            <Border Margin="4,3,4,3" Background="#172734" CornerRadius="6"/>
-                            <Track x:Name="PART_Track"
-                                   Orientation="{TemplateBinding Orientation}"
-                                   IsDirectionReversed="True"
-                                   Minimum="{TemplateBinding Minimum}"
-                                   Maximum="{TemplateBinding Maximum}"
-                                   Value="{TemplateBinding Value}"
-                                   ViewportSize="NaN"
-                                   Margin="4,3,4,3">
-                                <Track.DecreaseRepeatButton>
-                                    <RepeatButton Style="{StaticResource UnifiedScrollRepeatButtonStyle}"
-                                                  Command="ScrollBar.PageUpCommand"/>
-                                </Track.DecreaseRepeatButton>
-                                <Track.Thumb>
-                                    <Thumb Style="{StaticResource UnifiedScrollThumbStyle}"/>
-                                </Track.Thumb>
-                                <Track.IncreaseRepeatButton>
-                                    <RepeatButton Style="{StaticResource UnifiedScrollRepeatButtonStyle}"
-                                                  Command="ScrollBar.PageDownCommand"/>
-                                </Track.IncreaseRepeatButton>
-                            </Track>
-                        </Grid>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="Orientation" Value="Horizontal">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                                <Setter Property="Height" Value="0"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Resources/MainWindow.Styles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
     </Window.Resources>
 
     <Border x:Name="MainRootBorder"
@@ -558,8 +121,8 @@
                                      BorderThickness="0"
                                      Background="Transparent"
                                      TextChanged="SearchBox_TextChanged"/>
-                        <TextBlock Text="Поиск стримов..."
-                                   Foreground="#6A8294"
+                        <TextBlock x:Name="SearchPlaceholderText" Text="Поиск стримов..."
+                                    Foreground="#6A8294"
                                     FontWeight="Bold"
                                    FontSize="18"
                                    IsHitTestVisible="False"
@@ -589,9 +152,9 @@
                               VerticalAlignment="Center"
                               SelectionChanged="SortModeBox_SelectionChanged"
                               SelectedIndex="1">
-                        <ComboBoxItem Tag="watched_oldest" Content="Сначала старые просмотры"/>
-                        <ComboBoxItem Tag="watched_recent" Content="Сначала новые просмотры"/>
-                        <ComboBoxItem Tag="channel" Content="По порядку канала"/>
+                        <ComboBoxItem x:Name="SortWatchedOldestItem" Tag="watched_oldest" Content="Сначала старые просмотры"/>
+                        <ComboBoxItem x:Name="SortWatchedRecentItem" Tag="watched_recent" Content="Сначала новые просмотры"/>
+                        <ComboBoxItem x:Name="SortChannelOrderItem" Tag="channel" Content="По порядку канала"/>
                     </ComboBox>
 
                     <StackPanel Grid.Column="4"
@@ -658,6 +221,7 @@
                 <TabItem Header="Главная"/>
                 <TabItem Header="Избранное"/>
                 <TabItem Header="Профиль"/>
+                <TabItem Header="Задания"/>
                 <TabItem Header="Настройки"/>
             </TabControl>
 
@@ -682,7 +246,11 @@
                         BorderBrush="#5F8099"
                         BorderThickness="1">
                     <StackPanel>
-                        <TextBlock Text="Обзор главной" Foreground="#EDF7FF" FontSize="22" FontWeight="Bold"/>
+                        <TextBlock x:Name="HomeOverviewHeaderText"
+                                   Text="Обзор главной"
+                                   Foreground="#EDF7FF"
+                                   FontSize="22"
+                                   FontWeight="Bold"/>
                         <TextBlock x:Name="HomeStatsText"
                                    Foreground="#D5E6F3"
                                    FontSize="17"
@@ -786,7 +354,12 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
-                        <TextBlock Grid.Row="0" Text="Рекомендации" Foreground="#EDF7FF" FontWeight="Bold" FontSize="24"/>
+                        <TextBlock x:Name="RecommendationsHeaderText"
+                                   Grid.Row="0"
+                                   Text="Рекомендации"
+                                   Foreground="#EDF7FF"
+                                   FontWeight="Bold"
+                                   FontSize="24"/>
                         <ListBox x:Name="RecommendationsList"
                                  Grid.Row="1"
                                   Margin="0,8,0,0"
@@ -858,7 +431,7 @@
 
                     <Border Grid.Row="0" Background="#2A3D4E" BorderBrush="#6887A0" BorderThickness="1" CornerRadius="14" Padding="12">
                         <StackPanel>
-                            <TextBlock Text="Профиль" Foreground="#EDF7FF" FontWeight="Bold" FontSize="28"/>
+                            <TextBlock x:Name="ProfileHeaderText" Text="Профиль" Foreground="#EDF7FF" FontWeight="Bold" FontSize="28"/>
                             <Grid Margin="0,8,0,0" HorizontalAlignment="Left">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
@@ -890,13 +463,28 @@
                                 </StackPanel>
                             </Grid>
                             <ProgressBar x:Name="ProfileXpProgress" Margin="0,10,0,0" Height="22" Minimum="0"/>
-                            <Button x:Name="PrestigeButton"
-                                    Style="{StaticResource PrestigeButtonStyle}"
-                                    Margin="0,10,0,0"
-                                    Width="190"
-                                    Height="44"
-                                    Content="Престиж"
-                                    Click="PrestigeButton_Click"/>
+                            <Grid Margin="0,10,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="190"/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition Width="210"/>
+                                </Grid.ColumnDefinitions>
+                                <Button x:Name="PrestigeButton"
+                                        Grid.Column="0"
+                                        Style="{StaticResource PrestigeButtonStyle}"
+                                        Width="190"
+                                        Height="44"
+                                        Content="Престиж"
+                                        Click="PrestigeButton_Click"/>
+                                <Button x:Name="OpenQuestsButton"
+                                        Grid.Column="2"
+                                        Background="#356F8E"
+                                        Foreground="#F2FAFF"
+                                        Width="210"
+                                        Height="44"
+                                        Content="Открыть задания"
+                                        Click="OpenQuestsButton_Click"/>
+                            </Grid>
                         </StackPanel>
                     </Border>
 
@@ -913,7 +501,7 @@
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
-                                <TextBlock Text="Достижения" Foreground="#EDF7FF" FontWeight="Bold" FontSize="26"/>
+                                <TextBlock x:Name="AchievementsHeaderText" Text="Достижения" Foreground="#EDF7FF" FontWeight="Bold" FontSize="26"/>
                                 <ListBox x:Name="AchievementsList"
                                           Grid.Row="1"
                                           Margin="0,10,0,0"
@@ -981,9 +569,13 @@
 
                         <Border Grid.Column="2" Background="#2A3D4E" BorderBrush="#6887A0" BorderThickness="1" CornerRadius="14" Padding="12">
                             <StackPanel>
-                                <TextBlock Text="Последние просмотренные" Foreground="#EDF7FF" FontWeight="Bold" FontSize="26"/>
+                                <TextBlock x:Name="RecentStreamsHeaderText"
+                                           Text="Последние просмотренные"
+                                           Foreground="#EDF7FF"
+                                           FontWeight="Bold"
+                                           FontSize="22"/>
                                 <ListBox x:Name="RecentStreamsList"
-                                         Margin="0,10,0,0"
+                                         Margin="0,8,0,0"
                                          Background="Transparent"
                                          BorderThickness="0"
                                          Foreground="#EAD0BF"
@@ -1038,6 +630,154 @@
                 </Grid>
             </Border>
 
+            <Border x:Name="QuestsPanel"
+                    Grid.Row="4"
+                    Grid.RowSpan="3"
+                    Padding="14"
+                    CornerRadius="18"
+                    Background="#213241"
+                    BorderBrush="#5F8099"
+                    BorderThickness="1"
+                    Visibility="Collapsed">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="8"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="8"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="12"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock x:Name="QuestsPageHeaderText"
+                               Grid.Row="0"
+                               Text="Задания"
+                               Foreground="#EDF7FF"
+                               FontSize="30"
+                               FontWeight="Bold"/>
+                    <TextBlock x:Name="QuestsSummaryText"
+                               Grid.Row="4"
+                               Foreground="#CDE2F0"
+                               FontSize="15"
+                               TextWrapping="Wrap"/>
+
+                    <Button x:Name="BackToProfileButton"
+                            Grid.Row="2"
+                            Width="190"
+                            Height="40"
+                            HorizontalAlignment="Left"
+                            Content="Назад в профиль"
+                            Click="BackToProfileButton_Click"/>
+
+                    <Grid Grid.Row="6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="14"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Border Grid.Column="0" Background="#2A3D4E" BorderBrush="#6887A0" BorderThickness="1" CornerRadius="14" Padding="12">
+                            <StackPanel>
+                                <TextBlock x:Name="QuestsDailyHeaderText" Text="Ежедневные задания" Foreground="#EDF7FF" FontWeight="Bold" FontSize="24"/>
+                                <TextBlock x:Name="QuestsDailyResetText"
+                                           Margin="0,4,0,0"
+                                           Text="Обновление через: --:--:--"
+                                           Foreground="#A8D8F2"
+                                           FontSize="13"
+                                           FontWeight="SemiBold"/>
+                                <ListBox x:Name="QuestsDailyList"
+                                         Margin="0,10,0,0"
+                                         Background="Transparent"
+                                         BorderThickness="0"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                         ItemContainerStyle="{StaticResource QuestItemStyle}">
+                                    <ListBox.Resources>
+                                        <Style TargetType="ScrollBar" BasedOn="{StaticResource UnifiedScrollBarStyle}"/>
+                                    </ListBox.Resources>
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="24"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding StatusGlyph}" Foreground="{Binding StatusColor}" FontSize="16" VerticalAlignment="Top"/>
+                                                <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                                                    <TextBlock Text="{Binding Title}" Foreground="#F4FBFF" FontWeight="Bold" FontSize="16"/>
+                                                    <TextBlock Text="{Binding Description}" Foreground="#D3E6F3" FontSize="13" TextWrapping="Wrap"/>
+                                                    <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusColor}" FontSize="13" FontWeight="SemiBold" Margin="0,2,0,0"/>
+                                                    <TextBlock Text="{Binding ProgressText}" Foreground="#A9D8F3" FontSize="13" Margin="0,2,0,0"/>
+                                                    <TextBlock Text="{Binding RewardText}" Foreground="#9CE6B7" FontSize="13"/>
+                                                    <Button Margin="0,6,0,0"
+                                                            Height="32"
+                                                            HorizontalAlignment="Left"
+                                                            Style="{StaticResource ClaimQuestButtonStyle}"
+                                                            Content="{Binding ClaimButtonText}"
+                                                            Tag="{Binding ClaimKey}"
+                                                            IsEnabled="{Binding IsClaimEnabled}"
+                                                            Click="ClaimQuestButton_Click"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Column="2" Background="#2A3D4E" BorderBrush="#6887A0" BorderThickness="1" CornerRadius="14" Padding="12">
+                            <StackPanel>
+                                <TextBlock x:Name="QuestsWeeklyHeaderText" Text="Еженедельные задания" Foreground="#EDF7FF" FontWeight="Bold" FontSize="24"/>
+                                <TextBlock x:Name="QuestsWeeklyResetText"
+                                           Margin="0,4,0,0"
+                                           Text="Обновление через: --:--:--"
+                                           Foreground="#A8D8F2"
+                                           FontSize="13"
+                                           FontWeight="SemiBold"/>
+                                <ListBox x:Name="QuestsWeeklyList"
+                                         Margin="0,10,0,0"
+                                         Background="Transparent"
+                                         BorderThickness="0"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                         ItemContainerStyle="{StaticResource QuestItemStyle}">
+                                    <ListBox.Resources>
+                                        <Style TargetType="ScrollBar" BasedOn="{StaticResource UnifiedScrollBarStyle}"/>
+                                    </ListBox.Resources>
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="24"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding StatusGlyph}" Foreground="{Binding StatusColor}" FontSize="16" VerticalAlignment="Top"/>
+                                                <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                                                    <TextBlock Text="{Binding Title}" Foreground="#F4FBFF" FontWeight="Bold" FontSize="16"/>
+                                                    <TextBlock Text="{Binding Description}" Foreground="#D3E6F3" FontSize="13" TextWrapping="Wrap"/>
+                                                    <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusColor}" FontSize="13" FontWeight="SemiBold" Margin="0,2,0,0"/>
+                                                    <TextBlock Text="{Binding ProgressText}" Foreground="#A9D8F3" FontSize="13" Margin="0,2,0,0"/>
+                                                    <TextBlock Text="{Binding RewardText}" Foreground="#9CE6B7" FontSize="13"/>
+                                                    <Button Margin="0,6,0,0"
+                                                            Height="32"
+                                                            HorizontalAlignment="Left"
+                                                            Style="{StaticResource ClaimQuestButtonStyle}"
+                                                            Content="{Binding ClaimButtonText}"
+                                                            Tag="{Binding ClaimKey}"
+                                                            IsEnabled="{Binding IsClaimEnabled}"
+                                                            Click="ClaimQuestButton_Click"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Grid>
+            </Border>
+
             <Border x:Name="SettingsPanel"
                     Grid.Row="4"
                     Grid.RowSpan="3"
@@ -1054,29 +794,365 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock Grid.Row="0"
+                    <TextBlock x:Name="SettingsHeaderText"
+                               Grid.Row="0"
                                Text="Настройки"
                                Foreground="#EDF7FF"
                                FontSize="30"
                                FontWeight="Bold"/>
 
                     <Border Grid.Row="2"
-                            CornerRadius="14"
-                            Background="#2A3D4E"
+                            CornerRadius="18"
                             BorderBrush="#6887A0"
                             BorderThickness="1"
-                            Padding="14">
-                        <StackPanel>
-                            <TextBlock Text="Раздел в разработке"
+                            Padding="18">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Color="#2A3D4E" Offset="0"/>
+                                <GradientStop Color="#334C5F" Offset="0.55"/>
+                                <GradientStop Color="#274457" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Border.Background>
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="16"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock x:Name="SettingsSubtitleText"
+                                       Grid.Row="0"
+                                       Text="MVP настройки v1.2.0"
                                        Foreground="#F2FAFF"
                                        FontSize="22"
                                        FontWeight="Bold"/>
-                            <TextBlock Margin="0,8,0,0"
-                                       Text="Здесь появятся параметры приложения: автозапуск, язык, масштаб интерфейса, поведение fullscreen и сброс кеша."
-                                       Foreground="#CFE3F1"
-                                       FontSize="17"
-                                       TextWrapping="Wrap"/>
-                        </StackPanel>
+
+                            <Grid Grid.Row="2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="420"/>
+                                    <ColumnDefinition Width="24"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <Border Grid.Column="0"
+                                        CornerRadius="14"
+                                        BorderBrush="#7EA5BF"
+                                        BorderThickness="1"
+                                        Padding="14"
+                                        Background="#223746">
+                                    <StackPanel>
+                                    <TextBlock x:Name="AutoStartLabelText"
+                                               Text="Автозапуск"
+                                               Foreground="#EDF7FF"
+                                               FontSize="16"
+                                               FontWeight="SemiBold"/>
+                                    <CheckBox x:Name="AutoStartCheckBox"
+                                              Margin="0,8,0,0"
+                                              Foreground="#D8EAF8"
+                                              FontSize="16"
+                                              Content="Запускать вместе с Windows"
+                                              Checked="AutoStartCheckBox_Changed"
+                                              Unchecked="AutoStartCheckBox_Changed"/>
+
+                                    <TextBlock x:Name="LanguageLabelText"
+                                               Margin="0,16,0,0"
+                                               Text="Язык"
+                                               Foreground="#EDF7FF"
+                                               FontSize="16"
+                                               FontWeight="SemiBold"/>
+                                    <ComboBox x:Name="LanguageComboBox"
+                                              Margin="0,8,0,0"
+                                              SelectionChanged="LanguageComboBox_SelectionChanged">
+                                        <ComboBoxItem Tag="ru" Content="Русский"/>
+                                        <ComboBoxItem Tag="en" Content="English"/>
+                                    </ComboBox>
+
+                                    <TextBlock x:Name="UiScaleLabelText"
+                                               Margin="0,16,0,0"
+                                               Text="Масштаб UI"
+                                               Foreground="#EDF7FF"
+                                               FontSize="16"
+                                               FontWeight="SemiBold"/>
+                                     <Grid Margin="0,8,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="70"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Slider x:Name="UiScaleSlider"
+                                                Minimum="0.85"
+                                                Maximum="1.35"
+                                                TickFrequency="0.05"
+                                                IsSnapToTickEnabled="True"
+                                                ValueChanged="UiScaleSlider_ValueChanged"/>
+                                         <TextBlock x:Name="UiScaleValueText"
+                                                    Grid.Column="1"
+                                                    Margin="8,0,0,0"
+                                                    Foreground="#D8EAF8"
+                                                    FontSize="16"
+                                                    FontWeight="Bold"
+                                                    VerticalAlignment="Center"
+                                                    TextAlignment="Right"
+                                                    Text="1.00x"/>
+                                     </Grid>
+                                     <CheckBox x:Name="AnimationsEnabledCheckBox"
+                                               Margin="0,14,0,0"
+                                               Foreground="#D8EAF8"
+                                               FontSize="16"
+                                               Content="Плавные анимации интерфейса"
+                                               Checked="AnimationsEnabledCheckBox_Changed"
+                                               Unchecked="AnimationsEnabledCheckBox_Changed"/>
+                                     </StackPanel>
+                                 </Border>
+
+                                <Border Grid.Column="2"
+                                        CornerRadius="14"
+                                        BorderBrush="#7EA5BF"
+                                        BorderThickness="1"
+                                        Padding="14"
+                                        Background="#223746">
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                                  HorizontalScrollBarVisibility="Disabled">
+                                    <StackPanel>
+                                    <TextBlock x:Name="FullscreenBehaviorLabelText"
+                                               Text="Fullscreen поведение"
+                                               Foreground="#EDF7FF"
+                                               FontSize="16"
+                                               FontWeight="SemiBold"/>
+                                    <ComboBox x:Name="FullscreenBehaviorComboBox"
+                                              Margin="0,8,0,0"
+                                              SelectionChanged="FullscreenBehaviorComboBox_SelectionChanged">
+                                        <ComboBoxItem Tag="auto" Content="Авто: окно следует fullscreen плеера"/>
+                                        <ComboBoxItem Tag="windowed" Content="Оставаться в оконном режиме"/>
+                                    </ComboBox>
+                                    <TextBlock x:Name="FullscreenBehaviorDescriptionText"
+                                               Margin="0,8,0,0"
+                                               Text="Auto: при fullscreen в YouTube окно плеера тоже развернется. Windowed: окно остается обычным."
+                                               Foreground="#BFD9EA"
+                                               FontSize="13"
+                                               TextWrapping="Wrap"/>
+
+                                    <TextBlock x:Name="CacheLabelText"
+                                               Margin="0,16,0,0"
+                                               Text="Кеш"
+                                               Foreground="#EDF7FF"
+                                               FontSize="16"
+                                               FontWeight="SemiBold"/>
+                                    <TextBlock x:Name="CacheDescriptionText"
+                                               Margin="0,8,0,0"
+                                               Text="Очищает WebView2 профиль (YouTube данные) и локальные временные обновления."
+                                               Foreground="#CFE3F1"
+                                               FontSize="15"
+                                               TextWrapping="Wrap"/>
+                                    <Button x:Name="ResetCacheButton"
+                                            Margin="0,12,0,0"
+                                            Width="260"
+                                            Height="42"
+                                            Content="Сбросить кеш"
+                                            Click="ResetCacheButton_Click"/>
+
+                                    <Border Margin="0,18,0,0"
+                                            Padding="12"
+                                            CornerRadius="12"
+                                            BorderBrush="#8EB5CD"
+                                            BorderThickness="1"
+                                            Background="#2A4457">
+                                        <StackPanel>
+                                            <TextBlock x:Name="BindsSectionTitleText"
+                                                       Text="Бинды плеера"
+                                                       Foreground="#F2FBFF"
+                                                       FontSize="17"
+                                                       FontWeight="Bold"/>
+                                            <TextBlock x:Name="BindsSectionDescriptionText"
+                                                       Margin="0,4,0,0"
+                                                       Text="Настройка клавиш для панели эффектов и саунд-эффектов."
+                                                       Foreground="#C9E2F2"
+                                                       FontSize="13"
+                                                       TextWrapping="Wrap"/>
+
+                                            <TextBlock x:Name="BindCaptureHelpText"
+                                                       Margin="0,10,0,0"
+                                                       Text="Нажмите «Назначить», затем любую клавишу. Esc — отмена."
+                                                       Foreground="#A8D4EC"
+                                                       FontSize="12"
+                                                       TextWrapping="Wrap"/>
+                                            <TextBlock x:Name="BindCaptureStatusText"
+                                                       Margin="0,6,0,0"
+                                                       Text=""
+                                                       Foreground="#F4D89B"
+                                                       FontSize="12"
+                                                       TextWrapping="Wrap"/>
+
+                                            <Grid Margin="0,10,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="100"/>
+                                                    <ColumnDefinition Width="126"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock x:Name="HideEffectsBindLabelText"
+                                                           Text="Скрыть/показать эффекты"
+                                                           Foreground="#EDF7FF"
+                                                           FontSize="15"
+                                                           VerticalAlignment="Center"/>
+                                                <Border Grid.Column="1"
+                                                        Margin="8,0,8,0"
+                                                        Padding="8,4"
+                                                        CornerRadius="10"
+                                                        BorderBrush="#85B3CC"
+                                                        BorderThickness="1"
+                                                        Background="#20394A">
+                                                    <TextBlock x:Name="HideEffectsPanelBindValueText"
+                                                               Text="H"
+                                                               Foreground="#F3FBFF"
+                                                               FontWeight="Bold"
+                                                               FontSize="14"
+                                                               HorizontalAlignment="Center"/>
+                                                </Border>
+                                                <Button x:Name="AssignHideEffectsBindButton"
+                                                        Grid.Column="2"
+                                                        Padding="10,6"
+                                                        Content="Назначить"
+                                                        Tag="hide_effects"
+                                                        Click="AssignBindButton_Click"/>
+                                            </Grid>
+
+                                            <Grid Margin="0,8,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="100"/>
+                                                    <ColumnDefinition Width="126"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock x:Name="AuraFarmBindLabelText"
+                                                           Text="Aura Farm Sound"
+                                                           Foreground="#EDF7FF"
+                                                           FontSize="15"
+                                                           VerticalAlignment="Center"/>
+                                                <Border Grid.Column="1"
+                                                        Margin="8,0,8,0"
+                                                        Padding="8,4"
+                                                        CornerRadius="10"
+                                                        BorderBrush="#85B3CC"
+                                                        BorderThickness="1"
+                                                        Background="#20394A">
+                                                    <TextBlock x:Name="AuraFarmBindValueText"
+                                                               Text="Y"
+                                                               Foreground="#F3FBFF"
+                                                               FontWeight="Bold"
+                                                               FontSize="14"
+                                                               HorizontalAlignment="Center"/>
+                                                </Border>
+                                                <Button x:Name="AssignAuraFarmBindButton"
+                                                        Grid.Column="2"
+                                                        Padding="10,6"
+                                                        Content="Назначить"
+                                                        Tag="aura_farm"
+                                                        Click="AssignBindButton_Click"/>
+                                            </Grid>
+
+                                            <Grid Margin="0,8,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="100"/>
+                                                    <ColumnDefinition Width="126"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock x:Name="LaughBindLabelText"
+                                                           Text="Laugh Sound"
+                                                           Foreground="#EDF7FF"
+                                                           FontSize="15"
+                                                           VerticalAlignment="Center"/>
+                                                <Border Grid.Column="1"
+                                                        Margin="8,0,8,0"
+                                                        Padding="8,4"
+                                                        CornerRadius="10"
+                                                        BorderBrush="#85B3CC"
+                                                        BorderThickness="1"
+                                                        Background="#20394A">
+                                                    <TextBlock x:Name="LaughBindValueText"
+                                                               Text="U"
+                                                               Foreground="#F3FBFF"
+                                                               FontWeight="Bold"
+                                                               FontSize="14"
+                                                               HorizontalAlignment="Center"/>
+                                                </Border>
+                                                <Button x:Name="AssignLaughBindButton"
+                                                        Grid.Column="2"
+                                                        Padding="10,6"
+                                                        Content="Назначить"
+                                                        Tag="laugh"
+                                                        Click="AssignBindButton_Click"/>
+                                            </Grid>
+
+                                            <Grid Margin="0,8,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="100"/>
+                                                    <ColumnDefinition Width="126"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock x:Name="PsiBindLabelText"
+                                                           Text="Psi Radiation Sound"
+                                                           Foreground="#EDF7FF"
+                                                           FontSize="15"
+                                                           VerticalAlignment="Center"/>
+                                                <Border Grid.Column="1"
+                                                        Margin="8,0,8,0"
+                                                        Padding="8,4"
+                                                        CornerRadius="10"
+                                                        BorderBrush="#85B3CC"
+                                                        BorderThickness="1"
+                                                        Background="#20394A">
+                                                    <TextBlock x:Name="PsiBindValueText"
+                                                               Text="I"
+                                                               Foreground="#F3FBFF"
+                                                               FontWeight="Bold"
+                                                               FontSize="14"
+                                                               HorizontalAlignment="Center"/>
+                                                </Border>
+                                                <Button x:Name="AssignPsiBindButton"
+                                                        Grid.Column="2"
+                                                        Padding="10,6"
+                                                        Content="Назначить"
+                                                        Tag="psi"
+                                                        Click="AssignBindButton_Click"/>
+                                            </Grid>
+
+                                            <Grid Margin="0,8,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="100"/>
+                                                    <ColumnDefinition Width="126"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock x:Name="RespectBindLabelText"
+                                                           Text="+Respect Sound"
+                                                           Foreground="#EDF7FF"
+                                                           FontSize="15"
+                                                           VerticalAlignment="Center"/>
+                                                <Border Grid.Column="1"
+                                                        Margin="8,0,8,0"
+                                                        Padding="8,4"
+                                                        CornerRadius="10"
+                                                        BorderBrush="#85B3CC"
+                                                        BorderThickness="1"
+                                                        Background="#20394A">
+                                                    <TextBlock x:Name="RespectBindValueText"
+                                                               Text="O"
+                                                               Foreground="#F3FBFF"
+                                                               FontWeight="Bold"
+                                                               FontSize="14"
+                                                               HorizontalAlignment="Center"/>
+                                                </Border>
+                                                <Button x:Name="AssignRespectBindButton"
+                                                        Grid.Column="2"
+                                                        Padding="10,6"
+                                                        Content="Назначить"
+                                                        Tag="respect"
+                                                        Click="AssignBindButton_Click"/>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+                                    </StackPanel>
+                                    </ScrollViewer>
+                                </Border>
+                            </Grid>
+                        </Grid>
                     </Border>
                 </Grid>
             </Border>
@@ -1086,49 +1162,62 @@
             <Grid x:Name="LoadingOverlay"
                   Grid.RowSpan="9"
                   Panel.ZIndex="1000"
-                  Background="#40131B22">
+                  Background="#0B141D">
                 <Image x:Name="LoadingBackgroundImage"
-                       Stretch="UniformToFill"
+                        Stretch="UniformToFill"
                        Opacity="1.0"/>
-                <Border Background="#4A131B22"/>
-                <Border Width="560"
-                        Padding="28"
-                        CornerRadius="20"
-                        Background="#223747"
-                        BorderBrush="#6E91A9"
-                        BorderThickness="1.2"
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Center">
-                    <StackPanel>
-                        <TextBlock Text="JokerDBD Tracker"
-                                   Foreground="#EDF7FF"
-                                   FontSize="34"
-                                   FontWeight="ExtraBold"
-                                   HorizontalAlignment="Center"/>
-                        <TextBlock Text="Загрузка приложения"
-                                   Margin="0,8,0,0"
-                                   Foreground="#D1E3F2"
-                                   FontSize="20"
-                                   FontWeight="Bold"
-                                   HorizontalAlignment="Center"/>
-                         <TextBlock x:Name="LoadingStatusText"
-                                    Margin="0,12,0,0"
-                                    Foreground="#BED6E7"
-                                    FontSize="16"
-                                    TextAlignment="Center"
-                                    TextWrapping="Wrap"
-                                    Text=""/>
-                        <ProgressBar Margin="0,18,0,0"
-                                     x:Name="LoadingProgressBar"
-                                     Height="18"
-                                     IsIndeterminate="True"/>
-                        <TextBlock x:Name="LoadingProgressText"
-                                   Margin="0,8,0,0"
-                                   Foreground="#C9DEED"
-                                   FontSize="14"
-                                   TextAlignment="Center"/>
-                    </StackPanel>
-                </Border>
+                <Grid HorizontalAlignment="Center"
+                      VerticalAlignment="Center"
+                      Width="820">
+                    <Border Padding="22,18"
+                            CornerRadius="18"
+                            BorderBrush="#88D0EAFF"
+                            BorderThickness="1"
+                            Background="#87202A34">
+                        <StackPanel>
+                            <TextBlock Text="JokerDBD Tracker"
+                                       Foreground="#F8FCFF"
+                                       FontSize="58"
+                                       FontWeight="Black"
+                                       TextOptions.TextFormattingMode="Display"
+                                       HorizontalAlignment="Center"
+                                       TextAlignment="Center">
+                                <TextBlock.Effect>
+                                    <DropShadowEffect BlurRadius="5" ShadowDepth="0" Color="#0C151E" Opacity="1"/>
+                                </TextBlock.Effect>
+                            </TextBlock>
+                            <TextBlock x:Name="LoadingTitleText"
+                                       Text="Загрузка приложения"
+                                       Margin="0,8,0,0"
+                                       Foreground="#E8F4FC"
+                                       FontSize="30"
+                                       FontWeight="Bold"
+                                       HorizontalAlignment="Center"
+                                       TextAlignment="Center">
+                                <TextBlock.Effect>
+                                    <DropShadowEffect BlurRadius="4" ShadowDepth="0" Color="#0E1A25" Opacity="1"/>
+                                </TextBlock.Effect>
+                            </TextBlock>
+                            <TextBlock x:Name="LoadingStatusText"
+                                       Margin="0,14,0,0"
+                                       Foreground="#EEF8FF"
+                                       FontSize="20"
+                                       FontWeight="Bold"
+                                       TextAlignment="Center"
+                                       TextWrapping="Wrap"/>
+                            <ProgressBar Margin="0,18,0,0"
+                                         x:Name="LoadingProgressBar"
+                                         Height="18"
+                                         IsIndeterminate="True"/>
+                            <TextBlock x:Name="LoadingProgressText"
+                                       Margin="0,10,0,0"
+                                       Foreground="#DDF1FF"
+                                       FontSize="16"
+                                       FontWeight="SemiBold"
+                                       TextAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
             </Grid>
         </Grid>
     </Border>
