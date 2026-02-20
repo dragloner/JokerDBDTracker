@@ -58,7 +58,6 @@ namespace JokerDBDTracker
 
             var nextState = checkBox.IsChecked != true;
             checkBox.IsChecked = nextState;
-            PlayBindToggleSound(nextState);
             return true;
         }
 
@@ -117,25 +116,6 @@ namespace JokerDBDTracker
             }
 
             return fallback;
-        }
-
-        private static void PlayBindToggleSound(bool enabled)
-        {
-            try
-            {
-                if (enabled)
-                {
-                    SystemSounds.Asterisk.Play();
-                }
-                else
-                {
-                    SystemSounds.Beep.Play();
-                }
-            }
-            catch
-            {
-                // Sound feedback is optional.
-            }
         }
 
         private void PlaySoundEffect(SoundEffectKind kind)
