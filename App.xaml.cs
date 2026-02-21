@@ -11,9 +11,23 @@ public partial class App : Application
 {
     public App()
     {
+        InitializeDiagnosticsFromSettings();
         DispatcherUnhandledException += App_DispatcherUnhandledException;
         AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
         TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
+    }
+
+    private static void InitializeDiagnosticsFromSettings()
+    {
+        try
+        {
+            var settings = new AppSettingsService().LoadAsync().GetAwaiter().GetResult();
+            DiagnosticsService.SetEnabled(settings.LoggingEnabled);
+        }
+        catch
+        {
+            DiagnosticsService.SetEnabled(true);
+        }
     }
 
     private void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
@@ -44,10 +58,13 @@ public partial class App : Application
     {
         try
         {
+            var logInfo = DiagnosticsService.IsEnabled()
+                ? $"Log: {DiagnosticsService.GetLogFilePath()}"
+                : "Logging is currently disabled in Settings.";
             MessageBox.Show(
                 $"An unexpected error was handled and the app continued running.{Environment.NewLine}" +
                 $"Details: {reason}{Environment.NewLine}" +
-                $"Log: {DiagnosticsService.GetLogFilePath()}",
+                logInfo,
                 "JokerDBD Tracker",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);

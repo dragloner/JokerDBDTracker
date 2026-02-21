@@ -286,14 +286,15 @@ namespace JokerDBDTracker
         {
             if (BindsHintText is not null)
             {
+                var effects = BuildEffectBindHintText();
                 var hide = FormatBindLabel(_appSettings.HideEffectsPanelBind);
                 var aura = FormatBindLabel(_appSettings.AuraFarmSoundBind);
                 var laugh = FormatBindLabel(_appSettings.LaughSoundBind);
                 var psi = FormatBindLabel(_appSettings.PsiSoundBind);
                 var respect = FormatBindLabel(_appSettings.RespectSoundBind);
                 BindsHintText.Text = PT(
-                    $"Бинды: 1-0 / F1-F10 = эффекты 1-10, Q-T / F11-F12 + ZXC = 11-15. Панель: {hide}. Звуки: Aura {aura}, Смех {laugh}, Пси {psi}, +Respect {respect}.",
-                    $"Binds: 1-0 / F1-F10 = effects 1-10, Q-T / F11-F12 + ZXC = 11-15. Panel: {hide}. Sounds: Aura {aura}, Laugh {laugh}, Psi {psi}, +Respect {respect}.");
+                    $"Эффекты: {effects}. Панель: {hide}. Звуки: Aura {aura}, Смех {laugh}, Пси {psi}, +Respect {respect}.",
+                    $"Effects: {effects}. Panel: {hide}. Sounds: Aura {aura}, Laugh {laugh}, Psi {psi}, +Respect {respect}.");
             }
 
             if (AuraFarmSoundButton is not null)
@@ -342,27 +343,185 @@ namespace JokerDBDTracker
 
         private bool TryResolveEffectByKey(Key key, out CheckBox checkBox)
         {
-            checkBox = key switch
+            if (IsConfiguredEffectKeyMatch(key, _appSettings.Effect1Bind, Key.D1))
             {
-                Key.D1 or Key.NumPad1 or Key.F1 => Fx1,
-                Key.D2 or Key.NumPad2 or Key.F2 => Fx2,
-                Key.D3 or Key.NumPad3 or Key.F3 => Fx3,
-                Key.D4 or Key.NumPad4 or Key.F4 => Fx4,
-                Key.D5 or Key.NumPad5 or Key.F5 => Fx5,
-                Key.D6 or Key.NumPad6 or Key.F6 => Fx6,
-                Key.D7 or Key.NumPad7 or Key.F7 => Fx7,
-                Key.D8 or Key.NumPad8 or Key.F8 => Fx8,
-                Key.D9 or Key.NumPad9 or Key.F9 => Fx9,
-                Key.D0 or Key.NumPad0 or Key.F10 => Fx10,
-                Key.Q or Key.F11 => Fx11,
-                Key.W or Key.F12 => Fx12,
-                Key.E or Key.Z => Fx13,
-                Key.R or Key.X => Fx14,
-                Key.T or Key.C => Fx15,
-                _ => null!
+                checkBox = Fx1;
+                return true;
+            }
+
+            if (IsConfiguredEffectKeyMatch(key, _appSettings.Effect2Bind, Key.D2))
+            {
+                checkBox = Fx2;
+                return true;
+            }
+
+            if (IsConfiguredEffectKeyMatch(key, _appSettings.Effect3Bind, Key.D3))
+            {
+                checkBox = Fx3;
+                return true;
+            }
+
+            if (IsConfiguredEffectKeyMatch(key, _appSettings.Effect4Bind, Key.D4))
+            {
+                checkBox = Fx4;
+                return true;
+            }
+
+            if (IsConfiguredEffectKeyMatch(key, _appSettings.Effect5Bind, Key.D5))
+            {
+                checkBox = Fx5;
+                return true;
+            }
+
+            if (IsConfiguredEffectKeyMatch(key, _appSettings.Effect6Bind, Key.D6))
+            {
+                checkBox = Fx6;
+                return true;
+            }
+
+            if (IsConfiguredEffectKeyMatch(key, _appSettings.Effect7Bind, Key.D7))
+            {
+                checkBox = Fx7;
+                return true;
+            }
+
+            if (IsConfiguredEffectKeyMatch(key, _appSettings.Effect8Bind, Key.D8))
+            {
+                checkBox = Fx8;
+                return true;
+            }
+
+            if (IsConfiguredEffectKeyMatch(key, _appSettings.Effect9Bind, Key.D9))
+            {
+                checkBox = Fx9;
+                return true;
+            }
+
+            if (IsConfiguredEffectKeyMatch(key, _appSettings.Effect10Bind, Key.D0))
+            {
+                checkBox = Fx10;
+                return true;
+            }
+
+            if (IsConfiguredEffectKeyMatch(key, _appSettings.Effect11Bind, Key.Q))
+            {
+                checkBox = Fx11;
+                return true;
+            }
+
+            if (IsConfiguredEffectKeyMatch(key, _appSettings.Effect12Bind, Key.W))
+            {
+                checkBox = Fx12;
+                return true;
+            }
+
+            if (IsConfiguredEffectKeyMatch(key, _appSettings.Effect13Bind, Key.E))
+            {
+                checkBox = Fx13;
+                return true;
+            }
+
+            if (IsConfiguredEffectKeyMatch(key, _appSettings.Effect14Bind, Key.R))
+            {
+                checkBox = Fx14;
+                return true;
+            }
+
+            if (IsConfiguredEffectKeyMatch(key, _appSettings.Effect15Bind, Key.T))
+            {
+                checkBox = Fx15;
+                return true;
+            }
+
+            checkBox = null!;
+            return false;
+        }
+
+        private string BuildEffectBindHintText()
+        {
+            var tokens = new[]
+            {
+                $"1={FormatBindLabel(_appSettings.Effect1Bind)}",
+                $"2={FormatBindLabel(_appSettings.Effect2Bind)}",
+                $"3={FormatBindLabel(_appSettings.Effect3Bind)}",
+                $"4={FormatBindLabel(_appSettings.Effect4Bind)}",
+                $"5={FormatBindLabel(_appSettings.Effect5Bind)}",
+                $"6={FormatBindLabel(_appSettings.Effect6Bind)}",
+                $"7={FormatBindLabel(_appSettings.Effect7Bind)}",
+                $"8={FormatBindLabel(_appSettings.Effect8Bind)}",
+                $"9={FormatBindLabel(_appSettings.Effect9Bind)}",
+                $"10={FormatBindLabel(_appSettings.Effect10Bind)}",
+                $"11={FormatBindLabel(_appSettings.Effect11Bind)}",
+                $"12={FormatBindLabel(_appSettings.Effect12Bind)}",
+                $"13={FormatBindLabel(_appSettings.Effect13Bind)}",
+                $"14={FormatBindLabel(_appSettings.Effect14Bind)}",
+                $"15={FormatBindLabel(_appSettings.Effect15Bind)}"
             };
 
-            return checkBox is not null;
+            return string.Join(", ", tokens);
+        }
+
+        private static bool IsConfiguredEffectKeyMatch(Key pressedKey, string configuredBind, Key fallback)
+        {
+            var configuredKey = ReadConfiguredKey(configuredBind, fallback);
+            if (pressedKey == configuredKey)
+            {
+                return true;
+            }
+
+            return TryGetDigitValue(pressedKey, out var pressedDigit) &&
+                   TryGetDigitValue(configuredKey, out var configuredDigit) &&
+                   pressedDigit == configuredDigit;
+        }
+
+        private static bool TryGetDigitValue(Key key, out int value)
+        {
+            switch (key)
+            {
+                case Key.D0:
+                case Key.NumPad0:
+                    value = 0;
+                    return true;
+                case Key.D1:
+                case Key.NumPad1:
+                    value = 1;
+                    return true;
+                case Key.D2:
+                case Key.NumPad2:
+                    value = 2;
+                    return true;
+                case Key.D3:
+                case Key.NumPad3:
+                    value = 3;
+                    return true;
+                case Key.D4:
+                case Key.NumPad4:
+                    value = 4;
+                    return true;
+                case Key.D5:
+                case Key.NumPad5:
+                    value = 5;
+                    return true;
+                case Key.D6:
+                case Key.NumPad6:
+                    value = 6;
+                    return true;
+                case Key.D7:
+                case Key.NumPad7:
+                    value = 7;
+                    return true;
+                case Key.D8:
+                case Key.NumPad8:
+                    value = 8;
+                    return true;
+                case Key.D9:
+                case Key.NumPad9:
+                    value = 9;
+                    return true;
+                default:
+                    value = -1;
+                    return false;
+            }
         }
 
         private void AuraFarmSoundButton_Click(object sender, RoutedEventArgs e)

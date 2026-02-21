@@ -1,60 +1,60 @@
-﻿# JokerDBDTracker
+# JokerDBDTracker
 
-Desktop WPF tracker for JokerDBD streams with built-in player, progress system, quests, XP, prestige, and visual/audio effects.
+Жёсткий настольный WPF-трекер для стримов JokerDBD: смотришь, качаешь профиль, жмякаешь эффекты, кайфуешь без лишней херни и бюрократической блевотины.
 
-Current stable release: `v1.2.0.1`
+Текущая стабильная версия: `v1.2.1`
 
-## Highlights
+## Что внутри
 
-- Unified stream catalog with favorites and watched state.
-- Embedded YouTube player with immersive mode and effect panel.
-- Profile progression: XP, levels, prestige, achievements.
-- Daily and weekly quests with claimable rewards.
-- RU/EN localization.
-- Settings MVP:
-  - language
-  - startup behavior
-  - UI scale
-  - fullscreen behavior
-  - cache reset
+- Каталог стримов с избранным и отметкой просмотра.
+- Встроенный YouTube-плеер с полноэкраном и панелью эффектов.
+- XP, уровни, престиж, ачивки.
+- Дейлики и виклики с наградами.
+- Локализация `RU/EN`.
+- Настройки: язык, автозапуск, масштаб UI, поведение fullscreen, анимации, сброс кэша, бинды.
 
-## Release Scope
+## Релизы
 
 ### `v1.2.0`
 
-- Core UX upgrade and UI cleanup.
-- XP economy rebalance and session bonuses.
-- Quest system expansion (daily/weekly + timers + claim flow).
-- Prestige icon set with fallback behavior.
-- Player sound effects and keybind support.
+- Большой апгрейд UX и чистка интерфейса.
+- Ребаланс XP и бонусы за активный просмотр.
+- Расширение квестов (дейлики/виклики + таймеры + получение наград).
+- Иконки престижа с фолбэками.
+- Звуковые эффекты и горячие клавиши.
 
-### `v1.2.0.1` (stability patch)
+### `v1.2.0.1` (патч стабильности)
 
-- Startup/runtime crash handling with local diagnostics logging.
-- Player reliability fixes for WebView2 startup/navigation race conditions.
-- Safer effect application pipeline under heavy key spam.
-- Better keybind handling while player is loading.
-- Sound playback fallback fixes (without Windows default error beep).
-- Fullscreen and monitor-bound behavior fixes.
-- Repository structure cleanup (removed empty dev folders).
-- Release packaging cleanup for satellite resource languages (`ru/en`).
+- Обработка крэшей и локальные диагностические логи.
+- Фиксы запуска/навигации WebView2.
+- Безопасное применение эффектов при частом спаме клавиш.
+- Фиксы полноэкрана и поведения на мониторах.
+- Чистка структуры репозитория и релизной упаковки.
 
-## Install
+### `v1.2.1` (полировка UI + оптимизация)
 
-1. Open releases: `https://github.com/dragloner/JokerDBDTracker/releases`
-2. Download latest `win-x64` build.
-3. Extract to any writable folder.
-4. Run `JokerDBDTracker.exe`.
+- Общий тумблер анимаций в настройках для интерфейса и hover-движений.
+- Ховеры переделаны: меньше мыла текста и меньше косяков с обрезкой.
+- Тексты кнопок не должны тупо откусываться.
+- Скроллы/списки настроены так, чтобы меньше лагало на главной вкладке.
+- Визуально всё стало сочнее: прозрачности, подсветки, более аккуратный интерактив.
 
-## Build From Source
+## Установка
 
-Requirements:
+1. Открываешь релизы: `https://github.com/dragloner/JokerDBDTracker/releases`
+2. Качаешь последний `win-x64` билд.
+3. Распаковываешь куда удобно.
+4. Запускаешь `JokerDBDTracker.exe` и погнал, всё просто и без ебли с настройками на старте.
+
+## Сборка из исходников
+
+Требуется:
 
 - Windows 10/11
-- .NET SDK (matching project target)
+- .NET SDK под таргет проекта
 - Microsoft Edge WebView2 Runtime
 
-Commands:
+Команды:
 
 ```powershell
 dotnet build JokerDBDTracker.sln -c Debug
@@ -62,20 +62,10 @@ dotnet build JokerDBDTracker.sln -c Release
 dotnet publish JokerDBDTracker.csproj -c Release -r win-x64
 ```
 
-Notes:
+## Планы
 
-- `bin/` and `obj/` are build artifacts and are not part of source layout.
-- Release publish is configured to keep only required satellite languages.
+Смотри `ROADMAP.md`.
 
-## Data and Logs
+## Поддержка проекта
 
-- App data: `%APPDATA%\\JokerDBDTracker`
-- Diagnostics log: `%LOCALAPPDATA%\\JokerDBDTracker\\Logs\\app.log`
-
-## Roadmap
-
-See `ROADMAP.md`.
-
-## Maintainer
-
-`dragloner`
+Если что-то сломалось или работает через одно место, кидай issue и шаги воспроизведения, чтобы починить по-быстрому, а не гадать на кофейной гуще.

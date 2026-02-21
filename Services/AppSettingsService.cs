@@ -10,12 +10,28 @@ namespace JokerDBDTracker.Services
         public string Language { get; set; } = "ru";
         public double UiScale { get; set; } = 1.0;
         public bool AnimationsEnabled { get; set; } = true;
+        public bool LoggingEnabled { get; set; } = true;
         public string FullscreenBehavior { get; set; } = "auto";
         public string HideEffectsPanelBind { get; set; } = "H";
         public string AuraFarmSoundBind { get; set; } = "Y";
         public string LaughSoundBind { get; set; } = "U";
         public string PsiSoundBind { get; set; } = "I";
         public string RespectSoundBind { get; set; } = "O";
+        public string Effect1Bind { get; set; } = "D1";
+        public string Effect2Bind { get; set; } = "D2";
+        public string Effect3Bind { get; set; } = "D3";
+        public string Effect4Bind { get; set; } = "D4";
+        public string Effect5Bind { get; set; } = "D5";
+        public string Effect6Bind { get; set; } = "D6";
+        public string Effect7Bind { get; set; } = "D7";
+        public string Effect8Bind { get; set; } = "D8";
+        public string Effect9Bind { get; set; } = "D9";
+        public string Effect10Bind { get; set; } = "D0";
+        public string Effect11Bind { get; set; } = "Q";
+        public string Effect12Bind { get; set; } = "W";
+        public string Effect13Bind { get; set; } = "E";
+        public string Effect14Bind { get; set; } = "R";
+        public string Effect15Bind { get; set; } = "T";
     }
 
     public sealed class AppSettingsService
@@ -178,6 +194,21 @@ namespace JokerDBDTracker.Services
             settings.LaughSoundBind = NormalizeBind(settings.LaughSoundBind, "U");
             settings.PsiSoundBind = NormalizeBind(settings.PsiSoundBind, "I");
             settings.RespectSoundBind = NormalizeBind(settings.RespectSoundBind, "O");
+            settings.Effect1Bind = NormalizeBind(settings.Effect1Bind, "D1");
+            settings.Effect2Bind = NormalizeBind(settings.Effect2Bind, "D2");
+            settings.Effect3Bind = NormalizeBind(settings.Effect3Bind, "D3");
+            settings.Effect4Bind = NormalizeBind(settings.Effect4Bind, "D4");
+            settings.Effect5Bind = NormalizeBind(settings.Effect5Bind, "D5");
+            settings.Effect6Bind = NormalizeBind(settings.Effect6Bind, "D6");
+            settings.Effect7Bind = NormalizeBind(settings.Effect7Bind, "D7");
+            settings.Effect8Bind = NormalizeBind(settings.Effect8Bind, "D8");
+            settings.Effect9Bind = NormalizeBind(settings.Effect9Bind, "D9");
+            settings.Effect10Bind = NormalizeBind(settings.Effect10Bind, "D0");
+            settings.Effect11Bind = NormalizeBind(settings.Effect11Bind, "Q");
+            settings.Effect12Bind = NormalizeBind(settings.Effect12Bind, "W");
+            settings.Effect13Bind = NormalizeBind(settings.Effect13Bind, "E");
+            settings.Effect14Bind = NormalizeBind(settings.Effect14Bind, "R");
+            settings.Effect15Bind = NormalizeBind(settings.Effect15Bind, "T");
 
             if (string.Equals(settings.AuraFarmSoundBind, "F1", StringComparison.OrdinalIgnoreCase) &&
                 string.Equals(settings.LaughSoundBind, "F2", StringComparison.OrdinalIgnoreCase) &&

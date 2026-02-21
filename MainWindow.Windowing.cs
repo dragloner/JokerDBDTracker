@@ -29,9 +29,12 @@ namespace JokerDBDTracker
             catch (Exception ex)
             {
                 DiagnosticsService.LogException("MainWindow_Loaded", ex);
+                var logInfo = DiagnosticsService.IsEnabled()
+                    ? $"{T("Лог ошибок:", "Error log:")} {DiagnosticsService.GetLogFilePath()}"
+                    : T("Логирование отключено в настройках.", "Logging is disabled in Settings.");
                 MessageBox.Show(
                     $"{T("Произошла ошибка инициализации приложения:", "App initialization failed:")}{Environment.NewLine}{ex.Message}{Environment.NewLine}{Environment.NewLine}" +
-                    $"{T("Лог ошибок:", "Error log:")} {DiagnosticsService.GetLogFilePath()}",
+                    logInfo,
                     T("Ошибка", "Error"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);

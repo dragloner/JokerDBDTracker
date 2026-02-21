@@ -63,6 +63,7 @@ namespace JokerDBDTracker
             LanguageLabelText.Text = T("Язык", "Language");
             UiScaleLabelText.Text = T("Масштаб UI", "UI scale");
             AnimationsEnabledCheckBox.Content = T("Плавные анимации интерфейса", "Smooth UI animations");
+            LoggingEnabledCheckBox.Content = T("Включить логирование ошибок", "Enable error logging");
             FullscreenBehaviorLabelText.Text = T("Поведение fullscreen", "Fullscreen behavior");
             FullscreenBehaviorDescriptionText.Text = T(
                 "Auto: при fullscreen внутри YouTube окно плеера тоже становится fullscreen. Windowed: окно остается обычным.",
@@ -74,8 +75,8 @@ namespace JokerDBDTracker
             ResetCacheButton.Content = T("Сбросить кеш", "Reset cache");
             BindsSectionTitleText.Text = T("Бинды плеера", "Player binds");
             BindsSectionDescriptionText.Text = T(
-                "Клавиши для управления панелью эффектов и саунд-эффектами.",
-                "Keys for effects panel and sound effects.");
+                "Клавиши для панели эффектов, всех 15 эффектов и саунд-эффектов.",
+                "Keys for effects panel, all 15 effects, and sound effects.");
             BindCaptureHelpText.Text = T(
                 "Нажмите «Назначить», затем любую клавишу. Esc - отмена.",
                 "Click Assign, then press any key. Esc cancels.");
@@ -84,6 +85,11 @@ namespace JokerDBDTracker
             LaughBindLabelText.Text = T("Звук Смех", "Laugh sound");
             PsiBindLabelText.Text = T("Звук Пси-излучение", "Psi radiation sound");
             RespectBindLabelText.Text = T("Звук +Respect", "+Respect sound");
+            EffectBindsHeaderText.Text = T("Бинды эффектов", "Effect binds");
+            EffectBindsDescriptionText.Text = T(
+                "Каждый эффект (1-15) можно назначить на любую клавишу.",
+                "Each effect (1-15) can be assigned to any key.");
+            ResetBindsButton.Content = T("Сбросить бинды по умолчанию", "Reset binds to defaults");
 
             if (LanguageComboBox.Items.Count >= 2)
             {

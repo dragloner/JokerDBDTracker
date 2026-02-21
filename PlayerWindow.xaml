@@ -1,6 +1,7 @@
-﻿<Window x:Class="JokerDBDTracker.PlayerWindow"
+<Window x:Class="JokerDBDTracker.PlayerWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="clr-namespace:JokerDBDTracker"
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         Title="JokerDBD Tracker - Player"
@@ -27,38 +28,66 @@
     <Window.Resources>
         <Style TargetType="Button">
             <Setter Property="Foreground" Value="#F3FAFF"/>
-            <Setter Property="Background" Value="#2F6B8A"/>
+            <Setter Property="Background" Value="#C42F6B8A"/>
             <Setter Property="Padding" Value="16,9"/>
             <Setter Property="BorderBrush" Value="#6E91A9"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="FontSize" Value="18"/>
+            <Setter Property="TextBlock.TextWrapping" Value="Wrap"/>
+            <Setter Property="TextBlock.TextTrimming" Value="None"/>
+            <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
+            <Setter Property="TextOptions.TextRenderingMode" Value="ClearType"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="Root"
-                                Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="18"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center"
-                                              VerticalAlignment="Center"/>
-                        </Border>
+                        <Grid ClipToBounds="False">
+                            <Border x:Name="Root"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="18"
+                                    RenderTransformOrigin="0.5,0.5">
+                                <Border.RenderTransform>
+                                    <ScaleTransform ScaleX="1" ScaleY="1"/>
+                                </Border.RenderTransform>
+                            </Border>
+                            <Border Background="Transparent"
+                                    Padding="{TemplateBinding Padding}">
+                                <ContentPresenter HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"
+                                                  RecognizesAccessKey="True"/>
+                            </Border>
+                        </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Root" Property="Opacity" Value="0.96"/>
                                 <Setter TargetName="Root" Property="BorderBrush" Value="#9CC7E2"/>
                             </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Root" Property="Opacity" Value="0.9"/>
-                                <Setter TargetName="Root" Property="RenderTransformOrigin" Value="0.5,0.5"/>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsMouseOver" Value="True"/>
+                                    <Condition Property="ui:UiAnimation.IsEnabled" Value="True"/>
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="Root" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <ScaleTransform ScaleX="1.02" ScaleY="1.02"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </MultiTrigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsPressed" Value="True"/>
+                                    <Condition Property="ui:UiAnimation.IsEnabled" Value="True"/>
+                                </MultiTrigger.Conditions>
                                 <Setter TargetName="Root" Property="RenderTransform">
                                     <Setter.Value>
                                         <ScaleTransform ScaleX="0.985" ScaleY="0.985"/>
                                     </Setter.Value>
                                 </Setter>
+                            </MultiTrigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Root" Property="Opacity" Value="0.94"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter TargetName="Root" Property="Opacity" Value="0.55"/>
@@ -103,11 +132,13 @@
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Margin" Value="0,0,0,10"/>
             <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
+            <Setter Property="TextOptions.TextRenderingMode" Value="ClearType"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="CheckBox">
                         <Border x:Name="Root"
-                                Background="#2A3D4E"
+                                Background="#CC2A3D4E"
                                 BorderBrush="#6887A0"
                                 BorderThickness="1"
                                 CornerRadius="12"
@@ -142,11 +173,11 @@
                                 <Setter TargetName="Root" Property="BorderBrush" Value="#97BFD9"/>
                             </Trigger>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="Root" Property="Background" Value="#334B60"/>
+                                <Setter TargetName="Root" Property="Background" Value="#D7334B60"/>
                                 <Setter TargetName="Root" Property="BorderBrush" Value="#8CB8D4"/>
                                 <Setter TargetName="Mark" Property="Background" Value="#2FA27E"/>
                                 <Setter TargetName="Mark" Property="BorderBrush" Value="#95E7C9"/>
-                                <Setter TargetName="MarkGlyph" Property="Text" Value="✔"/>
+                                <Setter TargetName="MarkGlyph" Property="Text" Value="&#x2714;"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -226,7 +257,7 @@
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="Height" Value="22"/>
-            <Setter Property="IsMoveToPointEnabled" Value="True"/>
+            <Setter Property="IsMoveToPointEnabled" Value="False"/>
             <Setter Property="UseLayoutRounding" Value="True"/>
             <Setter Property="SnapsToDevicePixels" Value="True"/>
             <Setter Property="Minimum" Value="-1"/>
@@ -236,10 +267,11 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Slider">
                         <Grid Margin="0,2,0,2" VerticalAlignment="Center" UseLayoutRounding="True">
-                            <Border Height="10"
+                            <Border x:Name="TrackRail"
+                                    Height="10"
                                     VerticalAlignment="Center"
                                     CornerRadius="5"
-                                    Background="#CFE4F2"
+                                    Background="#D0CFE4F2"
                                     BorderBrush="#93B8CE"
                                     BorderThickness="1"/>
                             <Track x:Name="PART_Track"
@@ -260,6 +292,15 @@
                                 </Track.IncreaseRepeatButton>
                             </Track>
                         </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="TrackRail" Property="BorderBrush" Value="#B7D7EA"/>
+                                <Setter TargetName="TrackRail" Property="Background" Value="#E0DAEDF9"/>
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                                <Setter TargetName="TrackRail" Property="BorderBrush" Value="#C4E2F4"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
@@ -283,8 +324,8 @@
                                 BorderBrush="#BEE3F8">
                             <Border.Background>
                                 <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                    <GradientStop Color="#8FD3F7" Offset="0"/>
-                                    <GradientStop Color="#69BDEB" Offset="1"/>
+                                    <GradientStop Color="#D18FD3F7" Offset="0"/>
+                                    <GradientStop Color="#C469BDEB" Offset="1"/>
                                 </LinearGradientBrush>
                             </Border.Background>
                         </Border>
@@ -317,21 +358,21 @@
 
         <Style TargetType="ScrollBar">
             <Setter Property="Width" Value="18"/>
-            <Setter Property="Background" Value="#213647"/>
+            <Setter Property="Background" Value="#C2213647"/>
             <Setter Property="Focusable" Value="False"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ScrollBar">
                         <Grid SnapsToDevicePixels="True" UseLayoutRounding="True">
-                            <Border Background="#22384A" CornerRadius="9"/>
-                            <Border Margin="4,3,4,3" Background="#172734" CornerRadius="6"/>
+                            <Border Background="#C422384A" CornerRadius="9"/>
+                            <Border Margin="4,3,4,3" Background="#CD172734" CornerRadius="6"/>
                             <Track x:Name="PART_Track"
                                    Orientation="{TemplateBinding Orientation}"
                                    IsDirectionReversed="True"
                                    Minimum="{TemplateBinding Minimum}"
                                    Maximum="{TemplateBinding Maximum}"
                                    Value="{TemplateBinding Value}"
-                                   ViewportSize="NaN"
+                                   ViewportSize="{TemplateBinding ViewportSize}"
                                    Margin="4,3,4,3">
                                 <Track.DecreaseRepeatButton>
                                     <RepeatButton Style="{StaticResource AppScrollRepeatButtonStyle}"
@@ -368,7 +409,7 @@
                  Grid.Row="0"
                  Margin="0,4,0,8"
                  Padding="12,10"
-                 Background="#1F3040"
+                 Background="#C61F3040"
                  BorderBrush="#5F8099"
                  BorderThickness="1"
                  CornerRadius="14"
@@ -433,7 +474,7 @@
                 <ColumnDefinition x:Name="EffectsColumn" Width="420"/>
             </Grid.ColumnDefinitions>
 
-            <Border x:Name="PlayerHostBorder" Grid.Column="0" Background="#10171E" CornerRadius="10" Margin="0,8,0,8">
+            <Border x:Name="PlayerHostBorder" Grid.Column="0" Background="#D010171E" CornerRadius="10" Margin="0,8,0,8">
                 <Grid>
                     <Border x:Name="PlayerSurfaceHost" Background="#000000" Visibility="Collapsed">
                         <wv2:WebView2 x:Name="Player"/>
@@ -487,7 +528,7 @@
                     Grid.Column="2"
                     Margin="0,8,8,8"
                     Padding="12"
-                    Background="#213241"
+                    Background="#CC213241"
                     BorderBrush="#5F8099"
                     BorderThickness="1"
                     CornerRadius="16">
@@ -516,7 +557,7 @@
                                    FontSize="18"/>
                         <TextBlock x:Name="BindsHintText"
                                    Margin="0,4,0,0"
-                                   Text="Бинды: 1-0 / F1-F10 = эффекты 1-10, Q-T / F11-F12 + ZXC = 11-15."
+                                   Text="Эффекты: 1-0 и QWERT. Панель: H. Звуки: YUIO."
                                    TextWrapping="Wrap"
                                    Foreground="#8FC4E4"
                                    FontSize="14"/>

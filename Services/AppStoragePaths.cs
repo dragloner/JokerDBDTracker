@@ -25,6 +25,17 @@ namespace JokerDBDTracker.Services
             return Path.Combine(localAppData, CurrentFolderName);
         }
 
+        public static string GetProgramDirectory()
+        {
+            var baseDirectory = AppContext.BaseDirectory;
+            if (!string.IsNullOrWhiteSpace(baseDirectory))
+            {
+                return baseDirectory;
+            }
+
+            return Directory.GetCurrentDirectory();
+        }
+
         public static string GetWebViewProfileDirectory()
         {
             return Path.Combine(GetCurrentLocalAppDataDirectory(), "YouTube_Profile");

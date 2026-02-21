@@ -189,6 +189,10 @@ namespace JokerDBDTracker
                     timeoutMs: 1200,
                     operation: "ExitEmbeddedPlayerFullscreenAsync");
                 await Task.Delay(60);
+                if (_isPlayerClosing)
+                {
+                    return;
+                }
             }
             catch
             {
@@ -406,18 +410,33 @@ namespace JokerDBDTracker
             try
             {
                 _isPlayerClosing = true;
+                _shouldStartDragAfterExitingPlayerFullscreen = false;
                 _isPlayerNavigationInProgress = false;
                 _isPlayerRuntimeReady = false;
                 SetPlayerInteractionsEnabled(false);
-                _ = PersistPlaybackPositionAsync(force: true);
                 Topmost = false;
                 _positionTimer.Stop();
                 _effectsApplyDebounceTimer.Stop();
                 _resizeSettleDebounceTimer.Stop();
+                _positionTimer.Tick -= PositionTimer_Tick;
+                _effectsApplyDebounceTimer.Tick -= EffectsApplyDebounceTimer_Tick;
+                _resizeSettleDebounceTimer.Tick -= ResizeSettleDebounceTimer_Tick;
                 StopAllSoundEffects();
                 SystemEvents.DisplaySettingsChanged -= SystemEvents_DisplaySettingsChanged;
                 UnregisterGlobalHotkeys();
                 _hotkeySource?.RemoveHook(HotkeyWndProc);
+                _hotkeySource = null;
+                Loaded -= PlayerWindow_Loaded;
+                Closing -= PlayerWindow_Closing;
+                Closed -= PlayerWindow_Closed;
+                Activated -= PlayerWindow_Activated;
+                Deactivated -= PlayerWindow_Deactivated;
+                StateChanged -= PlayerWindow_StateChanged;
+                SizeChanged -= PlayerWindow_SizeChanged;
+                PreviewMouseMove -= PlayerWindow_PreviewMouseMove;
+                PreviewMouseLeftButtonUp -= PlayerWindow_PreviewMouseLeftButtonUp;
+                PreviewMouseDown -= PlayerWindow_PreviewMouseDown;
+                PreviewKeyDown -= PlayerWindow_PreviewKeyDown;
                 if (Player.CoreWebView2 is not null)
                 {
                     Player.CoreWebView2.ContainsFullScreenElementChanged -= CoreWebView2_ContainsFullScreenElementChanged;

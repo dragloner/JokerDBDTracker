@@ -32,6 +32,8 @@ namespace JokerDBDTracker
                     _appSettings = new AppSettingsData();
                 }
 
+                UiAnimation.SetIsEnabled(this, _appSettings.AnimationsEnabled);
+                DiagnosticsService.SetEnabled(_appSettings.LoggingEnabled);
                 PositionWindowToOwnerMonitor();
                 ApplyStartupMaximizedWindowed();
                 AnimatePlayerWindowEntrance();
@@ -87,9 +89,12 @@ namespace JokerDBDTracker
             catch (Exception ex)
             {
                 DiagnosticsService.LogException("PlayerWindow_Loaded", ex);
+                var logInfo = DiagnosticsService.IsEnabled()
+                    ? $"{PT("Лог ошибок:", "Error log:")} {DiagnosticsService.GetLogFilePath()}"
+                    : PT("Логирование отключено в настройках.", "Logging is disabled in Settings.");
                 MessageBox.Show(
                     $"{PT("Произошла ошибка при запуске плеера:", "Player startup failed:")}{Environment.NewLine}{ex.Message}{Environment.NewLine}{Environment.NewLine}" +
-                    $"{PT("Лог ошибок:", "Error log:")} {DiagnosticsService.GetLogFilePath()}",
+                    logInfo,
                     PT("Ошибка плеера", "Player error"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
@@ -311,6 +316,11 @@ namespace JokerDBDTracker
             {
                 var scriptTask = Player.CoreWebView2.ExecuteScriptAsync(script);
                 var completedTask = await Task.WhenAny(scriptTask, Task.Delay(timeoutMs));
+                if (_isPlayerClosing)
+                {
+                    return null;
+                }
+
                 if (completedTask != scriptTask)
                 {
                     if ((DateTime.UtcNow - _lastWebScriptTimeoutLogUtc).TotalSeconds >= 5)
@@ -351,6 +361,11 @@ namespace JokerDBDTracker
 
             for (var i = 0; i < 60; i++)
             {
+                if (_isPlayerClosing)
+                {
+                    return false;
+                }
+
                 try
                 {
                     var result = await ExecuteWebScriptWithTimeoutAsync(
@@ -360,6 +375,11 @@ namespace JokerDBDTracker
                     if (result is null)
                     {
                         await Task.Delay(100);
+                        if (_isPlayerClosing)
+                        {
+                            return false;
+                        }
+
                         continue;
                     }
 
@@ -374,6 +394,10 @@ namespace JokerDBDTracker
                 }
 
                 await Task.Delay(100);
+                if (_isPlayerClosing)
+                {
+                    return false;
+                }
             }
 
             return false;
@@ -610,6 +634,17 @@ namespace JokerDBDTracker
                                     visibility: hidden !important;
                                     pointer-events: none !important;
                                 }
+
+                                .ytp-chrome-top,
+                                .ytp-title,
+                                .ytp-title-link,
+                                .ytp-title-channel,
+                                .ytp-title-text,
+                                .ytp-title-expanded-overlay,
+                                .ytp-title-expanded-heading,
+                                .ytp-title-expanded-content {
+                                    pointer-events: none !important;
+                                }
                             `;
                             (document.head || document.documentElement).appendChild(style);
                         };
@@ -691,6 +726,17 @@ namespace JokerDBDTracker
                             #columns > :not(#primary) {
                                 display: none !important;
                                 visibility: hidden !important;
+                                pointer-events: none !important;
+                            }
+
+                            .ytp-chrome-top,
+                            .ytp-title,
+                            .ytp-title-link,
+                            .ytp-title-channel,
+                            .ytp-title-text,
+                            .ytp-title-expanded-overlay,
+                            .ytp-title-expanded-heading,
+                            .ytp-title-expanded-content {
                                 pointer-events: none !important;
                             }
                         `;

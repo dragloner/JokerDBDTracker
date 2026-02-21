@@ -1,5 +1,6 @@
-﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ui="clr-namespace:JokerDBDTracker">
         <LinearGradientBrush x:Key="AppBackground" StartPoint="0,0" EndPoint="1,1">
             <GradientStop Color="#1A2630" Offset="0"/>
             <GradientStop Color="#203140" Offset="0.52"/>
@@ -13,23 +14,93 @@
 
         <Style TargetType="Button">
             <Setter Property="Foreground" Value="#F3FAFF"/>
-            <Setter Property="Background" Value="#2F6B8A"/>
+            <Setter Property="Background" Value="#C42F6B8A"/>
+            <Setter Property="BorderBrush" Value="#6E91A9"/>
+            <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="18,10"/>
-            <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="FontSize" Value="18"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="TextBlock.TextWrapping" Value="Wrap"/>
+            <Setter Property="TextBlock.TextTrimming" Value="None"/>
+            <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
+            <Setter Property="TextOptions.TextRenderingMode" Value="ClearType"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
-                                CornerRadius="22"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center"
-                                              VerticalAlignment="Center"/>
-                        </Border>
+                        <Grid ClipToBounds="False">
+                            <Border x:Name="HoverPlate"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="22"
+                                    SnapsToDevicePixels="True"
+                                    RenderTransformOrigin="0.5,0.5">
+                                <Border.RenderTransform>
+                                    <ScaleTransform ScaleX="1" ScaleY="1"/>
+                                </Border.RenderTransform>
+                                <Border.Effect>
+                                    <DropShadowEffect BlurRadius="12"
+                                                      ShadowDepth="0"
+                                                      Color="#8ABEDF"
+                                                      Opacity="0"/>
+                                </Border.Effect>
+                            </Border>
+                            <Border Padding="{TemplateBinding Padding}"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    SnapsToDevicePixels="True">
+                                <ContentPresenter HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"
+                                                  RecognizesAccessKey="True"/>
+                            </Border>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="HoverPlate" Property="BorderBrush" Value="#9CC7E2"/>
+                            </Trigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsMouseOver" Value="True"/>
+                                    <Condition Property="ui:UiAnimation.IsEnabled" Value="True"/>
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="HoverPlate" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <ScaleTransform ScaleX="1.02" ScaleY="1.02"/>
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter TargetName="HoverPlate" Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect BlurRadius="20"
+                                                          ShadowDepth="0"
+                                                          Color="#8ABEDF"
+                                                          Opacity="0.32"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </MultiTrigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsPressed" Value="True"/>
+                                    <Condition Property="ui:UiAnimation.IsEnabled" Value="True"/>
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="HoverPlate" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <ScaleTransform ScaleX="0.988" ScaleY="0.988"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </MultiTrigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="HoverPlate" Property="Opacity" Value="0.94"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="HoverPlate" Property="Opacity" Value="0.55"/>
+                            </Trigger>
+                            <Trigger Property="ui:UiAnimation.IsEnabled" Value="False">
+                                <Setter TargetName="HoverPlate" Property="Effect" Value="{x:Null}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
@@ -42,19 +113,19 @@
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="FontWeight" Value="Normal"/>
             <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
-            <Setter Property="Background" Value="#2B5D79"/>
+            <Setter Property="Background" Value="#C42B5D79"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="BorderBrush" Value="#6D94AF"/>
         </Style>
 
         <Style x:Key="WindowCloseButtonStyle" TargetType="Button" BasedOn="{StaticResource WindowControlButtonStyle}">
-            <Setter Property="Background" Value="#7D3A46"/>
+            <Setter Property="Background" Value="#C47D3A46"/>
             <Setter Property="BorderBrush" Value="#B77682"/>
         </Style>
 
         <Style TargetType="ComboBox">
             <Setter Property="Foreground" Value="#173041"/>
-            <Setter Property="Background" Value="#E4EEF6"/>
+            <Setter Property="Background" Value="#E6E4EEF6"/>
             <Setter Property="BorderBrush" Value="#6E91A9"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="10,6"/>
@@ -63,6 +134,14 @@
             <Setter Property="FontSize" Value="18"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="BorderBrush" Value="#A9CCE3"/>
+                </Trigger>
+                <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                    <Setter Property="BorderBrush" Value="#B9DBF1"/>
+                </Trigger>
+            </Style.Triggers>
         </Style>
 
         <Style TargetType="ComboBoxItem">
@@ -75,7 +154,7 @@
 
         <Style TargetType="TextBox">
             <Setter Property="Foreground" Value="#173041"/>
-            <Setter Property="Background" Value="#E4EEF6"/>
+            <Setter Property="Background" Value="#E6E4EEF6"/>
             <Setter Property="BorderBrush" Value="#6E91A9"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="10,6"/>
@@ -85,12 +164,30 @@
             <Setter Property="TextAlignment" Value="Center"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="BorderBrush" Value="#A9CCE3"/>
+                </Trigger>
+                <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                    <Setter Property="BorderBrush" Value="#B9DBF1"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style TargetType="CheckBox">
+            <Setter Property="Foreground" Value="#D8EAF8"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Foreground" Value="#EAF6FF"/>
+                </Trigger>
+            </Style.Triggers>
         </Style>
 
         <Style TargetType="ListBox">
             <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True"/>
             <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Recycling"/>
             <Setter Property="ScrollViewer.CanContentScroll" Value="True"/>
+            <Setter Property="VirtualizingPanel.ScrollUnit" Value="Pixel"/>
         </Style>
 
         <Style TargetType="TabControl">
@@ -119,7 +216,7 @@
 
         <Style TargetType="TabItem">
             <Setter Property="Foreground" Value="#E6F2FA"/>
-            <Setter Property="Background" Value="#2B4153"/>
+            <Setter Property="Background" Value="#C92B4153"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="FontSize" Value="15"/>
             <Setter Property="Padding" Value="18,8"/>
@@ -140,8 +237,11 @@
                                               VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="TabRoot" Property="BorderBrush" Value="#A2C5DB"/>
+                            </Trigger>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="TabRoot" Property="Background" Value="#E4EEF6"/>
+                                <Setter TargetName="TabRoot" Property="Background" Value="#F0E4EEF6"/>
                                 <Setter TargetName="TabRoot" Property="BorderBrush" Value="#8FB4CD"/>
                                 <Setter Property="Foreground" Value="#173041"/>
                             </Trigger>
@@ -158,7 +258,7 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="ListBoxItem">
                         <Border x:Name="ItemRoot"
-                                Background="#283847"
+                                Background="#CE283847"
                                 BorderBrush="#5E7F98"
                                 BorderThickness="1"
                                 CornerRadius="14"
@@ -170,7 +270,7 @@
                                 <Setter TargetName="ItemRoot" Property="BorderBrush" Value="#95BCD7"/>
                             </Trigger>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="ItemRoot" Property="Background" Value="#32485B"/>
+                                <Setter TargetName="ItemRoot" Property="Background" Value="#DE32485B"/>
                                 <Setter TargetName="ItemRoot" Property="BorderBrush" Value="#A7CBE1"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -186,7 +286,7 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="ListBoxItem">
                         <Border x:Name="AchievementItemRoot"
-                                Background="#2B3D4E"
+                                Background="#CC2B3D4E"
                                 BorderBrush="#6887A0"
                                 BorderThickness="1"
                                 CornerRadius="12"
@@ -232,7 +332,7 @@
             <Setter Property="FontSize" Value="30"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="Padding" Value="20,10"/>
-            <Setter Property="Background" Value="#2C4357"/>
+            <Setter Property="Background" Value="#C92C4357"/>
             <Setter Property="Foreground" Value="#EAF6FF"/>
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
             <Setter Property="VerticalAlignment" Value="Stretch"/>
@@ -241,20 +341,39 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="NavButtonRoot"
-                                Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="24"
-                                SnapsToDevicePixels="True"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center"
-                                              VerticalAlignment="Center"/>
-                        </Border>
+                        <Grid ClipToBounds="False">
+                            <Border x:Name="NavButtonRoot"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="24"
+                                    SnapsToDevicePixels="True"
+                                    RenderTransformOrigin="0.5,0.5">
+                                <Border.RenderTransform>
+                                    <ScaleTransform ScaleX="1" ScaleY="1"/>
+                                </Border.RenderTransform>
+                            </Border>
+                            <Border Padding="{TemplateBinding Padding}"
+                                    Background="Transparent">
+                                <ContentPresenter HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"/>
+                            </Border>
+                        </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="NavButtonRoot" Property="BorderBrush" Value="#A2C5DB"/>
                             </Trigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsMouseOver" Value="True"/>
+                                    <Condition Property="ui:UiAnimation.IsEnabled" Value="True"/>
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="NavButtonRoot" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <ScaleTransform ScaleX="1.015" ScaleY="1.015"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </MultiTrigger>
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="NavButtonRoot" Property="Background" Value="#22394C"/>
                             </Trigger>
@@ -319,7 +438,7 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="ListBoxItem">
                         <Border x:Name="QuestItemRoot"
-                                Background="#2E4458"
+                                Background="#CC2E4458"
                                 BorderBrush="#7193AA"
                                 BorderThickness="1"
                                 CornerRadius="11"
@@ -387,7 +506,7 @@
                                    Minimum="{TemplateBinding Minimum}"
                                    Maximum="{TemplateBinding Maximum}"
                                    Value="{TemplateBinding Value}"
-                                   ViewportSize="NaN"
+                                   ViewportSize="{TemplateBinding ViewportSize}"
                                    Margin="2">
                                 <Track.DecreaseRepeatButton>
                                     <RepeatButton Background="Transparent"
@@ -476,7 +595,7 @@
                                    Minimum="{TemplateBinding Minimum}"
                                    Maximum="{TemplateBinding Maximum}"
                                    Value="{TemplateBinding Value}"
-                                   ViewportSize="NaN"
+                                   ViewportSize="{TemplateBinding ViewportSize}"
                                    Margin="4,3,4,3">
                                 <Track.DecreaseRepeatButton>
                                     <RepeatButton Style="{StaticResource UnifiedScrollRepeatButtonStyle}"
