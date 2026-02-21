@@ -161,7 +161,7 @@ namespace JokerDBDTracker
         {
             var fileName = kind switch
             {
-                SoundEffectKind.AuraFarm => "aura-ego.mp3",
+                SoundEffectKind.AuraFarm => "doue-aura.mp3",
                 SoundEffectKind.Laugh => "sitcom-laughing-1.mp3",
                 SoundEffectKind.PsiRadiation => "zvuk-psi-izlucheniia.mp3",
                 SoundEffectKind.Respect => "italian-mafia-music.mp3",
