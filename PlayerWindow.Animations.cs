@@ -6,6 +6,8 @@ namespace JokerDBDTracker
 {
     public partial class PlayerWindow
     {
+        private const int PlayerMinimizeAnimationDurationMs = 540;
+        private const double PlayerMinimizeScaleTo = 0.966;
         private bool ArePlayerAnimationsEnabled => _appSettings.AnimationsEnabled;
 
         private void AnimatePlayerWindowEntrance()
@@ -86,20 +88,20 @@ namespace JokerDBDTracker
                         MainRootGrid.RenderTransform = scale;
                     }
 
-                    var scaleDuration = TimeSpan.FromMilliseconds(340);
+                    var scaleDuration = TimeSpan.FromMilliseconds(PlayerMinimizeAnimationDurationMs);
                     var scaleEase = new CubicEase { EasingMode = EasingMode.EaseInOut };
-                    scale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(1, 0.970, scaleDuration)
+                    scale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(1, PlayerMinimizeScaleTo, scaleDuration)
                     {
                         EasingFunction = scaleEase
                     });
-                    scale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(1, 0.970, scaleDuration)
+                    scale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(1, PlayerMinimizeScaleTo, scaleDuration)
                     {
                         EasingFunction = scaleEase
                     });
                 }
 
                 var tcs = new TaskCompletionSource<bool>();
-                var opacityAnimation = new DoubleAnimation(Opacity, 0.0, TimeSpan.FromMilliseconds(340))
+                var opacityAnimation = new DoubleAnimation(Opacity, 0.0, TimeSpan.FromMilliseconds(PlayerMinimizeAnimationDurationMs))
                 {
                     EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
                 };

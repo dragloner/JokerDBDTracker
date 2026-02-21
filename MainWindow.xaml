@@ -74,7 +74,7 @@
                                    FontWeight="ExtraBold"/>
                         <StackPanel Margin="3,-2,0,0" Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock x:Name="AppVersionText"
-                                       Text="v1.2.1"
+                                       Text="v1.2.1.1"
                                        Foreground="#B9CFDF"
                                        FontSize="14"
                                        FontWeight="SemiBold"
@@ -1201,6 +1201,15 @@
                             </Grid>
                         </Grid>
                     </Border>
+                    <TextBlock x:Name="SettingsCreatorText"
+                               Grid.Row="2"
+                               Margin="0,0,6,4"
+                               HorizontalAlignment="Right"
+                               VerticalAlignment="Bottom"
+                               Text="dragloner"
+                               Foreground="#88AFC5D7"
+                               FontSize="9"
+                               FontWeight="SemiBold"/>
                 </Grid>
             </Border>
 
@@ -1269,7 +1278,3 @@
         </Grid>
     </Border>
 </Window>
-
-
-
-

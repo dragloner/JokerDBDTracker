@@ -6,6 +6,8 @@ namespace JokerDBDTracker
 {
     public partial class MainWindow
     {
+        private const int MainMinimizeAnimationDurationMs = 520;
+        private const double MainMinimizeScaleTo = 0.968;
         private bool AreAnimationsEnabled => _appSettings.AnimationsEnabled;
 
         private Task AnimateWindowOpacityAsync(double toOpacity, int durationMs)
@@ -97,19 +99,19 @@ namespace JokerDBDTracker
                         MainRootBorder.RenderTransform = scale;
                     }
 
-                    var scaleDuration = TimeSpan.FromMilliseconds(320);
+                    var scaleDuration = TimeSpan.FromMilliseconds(MainMinimizeAnimationDurationMs);
                     var scaleEase = new CubicEase { EasingMode = EasingMode.EaseInOut };
-                    scale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(1, 0.972, scaleDuration)
+                    scale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(1, MainMinimizeScaleTo, scaleDuration)
                     {
                         EasingFunction = scaleEase
                     });
-                    scale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(1, 0.972, scaleDuration)
+                    scale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(1, MainMinimizeScaleTo, scaleDuration)
                     {
                         EasingFunction = scaleEase
                     });
                 }
 
-                await AnimateWindowOpacityAsync(0.0, 320);
+                await AnimateWindowOpacityAsync(0.0, MainMinimizeAnimationDurationMs);
             }
             catch
             {

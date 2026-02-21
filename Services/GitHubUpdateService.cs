@@ -1,9 +1,11 @@
-using System.Net.Http;
+using System.Diagnostics;
 using System.IO;
+using System.Net;
+using System.Net.Http;
+using System.Reflection;
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using System.Net;
-using System.Security.Cryptography;
 
 namespace JokerDBDTracker.Services
 {
@@ -19,18 +21,46 @@ namespace JokerDBDTracker.Services
         public string DownloadAssetSha256 { get; init; } = string.Empty;
     }
 
+    public sealed class UpdateDownloadProgress
+    {
+        public long DownloadedBytes { get; init; }
+        public long? TotalBytes { get; init; }
+        public double BytesPerSecond { get; init; }
+        public bool IsCompleted { get; init; }
+
+        public double? Fraction =>
+            TotalBytes.HasValue && TotalBytes.Value > 0
+                ? Math.Clamp((double)DownloadedBytes / TotalBytes.Value, 0, 1)
+                : null;
+    }
+
     public sealed class GitHubUpdateService
     {
         private static readonly HttpClient HttpClient = new HttpClient();
         private const int MaxCheckAttempts = 3;
-        private const int MaxDownloadAttempts = 3;
+        private const int MaxDownloadNetworkAttempts = 2;
+        private static readonly TimeSpan CheckRequestTimeout = TimeSpan.FromSeconds(20);
+        private static readonly TimeSpan DownloadAttemptTimeout = TimeSpan.FromMinutes(20);
 
         static GitHubUpdateService()
         {
-            HttpClient.DefaultRequestHeaders.UserAgent.ParseAdd(
-                "JokerDBDTracker/1.2.0.1 (+https://github.com/dragloner/JokerDBDTracker)");
+            HttpClient.DefaultRequestHeaders.UserAgent.ParseAdd(BuildUserAgent());
             HttpClient.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
-            HttpClient.Timeout = TimeSpan.FromSeconds(15);
+            HttpClient.Timeout = Timeout.InfiniteTimeSpan;
+        }
+
+        private static string BuildUserAgent()
+        {
+            var versionText = Assembly.GetExecutingAssembly()
+                .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+                .InformationalVersion?
+                .Split('+')[0];
+            if (string.IsNullOrWhiteSpace(versionText))
+            {
+                versionText = "1.0.0";
+            }
+
+            return $"JokerDBDTracker/{versionText} (+https://github.com/dragloner/JokerDBDTracker)";
         }
 
         public async Task<GitHubUpdateInfo> CheckForUpdateAsync(
@@ -43,12 +73,13 @@ namespace JokerDBDTracker.Services
             {
                 try
                 {
+                    using var timeoutCts = CreateLinkedTimeoutToken(cancellationToken, CheckRequestTimeout);
                     var endpoint = $"https://api.github.com/repos/{owner}/{repository}/releases/latest";
-                    using var response = await HttpClient.GetAsync(endpoint, cancellationToken);
+                    using var response = await HttpClient.GetAsync(endpoint, timeoutCts.Token);
                     response.EnsureSuccessStatusCode();
 
-                    await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-                    using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+                    await using var stream = await response.Content.ReadAsStreamAsync(timeoutCts.Token);
+                    using var document = await JsonDocument.ParseAsync(stream, cancellationToken: timeoutCts.Token);
                     var root = document.RootElement;
 
                     var tag = TryGetString(root, "tag_name");
@@ -61,11 +92,10 @@ namespace JokerDBDTracker.Services
 
                     var (assetName, assetUrl, assetSizeBytes, checksumUrl) = SelectBestAsset(root);
                     var assetSha256 = await TryResolveSha256Async(checksumUrl, assetName, cancellationToken);
-                    var isUpdateAvailable = latestVersion > currentVersion;
                     return new GitHubUpdateInfo
                     {
                         IsCheckSuccessful = true,
-                        IsUpdateAvailable = isUpdateAvailable,
+                        IsUpdateAvailable = latestVersion > currentVersion,
                         LatestVersionText = FormatVersion(latestVersion),
                         ReleaseUrl = string.IsNullOrWhiteSpace(htmlUrl)
                             ? $"https://github.com/{owner}/{repository}/releases/latest"
@@ -78,7 +108,7 @@ namespace JokerDBDTracker.Services
                 }
                 catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
                 {
-                    // Http timeout; retry.
+                    // Request timeout; retry.
                 }
                 catch (HttpRequestException)
                 {
@@ -107,16 +137,14 @@ namespace JokerDBDTracker.Services
             };
         }
 
-        public async Task DownloadAssetAsync(
+        public async Task<string> DownloadAssetAsync(
             string downloadUrl,
             string destinationPath,
             long expectedSizeBytes = 0,
             string expectedSha256 = "",
-            IProgress<double>? progress = null,
+            IProgress<UpdateDownloadProgress>? progress = null,
             CancellationToken cancellationToken = default)
         {
-            _ = expectedSizeBytes; // Intentionally ignored: update flow should not depend on file size metadata.
-
             if (string.IsNullOrWhiteSpace(downloadUrl))
             {
                 throw new InvalidDataException("Update download URL is empty.");
@@ -133,110 +161,284 @@ namespace JokerDBDTracker.Services
                 Directory.CreateDirectory(targetDirectory);
             }
 
-            var tempPath = $"{destinationPath}.downloading";
-            Exception? lastException = null;
-            for (var attempt = 1; attempt <= MaxDownloadAttempts; attempt++)
+            if (await TryUseExistingDownloadedAssetAsync(destinationPath, expectedSizeBytes, expectedSha256, cancellationToken))
+            {
+                var existingLength = new FileInfo(destinationPath).Length;
+                progress?.Report(new UpdateDownloadProgress
+                {
+                    DownloadedBytes = existingLength,
+                    TotalBytes = expectedSizeBytes > 0 ? expectedSizeBytes : existingLength,
+                    BytesPerSecond = 0,
+                    IsCompleted = true
+                });
+                return destinationPath;
+            }
+
+            var tempPath = $"{destinationPath}.{Guid.NewGuid():N}.downloading";
+            Exception? lastNetworkException = null;
+            try
+            {
+                for (var attempt = 1; attempt <= MaxDownloadNetworkAttempts; attempt++)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    try
+                    {
+                        await DownloadToTempFileAsync(
+                            downloadUrl,
+                            tempPath,
+                            expectedSizeBytes,
+                            progress,
+                            cancellationToken);
+                        lastNetworkException = null;
+                        break;
+                    }
+                    catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested && attempt < MaxDownloadNetworkAttempts)
+                    {
+                        lastNetworkException = new TimeoutException("Update download timed out.");
+                    }
+                    catch (HttpRequestException ex) when (attempt < MaxDownloadNetworkAttempts)
+                    {
+                        lastNetworkException = ex;
+                    }
+
+                    TryDeleteFile(tempPath);
+                    DiagnosticsService.LogInfo(
+                        nameof(GitHubUpdateService),
+                        $"Retrying update download. Attempt {attempt + 1}/{MaxDownloadNetworkAttempts}. Url={downloadUrl}");
+                    await Task.Delay(650, cancellationToken);
+                }
+
+                if (lastNetworkException is not null)
+                {
+                    throw lastNetworkException;
+                }
+
+                await EnsureDownloadedAssetValidAsync(tempPath, expectedSizeBytes, expectedSha256, cancellationToken);
+                var finalPath = await MoveDownloadedFileWithFallbackAsync(tempPath, destinationPath, cancellationToken);
+                var finalLength = new FileInfo(finalPath).Length;
+                progress?.Report(new UpdateDownloadProgress
+                {
+                    DownloadedBytes = finalLength,
+                    TotalBytes = expectedSizeBytes > 0 ? expectedSizeBytes : finalLength,
+                    BytesPerSecond = 0,
+                    IsCompleted = true
+                });
+                return finalPath;
+            }
+            catch
+            {
+                TryDeleteFile(tempPath);
+                throw;
+            }
+        }
+
+        private static async Task DownloadToTempFileAsync(
+            string downloadUrl,
+            string tempPath,
+            long expectedSizeBytes,
+            IProgress<UpdateDownloadProgress>? progress,
+            CancellationToken cancellationToken)
+        {
+            TryDeleteFile(tempPath);
+            using var timeoutCts = CreateLinkedTimeoutToken(cancellationToken, DownloadAttemptTimeout);
+            using var response = await HttpClient.GetAsync(
+                downloadUrl,
+                HttpCompletionOption.ResponseHeadersRead,
+                timeoutCts.Token);
+            response.EnsureSuccessStatusCode();
+
+            var mediaType = response.Content.Headers.ContentType?.MediaType ?? string.Empty;
+            if (mediaType.StartsWith("text/", StringComparison.OrdinalIgnoreCase) ||
+                mediaType.Contains("html", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidDataException($"Update server returned unexpected content type: {mediaType}");
+            }
+
+            var totalBytes = response.Content.Headers.ContentLength;
+            if ((!totalBytes.HasValue || totalBytes.Value <= 0) && expectedSizeBytes > 0)
+            {
+                totalBytes = expectedSizeBytes;
+            }
+
+            await using var responseStream = await response.Content.ReadAsStreamAsync(timeoutCts.Token);
+            await using var fileStream = new FileStream(
+                tempPath,
+                FileMode.Create,
+                FileAccess.Write,
+                FileShare.None,
+                bufferSize: 1024 * 64,
+                useAsync: true);
+
+            var buffer = new byte[1024 * 64];
+            long downloadedBytes = 0;
+            var watch = Stopwatch.StartNew();
+            var lastSampleSeconds = 0.0;
+            var lastSampleBytes = 0L;
+            var latestSpeed = 0.0;
+
+            progress?.Report(new UpdateDownloadProgress
+            {
+                DownloadedBytes = 0,
+                TotalBytes = totalBytes,
+                BytesPerSecond = 0,
+                IsCompleted = false
+            });
+
+            int read;
+            while ((read = await responseStream.ReadAsync(buffer.AsMemory(0, buffer.Length), timeoutCts.Token)) > 0)
+            {
+                await fileStream.WriteAsync(buffer.AsMemory(0, read), timeoutCts.Token);
+                downloadedBytes += read;
+
+                var elapsedSeconds = watch.Elapsed.TotalSeconds;
+                var shouldReport =
+                    elapsedSeconds - lastSampleSeconds >= 0.25 ||
+                    (totalBytes.HasValue && downloadedBytes >= totalBytes.Value);
+                if (!shouldReport)
+                {
+                    continue;
+                }
+
+                var deltaBytes = downloadedBytes - lastSampleBytes;
+                var deltaSeconds = Math.Max(0.001, elapsedSeconds - lastSampleSeconds);
+                latestSpeed = deltaBytes / deltaSeconds;
+                lastSampleBytes = downloadedBytes;
+                lastSampleSeconds = elapsedSeconds;
+
+                progress?.Report(new UpdateDownloadProgress
+                {
+                    DownloadedBytes = downloadedBytes,
+                    TotalBytes = totalBytes,
+                    BytesPerSecond = latestSpeed,
+                    IsCompleted = false
+                });
+            }
+
+            await fileStream.FlushAsync(timeoutCts.Token);
+            progress?.Report(new UpdateDownloadProgress
+            {
+                DownloadedBytes = downloadedBytes,
+                TotalBytes = totalBytes ?? (downloadedBytes > 0 ? downloadedBytes : null),
+                BytesPerSecond = latestSpeed,
+                IsCompleted = true
+            });
+        }
+
+        private static async Task<bool> TryUseExistingDownloadedAssetAsync(
+            string path,
+            long expectedSizeBytes,
+            string expectedSha256,
+            CancellationToken cancellationToken)
+        {
+            if (!File.Exists(path))
+            {
+                return false;
+            }
+
+            try
+            {
+                await EnsureDownloadedAssetValidAsync(path, expectedSizeBytes, expectedSha256, cancellationToken);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static async Task EnsureDownloadedAssetValidAsync(
+            string path,
+            long expectedSizeBytes,
+            string expectedSha256,
+            CancellationToken cancellationToken)
+        {
+            var fileInfo = new FileInfo(path);
+            if (!fileInfo.Exists || fileInfo.Length <= 0)
+            {
+                throw new InvalidDataException("Downloaded update archive is empty.");
+            }
+
+            if (expectedSizeBytes > 0 && fileInfo.Length != expectedSizeBytes)
+            {
+                DiagnosticsService.LogInfo(
+                    nameof(GitHubUpdateService),
+                    $"Downloaded file size mismatch ignored. Expected {expectedSizeBytes}, got {fileInfo.Length}.");
+            }
+
+            if (string.IsNullOrWhiteSpace(expectedSha256))
+            {
+                return;
+            }
+
+            var actualSha256 = await ComputeFileSha256Async(path, cancellationToken);
+            if (!string.Equals(actualSha256, expectedSha256, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidDataException("Downloaded file hash mismatch.");
+            }
+        }
+
+        private static async Task<string> MoveDownloadedFileWithFallbackAsync(
+            string tempPath,
+            string destinationPath,
+            CancellationToken cancellationToken)
+        {
+            for (var attempt = 1; attempt <= 6; attempt++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 try
                 {
-                    if (File.Exists(tempPath))
-                    {
-                        File.Delete(tempPath);
-                    }
-
-                    using var response = await HttpClient.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-                    response.EnsureSuccessStatusCode();
-
-                    var mediaType = response.Content.Headers.ContentType?.MediaType ?? string.Empty;
-                    if (mediaType.StartsWith("text/", StringComparison.OrdinalIgnoreCase) ||
-                        mediaType.Contains("html", StringComparison.OrdinalIgnoreCase))
-                    {
-                        throw new InvalidDataException($"Update server returned unexpected content type: {mediaType}");
-                    }
-
-                    var totalBytes = response.Content.Headers.ContentLength;
-                    await using var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken);
-                    await using var fileStream = new FileStream(
-                        tempPath,
-                        FileMode.Create,
-                        FileAccess.Write,
-                        FileShare.None,
-                        bufferSize: 1024 * 64,
-                        useAsync: true);
-
-                    var buffer = new byte[1024 * 64];
-                    long downloadedBytes = 0;
-                    int read;
-                    while ((read = await responseStream.ReadAsync(buffer.AsMemory(0, buffer.Length), cancellationToken)) > 0)
-                    {
-                        await fileStream.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
-                        downloadedBytes += read;
-
-                        if (totalBytes.HasValue && totalBytes.Value > 0)
-                        {
-                            progress?.Report((double)downloadedBytes / totalBytes.Value);
-                        }
-                    }
-
-                    await fileStream.FlushAsync(cancellationToken);
-                    progress?.Report(1.0);
-
-                    var downloadedFileInfo = new FileInfo(tempPath);
-                    if (!downloadedFileInfo.Exists || downloadedFileInfo.Length <= 0)
-                    {
-                        throw new InvalidDataException("Downloaded update archive is empty.");
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(expectedSha256))
-                    {
-                        var actualSha256 = await ComputeFileSha256Async(tempPath, cancellationToken);
-                        if (!string.Equals(actualSha256, expectedSha256, StringComparison.OrdinalIgnoreCase))
-                        {
-                            throw new InvalidDataException("Downloaded file hash mismatch.");
-                        }
-                    }
-
                     File.Move(tempPath, destinationPath, overwrite: true);
-                    return;
+                    return destinationPath;
                 }
-                catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested && attempt < MaxDownloadAttempts)
+                catch (IOException) when (attempt < 6)
                 {
-                    lastException = new TimeoutException("Update download timed out.");
+                    await Task.Delay(220, cancellationToken);
                 }
-                catch (Exception ex) when (
-                    ex is HttpRequestException or IOException or InvalidDataException &&
-                    attempt < MaxDownloadAttempts)
+                catch (UnauthorizedAccessException) when (attempt < 6)
                 {
-                    lastException = ex;
+                    await Task.Delay(220, cancellationToken);
                 }
-                catch (Exception)
-                {
-                    if (File.Exists(tempPath))
-                    {
-                        File.Delete(tempPath);
-                    }
-
-                    throw;
-                }
-
-                if (File.Exists(tempPath))
-                {
-                    File.Delete(tempPath);
-                }
-
-                DiagnosticsService.LogInfo(
-                    nameof(GitHubUpdateService),
-                    $"Retrying update download. Attempt {attempt + 1}/{MaxDownloadAttempts}. Url={downloadUrl}");
-                await Task.Delay(450, cancellationToken);
             }
 
-            if (lastException is not null)
+            // Destination might be locked by antivirus/indexer/previous updater run.
+            // Keep downloaded archive under unique name so update can still continue.
+            var fallbackPath = BuildAlternativeDestinationPath(destinationPath);
+            File.Move(tempPath, fallbackPath, overwrite: false);
+            return fallbackPath;
+        }
+
+        private static string BuildAlternativeDestinationPath(string destinationPath)
+        {
+            var directory = Path.GetDirectoryName(destinationPath) ?? Path.GetTempPath();
+            var name = Path.GetFileNameWithoutExtension(destinationPath);
+            var extension = Path.GetExtension(destinationPath);
+            return Path.Combine(
+                directory,
+                $"{name}_{DateTime.UtcNow:yyyyMMdd_HHmmss}_{Guid.NewGuid():N}{extension}");
+        }
+
+        private static void TryDeleteFile(string path)
+        {
+            try
             {
-                throw lastException;
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                }
             }
+            catch
+            {
+                // Best-effort cleanup only.
+            }
+        }
 
-            throw new InvalidDataException("Failed to download update archive.");
+        private static CancellationTokenSource CreateLinkedTimeoutToken(
+            CancellationToken cancellationToken,
+            TimeSpan timeout)
+        {
+            var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            linked.CancelAfter(timeout);
+            return linked;
         }
 
         private static string TryGetString(JsonElement root, string propertyName)
@@ -304,8 +506,8 @@ namespace JokerDBDTracker.Services
                 {
                     checksumAssets.Add((name, url));
                 }
-                var priority = GetPortableAssetPriority(name, extension);
 
+                var priority = GetPortableAssetPriority(name, extension);
                 if (priority == 0)
                 {
                     continue;
@@ -342,14 +544,17 @@ namespace JokerDBDTracker.Services
             {
                 priority += 140;
             }
+
             if (lower.Contains("portable"))
             {
                 priority += 90;
             }
+
             if (lower.Contains("self-contained"))
             {
                 priority += 50;
             }
+
             if (lower.Contains("symbols") || lower.Contains("debug"))
             {
                 priority -= 120;
@@ -382,7 +587,8 @@ namespace JokerDBDTracker.Services
 
             try
             {
-                var checksumText = await HttpClient.GetStringAsync(checksumUrl, cancellationToken);
+                using var timeoutCts = CreateLinkedTimeoutToken(cancellationToken, TimeSpan.FromSeconds(12));
+                var checksumText = await HttpClient.GetStringAsync(checksumUrl, timeoutCts.Token);
                 var lines = checksumText
                     .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
                 if (lines.Length == 0)
@@ -446,8 +652,9 @@ namespace JokerDBDTracker.Services
         {
             try
             {
+                using var timeoutCts = CreateLinkedTimeoutToken(cancellationToken, CheckRequestTimeout);
                 var latestUrl = $"https://github.com/{owner}/{repository}/releases/latest";
-                using var response = await HttpClient.GetAsync(latestUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                using var response = await HttpClient.GetAsync(latestUrl, HttpCompletionOption.ResponseHeadersRead, timeoutCts.Token);
                 if (response.StatusCode is not HttpStatusCode.OK and not HttpStatusCode.Found and not HttpStatusCode.MovedPermanently)
                 {
                     return new GitHubUpdateInfo { IsCheckSuccessful = false };

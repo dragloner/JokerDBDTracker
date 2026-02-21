@@ -22,6 +22,11 @@ namespace JokerDBDTracker
         private void PlayerWindow_StateChanged(object? sender, EventArgs e)
         {
             UpdateWindowSizeButtonState();
+            if (WindowState == WindowState.Minimized)
+            {
+                return;
+            }
+
             AnimateWindowStatePulse();
             RequestApplyEffects(immediate: true);
             TriggerEffectsReapplyBurst();

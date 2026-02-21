@@ -3,61 +3,11 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Threading;
-using JokerDBDTracker.Services;
 
 namespace JokerDBDTracker
 {
     public partial class MainWindow
     {
-        private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
-        {
-            ApplyStartupMaximized();
-            UpdateMainWindowButtonsState();
-            ShowLoadingOverlay(string.Empty, isIndeterminate: true);
-
-            try
-            {
-                await InitializeNetworkClockAsync();
-                await LoadAndApplySettingsAsync();
-                var loadVideosTask = LoadVideosAsync();
-                var updateCheckTask = CheckForUpdatesDuringStartupAsync();
-                await Task.WhenAll(loadVideosTask, updateCheckTask);
-                StartQuestRolloverMonitoring();
-                _questUiRefreshTimer.Start();
-            }
-            catch (Exception ex)
-            {
-                DiagnosticsService.LogException("MainWindow_Loaded", ex);
-                var logInfo = DiagnosticsService.IsEnabled()
-                    ? $"{T("Лог ошибок:", "Error log:")} {DiagnosticsService.GetLogFilePath()}"
-                    : T("Логирование отключено в настройках.", "Logging is disabled in Settings.");
-                MessageBox.Show(
-                    $"{T("Произошла ошибка инициализации приложения:", "App initialization failed:")}{Environment.NewLine}{ex.Message}{Environment.NewLine}{Environment.NewLine}" +
-                    logInfo,
-                    T("Ошибка", "Error"),
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-            }
-            finally
-            {
-                HideLoadingOverlay();
-            }
-        }
-
-        private void ApplyStartupMaximized()
-        {
-            Topmost = false;
-            WindowState = WindowState.Maximized;
-            Dispatcher.BeginInvoke(() =>
-            {
-                if (WindowState != WindowState.Minimized)
-                {
-                    WindowState = WindowState.Maximized;
-                }
-            }, DispatcherPriority.Loaded);
-        }
-
         private async void MainMinimizeButton_Click(object sender, RoutedEventArgs e)
         {
             await AnimateMainMinimizeAsync();
@@ -77,7 +27,10 @@ namespace JokerDBDTracker
         private void MainWindow_StateChanged(object? sender, EventArgs e)
         {
             UpdateMainWindowButtonsState();
-            AnimateMainStatePulse();
+            if (WindowState != WindowState.Minimized)
+            {
+                AnimateMainStatePulse();
+            }
         }
 
         private void UpdateMainWindowButtonsState()
