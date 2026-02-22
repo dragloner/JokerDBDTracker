@@ -344,6 +344,23 @@ namespace JokerDBDTracker
                             fisheyeMapStrength: 999,
                             fisheyeImageData: null,
                             fisheyeStrength: 0,
+                            fisheyeSvgRoot: null,
+                            fisheyeSvgFilter: null,
+                            fisheyeDisplacementNode: null,
+                            fisheyeMapNode: null,
+                            fisheyeFilterCss: 'none',
+                            fisheyeMapCacheKey: '',
+                            fisheyeOverlayCanvas: null,
+                            fisheyeGl: null,
+                            fisheyeGlProgram: null,
+                            fisheyeGlTexture: null,
+                            fisheyeGlPosBuffer: null,
+                            fisheyeGlUvBuffer: null,
+                            fisheyeGlUniformTex: null,
+                            fisheyeGlUniformStrength: null,
+                            fisheyeGlAttribPos: -1,
+                            fisheyeGlAttribUv: -1,
+                            fisheyeGlSupported: null,
                             postFxBaseFilter: 'none',
                             audioUnsupported: false,
                             audioCtx: null,
@@ -398,6 +415,211 @@ namespace JokerDBDTracker
                                 this.postFxBaseFilter = typeof value === 'string' && value.length > 0
                                     ? value
                                     : 'none';
+                            },
+                            ensureFisheyeSvgFilter() {
+                                if (this.fisheyeSvgFilter && this.fisheyeDisplacementNode && this.fisheyeMapNode && this.fisheyeSvgRoot?.isConnected) {
+                                    return true;
+                                }
+
+                                const svgNs = 'http://www.w3.org/2000/svg';
+                                const xlinkNs = 'http://www.w3.org/1999/xlink';
+                                let root = document.getElementById('stwfx-fisheye-svg');
+                                if (root && !(root instanceof SVGSVGElement)) {
+                                    root.remove();
+                                    root = null;
+                                }
+
+                                if (!root) {
+                                    root = document.createElementNS(svgNs, 'svg');
+                                    root.setAttribute('id', 'stwfx-fisheye-svg');
+                                    root.setAttribute('width', '0');
+                                    root.setAttribute('height', '0');
+                                    root.setAttribute('aria-hidden', 'true');
+                                    root.style.position = 'fixed';
+                                    root.style.left = '-99999px';
+                                    root.style.top = '-99999px';
+                                    root.style.width = '0';
+                                    root.style.height = '0';
+                                    root.style.pointerEvents = 'none';
+                                    (document.body || document.documentElement).appendChild(root);
+                                }
+
+                                let defs = root.querySelector('defs');
+                                if (!(defs instanceof SVGDefsElement)) {
+                                    defs = document.createElementNS(svgNs, 'defs');
+                                    root.appendChild(defs);
+                                }
+
+                                let filter = root.querySelector('#stwfx-fisheye-filter');
+                                if (!(filter instanceof SVGFilterElement)) {
+                                    filter = document.createElementNS(svgNs, 'filter');
+                                    filter.setAttribute('id', 'stwfx-fisheye-filter');
+                                    filter.setAttribute('filterUnits', 'objectBoundingBox');
+                                    filter.setAttribute('primitiveUnits', 'userSpaceOnUse');
+                                    filter.setAttribute('x', '-10%');
+                                    filter.setAttribute('y', '-10%');
+                                    filter.setAttribute('width', '120%');
+                                    filter.setAttribute('height', '120%');
+                                    filter.setAttribute('color-interpolation-filters', 'sRGB');
+                                    defs.appendChild(filter);
+                                }
+
+                                let mapNode = filter.querySelector('feImage');
+                                if (!(mapNode instanceof SVGFEImageElement)) {
+                                    mapNode = document.createElementNS(svgNs, 'feImage');
+                                    mapNode.setAttribute('result', 'stwfxMap');
+                                    mapNode.setAttribute('x', '0');
+                                    mapNode.setAttribute('y', '0');
+                                    mapNode.setAttribute('width', '100%');
+                                    mapNode.setAttribute('height', '100%');
+                                    mapNode.setAttribute('preserveAspectRatio', 'none');
+                                    filter.appendChild(mapNode);
+                                }
+
+                                let displacement = filter.querySelector('feDisplacementMap');
+                                if (!(displacement instanceof SVGFEDisplacementMapElement)) {
+                                    displacement = document.createElementNS(svgNs, 'feDisplacementMap');
+                                    displacement.setAttribute('in', 'SourceGraphic');
+                                    displacement.setAttribute('in2', 'stwfxMap');
+                                    displacement.setAttribute('xChannelSelector', 'R');
+                                    displacement.setAttribute('yChannelSelector', 'G');
+                                    displacement.setAttribute('edgeMode', 'duplicate');
+                                    displacement.setAttribute('scale', '0');
+                                    filter.appendChild(displacement);
+                                }
+
+                                this.fisheyeSvgRoot = root;
+                                this.fisheyeSvgFilter = filter;
+                                this.fisheyeMapNode = mapNode;
+                                this.fisheyeDisplacementNode = displacement;
+                                this.fisheyeFilterCss = 'url(#stwfx-fisheye-filter)';
+                                this.fisheyeMapCacheKey = '';
+                                this._fisheyeXlinkNs = xlinkNs;
+                                return true;
+                            },
+                            buildFisheyeDisplacementDataUri(signedStrength, frameWidth, frameHeight, scalePx) {
+                                const signed = clamp11(signedStrength);
+                                const absStrength = Math.abs(signed);
+                                if (absStrength <= 0.01) {
+                                    return null;
+                                }
+
+                                const size = 512;
+                                const canvas = document.createElement('canvas');
+                                canvas.width = size;
+                                canvas.height = size;
+                                const ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
+                                if (!ctx) {
+                                    return null;
+                                }
+
+                                const image = ctx.createImageData(size, size);
+                                const data = image.data;
+                                const frameW = Math.max(2, Number(frameWidth) || 2);
+                                const frameH = Math.max(2, Number(frameHeight) || 2);
+                                const cxPx = frameW * 0.5;
+                                const cyPx = frameH * 0.5;
+                                const maxRadius = Math.SQRT2;
+                                const effectiveScale = Math.max(8, Number(scalePx) || 8);
+                                const dxField = new Float32Array(size * size);
+                                const dyField = new Float32Array(size * size);
+                                let dxSum = 0;
+                                let dySum = 0;
+                                let index = 0;
+                                for (let y = 0; y < size; y++) {
+                                    const ny = ((y + 0.5) / size) * 2 - 1;
+                                    for (let x = 0; x < size; x++) {
+                                        const nx = ((x + 0.5) / size) * 2 - 1;
+                                        const r = Math.hypot(nx, ny);
+                                        let dx = 0;
+                                        let dy = 0;
+                                        if (r > 1e-5) {
+                                            const rn = Math.min(1, r / maxRadius);
+                                            const p = 1 + absStrength * 1.9;
+                                            let srcRn;
+                                            if (signed >= 0) {
+                                                // Barrel / fisheye lens (bulge): sample inward near center.
+                                                srcRn = Math.pow(rn, p);
+                                            } else {
+                                                // Reverse lens (pinch).
+                                                srcRn = 1 - Math.pow(1 - rn, p);
+                                            }
+
+                                            const srcRadius = srcRn * maxRadius;
+                                            const dirX = nx / r;
+                                            const dirY = ny / r;
+                                            const srcNx = dirX * srcRadius;
+                                            const srcNy = dirY * srcRadius;
+
+                                            // Desired displacement in *pixels* for the actual element aspect ratio.
+                                            const dxPx = (srcNx - nx) * cxPx;
+                                            const dyPx = (srcNy - ny) * cyPx;
+
+                                            // feDisplacementMap offset = scale * (channel - 0.5).
+                                            // Encode pixel offsets into channel space using the chosen scale.
+                                            dx = Math.max(-0.5, Math.min(0.5, dxPx / effectiveScale));
+                                            dy = Math.max(-0.5, Math.min(0.5, dyPx / effectiveScale));
+                                        }
+                                        dxField[index] = dx;
+                                        dyField[index] = dy;
+                                        dxSum += dx;
+                                        dySum += dy;
+                                        index++;
+                                    }
+                                }
+
+                                // Remove any tiny DC bias to prevent "whole frame shifts".
+                                const count = Math.max(1, size * size);
+                                const dxBias = dxSum / count;
+                                const dyBias = dySum / count;
+
+                                let p = 0;
+                                for (let i = 0; i < count; i++) {
+                                    const dx = Math.max(-0.5, Math.min(0.5, dxField[i] - dxBias));
+                                    const dy = Math.max(-0.5, Math.min(0.5, dyField[i] - dyBias));
+                                    data[p++] = Math.max(0, Math.min(255, Math.round((dx + 0.5) * 255)));
+                                    data[p++] = Math.max(0, Math.min(255, Math.round((dy + 0.5) * 255)));
+                                    data[p++] = 128;
+                                    data[p++] = 255;
+                                }
+
+                                ctx.putImageData(image, 0, 0);
+                                return canvas.toDataURL('image/png');
+                            },
+                            updateFisheyeFilter(strength) {
+                                const signed = clamp11(strength);
+                                const absStrength = Math.abs(signed);
+                                this.fisheyeStrength = signed;
+                                this.fisheyeEnabled = absStrength > 0.01;
+                                // SVG-based fisheye is unstable in WebView2/Chromium on HTML video/canvas and
+                                // often degenerates into frame shifts. Keep runtime state only; actual fisheye is
+                                // rendered by the WebGL overlay in the post-FX loop.
+                                this.fisheyeFilterCss = 'none';
+                                if (this.jpegCanvas) {
+                                    this.jpegCanvas.style.filter = 'none';
+                                }
+                                if (this.fisheyeOverlayCanvas) {
+                                    this.fisheyeOverlayCanvas.style.filter = 'none';
+                                }
+                            },
+                            getFisheyeCssFilter() {
+                                return this.fisheyeEnabled && Math.abs(clamp11(this.fisheyeStrength)) > 0.01
+                                    ? (this.fisheyeFilterCss || 'url(#stwfx-fisheye-filter)')
+                                    : 'none';
+                            },
+                            composeVideoFilter(baseFilter) {
+                                const base = typeof baseFilter === 'string' && baseFilter.length > 0 ? baseFilter : 'none';
+                                const postFxOwnsVisual =
+                                    (this.jpegDamageEnabled && clamp01(this.jpegStrength) > 0.0001) ||
+                                    (this.fisheyeEnabled && Math.abs(clamp11(this.fisheyeStrength)) > 0.01);
+                                return postFxOwnsVisual ? 'none' : base;
+                            },
+                            applyJpegOverlayFisheyeFilter() {
+                                if (!this.jpegCanvas) {
+                                    return;
+                                }
+                                this.jpegCanvas.style.filter = 'none';
+                                this.jpegCanvas.style.willChange = 'transform';
                             },
                             applyPitchPlaybackRate(semitones) {
                                 const clampedSemitones = Math.max(-12, Math.min(12, Number(semitones) || 0));
@@ -943,11 +1165,16 @@ namespace JokerDBDTracker
                                     const cx = targetWidth * 0.5;
                                     const cy = targetHeight * 0.5;
                                     const maxNormRadius = Math.SQRT2; // corners of normalized rect [-1..1]
-                                    const tile = Math.max(6, Math.round(18 - absStrength * 10));
+                                    const tile = Math.max(3, Math.round(9 - absStrength * 4));
 
                                     // Full-frame warp. Start from original frame to hide any tiny seams.
                                     ctx.clearRect(0, 0, targetWidth, targetHeight);
                                     ctx.imageSmoothingEnabled = true;
+                                    try {
+                                        ctx.imageSmoothingQuality = 'high';
+                                    } catch {
+                                        // no-op
+                                    }
                                     ctx.drawImage(sourceCanvas, 0, 0, targetWidth, targetHeight);
 
                                     const mapRadius = (rn) => {
@@ -1018,8 +1245,370 @@ namespace JokerDBDTracker
                                     return sourceCanvas;
                                 }
                             },
+                            ensureFisheyeOverlay() {
+                                if (this.fisheyeOverlayCanvas && this.fisheyeOverlayCanvas.isConnected) {
+                                    const host = this.video.closest('.html5-video-container') || this.video.parentElement || document.body || document.documentElement;
+                                    if (host && this.fisheyeOverlayCanvas.parentElement !== host) {
+                                        try {
+                                            host.appendChild(this.fisheyeOverlayCanvas);
+                                        } catch {
+                                            // no-op
+                                        }
+                                    }
+
+                                    return this.fisheyeOverlayCanvas;
+                                }
+
+                                if (this.fisheyeOverlayCanvas && !this.fisheyeOverlayCanvas.isConnected) {
+                                    this.fisheyeOverlayCanvas = null;
+                                    this.fisheyeGl = null;
+                                    this.fisheyeGlProgram = null;
+                                    this.fisheyeGlTexture = null;
+                                    this.fisheyeGlPosBuffer = null;
+                                    this.fisheyeGlUvBuffer = null;
+                                    this.fisheyeGlUniformTex = null;
+                                    this.fisheyeGlUniformStrength = null;
+                                    this.fisheyeGlAttribPos = -1;
+                                    this.fisheyeGlAttribUv = -1;
+                                }
+
+                                let canvas = document.getElementById('stwfx-fisheye');
+                                if (canvas && !(canvas instanceof HTMLCanvasElement)) {
+                                    canvas.remove();
+                                    canvas = null;
+                                }
+
+                                const host = this.video.closest('.html5-video-container') || this.video.parentElement || document.body || document.documentElement;
+                                if (!canvas) {
+                                    canvas = document.createElement('canvas');
+                                    canvas.id = 'stwfx-fisheye';
+                                    canvas.style.position = host === document.body || host === document.documentElement ? 'fixed' : 'absolute';
+                                    canvas.style.left = '0';
+                                    canvas.style.top = '0';
+                                    canvas.style.width = '1px';
+                                    canvas.style.height = '1px';
+                                    canvas.style.pointerEvents = 'none';
+                                    canvas.style.mixBlendMode = 'normal';
+                                    canvas.style.zIndex = host === document.body || host === document.documentElement ? '2147483646' : '3';
+                                    canvas.style.display = 'none';
+                                    if (host instanceof HTMLElement) {
+                                        const hostStyle = window.getComputedStyle(host);
+                                        if (hostStyle.position === 'static') {
+                                            host.style.setProperty('position', 'relative', 'important');
+                                        }
+                                    }
+                                    host.appendChild(canvas);
+                                } else if (host && canvas.parentElement !== host) {
+                                    if (host instanceof HTMLElement) {
+                                        const hostStyle = window.getComputedStyle(host);
+                                        if (hostStyle.position === 'static') {
+                                            host.style.setProperty('position', 'relative', 'important');
+                                        }
+                                    }
+
+                                    canvas.style.position = host === document.body || host === document.documentElement ? 'fixed' : 'absolute';
+                                    canvas.style.zIndex = host === document.body || host === document.documentElement ? '2147483646' : '3';
+                                    host.appendChild(canvas);
+                                }
+
+                                this.fisheyeOverlayCanvas = canvas instanceof HTMLCanvasElement ? canvas : null;
+                                return this.fisheyeOverlayCanvas;
+                            },
+                            hideFisheyeOverlay(clearFrame) {
+                                const canvas = this.fisheyeOverlayCanvas;
+                                if (!canvas) {
+                                    return;
+                                }
+
+                                canvas.style.removeProperty('transform');
+                                canvas.style.removeProperty('transform-origin');
+                                canvas.style.filter = 'none';
+                                canvas.style.display = 'none';
+                                if (clearFrame && this.fisheyeGl && typeof this.fisheyeGl.clear === 'function') {
+                                    try {
+                                        this.fisheyeGl.viewport(0, 0, canvas.width || 1, canvas.height || 1);
+                                        this.fisheyeGl.clearColor(0, 0, 0, 0);
+                                        this.fisheyeGl.clear(this.fisheyeGl.COLOR_BUFFER_BIT);
+                                    } catch {
+                                        // no-op
+                                    }
+                                }
+                            },
+                            ensureFisheyeGl() {
+                                if (this.fisheyeGlSupported === false) {
+                                    return false;
+                                }
+
+                                const canvas = this.ensureFisheyeOverlay();
+                                if (!(canvas instanceof HTMLCanvasElement)) {
+                                    return false;
+                                }
+
+                                if (this.fisheyeGl &&
+                                    this.fisheyeGl.canvas === canvas &&
+                                    this.fisheyeGlProgram &&
+                                    this.fisheyeGlTexture &&
+                                    this.fisheyeGlPosBuffer &&
+                                    this.fisheyeGlUvBuffer)
+                                {
+                                    return true;
+                                }
+
+                                const gl = canvas.getContext('webgl', {
+                                    alpha: true,
+                                    antialias: true,
+                                    depth: false,
+                                    stencil: false,
+                                    preserveDrawingBuffer: false,
+                                    premultipliedAlpha: true,
+                                    desynchronized: true
+                                }) || canvas.getContext('experimental-webgl', {
+                                    alpha: true,
+                                    antialias: true,
+                                    depth: false,
+                                    stencil: false,
+                                    preserveDrawingBuffer: false,
+                                    premultipliedAlpha: true
+                                });
+
+                                if (!gl) {
+                                    this.fisheyeGlSupported = false;
+                                    return false;
+                                }
+
+                                const compile = (type, source) => {
+                                    const shader = gl.createShader(type);
+                                    if (!shader) {
+                                        return null;
+                                    }
+                                    gl.shaderSource(shader, source);
+                                    gl.compileShader(shader);
+                                    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                                        try {
+                                            gl.deleteShader(shader);
+                                        } catch {
+                                            // no-op
+                                        }
+                                        return null;
+                                    }
+                                    return shader;
+                                };
+
+                                const vertexSource = `
+                                    attribute vec2 aPosition;
+                                    attribute vec2 aUv;
+                                    varying vec2 vUv;
+                                    void main() {
+                                        vUv = aUv;
+                                        gl_Position = vec4(aPosition, 0.0, 1.0);
+                                    }
+                                `;
+                                const fragmentSource = `
+                                    precision mediump float;
+                                    varying vec2 vUv;
+                                    uniform sampler2D uTex;
+                                    uniform float uStrength;
+                                    const float MAX_R = 1.41421356237;
+
+                                    void main() {
+                                        vec2 p = vUv * 2.0 - 1.0;
+                                        float r = length(p);
+                                        vec2 uv = vUv;
+                                        float s = clamp(uStrength, -1.0, 1.0);
+                                        if (abs(s) > 0.0001 && r > 0.00001) {
+                                            float rn = clamp(r / MAX_R, 0.0, 1.0);
+                                            float pw = 1.0 + abs(s) * 1.85;
+                                            float srcRn = s >= 0.0
+                                                ? pow(rn, pw)
+                                                : (1.0 - pow(1.0 - rn, pw));
+                                            float srcR = srcRn * MAX_R;
+                                            vec2 srcP = (p / r) * srcR;
+                                            uv = clamp(srcP * 0.5 + 0.5, 0.0, 1.0);
+                                        }
+                                        gl_FragColor = texture2D(uTex, uv);
+                                    }
+                                `;
+
+                                const vs = compile(gl.VERTEX_SHADER, vertexSource);
+                                const fs = compile(gl.FRAGMENT_SHADER, fragmentSource);
+                                if (!vs || !fs) {
+                                    this.fisheyeGlSupported = false;
+                                    return false;
+                                }
+
+                                const program = gl.createProgram();
+                                if (!program) {
+                                    this.fisheyeGlSupported = false;
+                                    return false;
+                                }
+                                gl.attachShader(program, vs);
+                                gl.attachShader(program, fs);
+                                gl.linkProgram(program);
+                                try {
+                                    gl.deleteShader(vs);
+                                    gl.deleteShader(fs);
+                                } catch {
+                                    // no-op
+                                }
+                                if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+                                    try {
+                                        gl.deleteProgram(program);
+                                    } catch {
+                                        // no-op
+                                    }
+                                    this.fisheyeGlSupported = false;
+                                    return false;
+                                }
+
+                                const posBuffer = gl.createBuffer();
+                                const uvBuffer = gl.createBuffer();
+                                const texture = gl.createTexture();
+                                if (!posBuffer || !uvBuffer || !texture) {
+                                    this.fisheyeGlSupported = false;
+                                    return false;
+                                }
+
+                                gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
+                                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+                                    -1, -1,
+                                     1, -1,
+                                    -1,  1,
+                                     1,  1
+                                ]), gl.STATIC_DRAW);
+
+                                gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffer);
+                                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+                                    0, 0,
+                                    1, 0,
+                                    0, 1,
+                                    1, 1
+                                ]), gl.STATIC_DRAW);
+
+                                gl.bindTexture(gl.TEXTURE_2D, texture);
+                                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+                                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+                                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+                                gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+                                try {
+                                    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+                                } catch {
+                                    // no-op
+                                }
+
+                                const attribPos = gl.getAttribLocation(program, 'aPosition');
+                                const attribUv = gl.getAttribLocation(program, 'aUv');
+                                const uniformTex = gl.getUniformLocation(program, 'uTex');
+                                const uniformStrength = gl.getUniformLocation(program, 'uStrength');
+
+                                this.fisheyeGl = gl;
+                                this.fisheyeGlProgram = program;
+                                this.fisheyeGlTexture = texture;
+                                this.fisheyeGlPosBuffer = posBuffer;
+                                this.fisheyeGlUvBuffer = uvBuffer;
+                                this.fisheyeGlUniformTex = uniformTex;
+                                this.fisheyeGlUniformStrength = uniformStrength;
+                                this.fisheyeGlAttribPos = attribPos;
+                                this.fisheyeGlAttribUv = attribUv;
+                                this.fisheyeGlSupported = true;
+                                return true;
+                            },
+                            renderFisheyeOverlayFrame(sourceElement, rect, filtersAlreadyBaked) {
+                                if (!sourceElement) {
+                                    this.hideFisheyeOverlay(false);
+                                    return false;
+                                }
+
+                                if (!this.ensureFisheyeGl()) {
+                                    this.hideFisheyeOverlay(false);
+                                    return false;
+                                }
+
+                                const canvas = this.fisheyeOverlayCanvas;
+                                const gl = this.fisheyeGl;
+                                if (!(canvas instanceof HTMLCanvasElement) || !gl || !this.fisheyeGlProgram || !this.fisheyeGlTexture) {
+                                    this.hideFisheyeOverlay(false);
+                                    return false;
+                                }
+
+                                const parentRect = canvas.parentElement?.getBoundingClientRect?.() || null;
+                                const useFixedPosition = !parentRect ||
+                                    canvas.parentElement === document.body ||
+                                    canvas.parentElement === document.documentElement;
+                                const cssLeft = useFixedPosition ? rect.left : (rect.left - parentRect.left);
+                                const cssTop = useFixedPosition ? rect.top : (rect.top - parentRect.top);
+                                canvas.style.position = useFixedPosition ? 'fixed' : 'absolute';
+                                canvas.style.left = `${cssLeft.toFixed(3)}px`;
+                                canvas.style.top = `${cssTop.toFixed(3)}px`;
+                                canvas.style.width = `${rect.width.toFixed(3)}px`;
+                                canvas.style.height = `${rect.height.toFixed(3)}px`;
+                                canvas.style.display = 'block';
+                                canvas.style.mixBlendMode = 'normal';
+                                canvas.style.opacity = '1';
+
+                                const fxFlags = Array.isArray(this.settings?.Flags) ? this.settings.Flags : [];
+                                const overlayScaleX = fxFlags[11] === true ? -1 : 1;
+                                const overlayScaleY = fxFlags[14] === true ? -1 : 1;
+                                const shakeEnabled = fxFlags[10] === true;
+                                const tx = shakeEnabled ? this.shakeX : 0;
+                                const ty = shakeEnabled ? this.shakeY : 0;
+                                canvas.style.transformOrigin = 'center center';
+                                canvas.style.transform = `translate3d(${tx.toFixed(2)}px, ${ty.toFixed(2)}px, 0) scale(${overlayScaleX}, ${overlayScaleY})`;
+                                canvas.style.filter = filtersAlreadyBaked ? 'none' : this.postFxBaseFilter;
+                                canvas.style.willChange = 'transform, filter';
+
+                                const dpr = Math.min(1.5, Math.max(1, Number(window.devicePixelRatio) || 1));
+                                const targetWidth = Math.max(2, Math.round(rect.width * dpr));
+                                const targetHeight = Math.max(2, Math.round(rect.height * dpr));
+                                if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
+                                    canvas.width = targetWidth;
+                                    canvas.height = targetHeight;
+                                }
+
+                                try {
+                                    gl.viewport(0, 0, targetWidth, targetHeight);
+                                    gl.disable(gl.BLEND);
+                                    gl.useProgram(this.fisheyeGlProgram);
+
+                                    gl.bindBuffer(gl.ARRAY_BUFFER, this.fisheyeGlPosBuffer);
+                                    gl.enableVertexAttribArray(this.fisheyeGlAttribPos);
+                                    gl.vertexAttribPointer(this.fisheyeGlAttribPos, 2, gl.FLOAT, false, 0, 0);
+
+                                    gl.bindBuffer(gl.ARRAY_BUFFER, this.fisheyeGlUvBuffer);
+                                    gl.enableVertexAttribArray(this.fisheyeGlAttribUv);
+                                    gl.vertexAttribPointer(this.fisheyeGlAttribUv, 2, gl.FLOAT, false, 0, 0);
+
+                                    gl.activeTexture(gl.TEXTURE0);
+                                    gl.bindTexture(gl.TEXTURE_2D, this.fisheyeGlTexture);
+                                    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+                                    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, sourceElement);
+
+                                    if (this.fisheyeGlUniformTex) {
+                                        gl.uniform1i(this.fisheyeGlUniformTex, 0);
+                                    }
+                                    if (this.fisheyeGlUniformStrength) {
+                                        gl.uniform1f(this.fisheyeGlUniformStrength, clamp11(this.fisheyeStrength));
+                                    }
+
+                                    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+                                    return true;
+                                } catch {
+                                    this.fisheyeGlSupported = false;
+                                    this.hideFisheyeOverlay(false);
+                                    return false;
+                                }
+                            },
                             ensureJpegOverlay() {
                                 if (this.jpegCanvas && this.jpegCtx && this.jpegCanvas.isConnected) {
+                                    const host = this.video.closest('.html5-video-container') || this.video.parentElement || document.body || document.documentElement;
+                                    if (host && this.jpegCanvas.parentElement !== host) {
+                                        try {
+                                            host.appendChild(this.jpegCanvas);
+                                        } catch {
+                                            // no-op
+                                        }
+                                    }
+
                                     return this.jpegCanvas;
                                 }
 
@@ -1034,19 +1623,37 @@ namespace JokerDBDTracker
                                     canvas = null;
                                 }
 
+                                const host = this.video.closest('.html5-video-container') || this.video.parentElement || document.body || document.documentElement;
                                 if (!canvas) {
                                     canvas = document.createElement('canvas');
                                     canvas.id = 'stwfx-jpeg';
-                                    canvas.style.position = 'fixed';
+                                    canvas.style.position = host === document.body || host === document.documentElement ? 'fixed' : 'absolute';
                                     canvas.style.left = '0';
                                     canvas.style.top = '0';
                                     canvas.style.width = '1px';
                                     canvas.style.height = '1px';
                                     canvas.style.pointerEvents = 'none';
                                     canvas.style.mixBlendMode = 'normal';
-                                    canvas.style.zIndex = '2147483645';
+                                    canvas.style.zIndex = host === document.body || host === document.documentElement ? '2147483645' : '2';
                                     canvas.style.display = 'none';
-                                    (document.body || document.documentElement).appendChild(canvas);
+                                    if (host instanceof HTMLElement) {
+                                        const hostStyle = window.getComputedStyle(host);
+                                        if (hostStyle.position === 'static') {
+                                            host.style.setProperty('position', 'relative', 'important');
+                                        }
+                                    }
+                                    host.appendChild(canvas);
+                                } else if (host && canvas.parentElement !== host) {
+                                    if (host instanceof HTMLElement) {
+                                        const hostStyle = window.getComputedStyle(host);
+                                        if (hostStyle.position === 'static') {
+                                            host.style.setProperty('position', 'relative', 'important');
+                                        }
+                                    }
+
+                                    canvas.style.position = host === document.body || host === document.documentElement ? 'fixed' : 'absolute';
+                                    canvas.style.zIndex = host === document.body || host === document.documentElement ? '2147483645' : '2';
+                                    host.appendChild(canvas);
                                 }
 
                                 if (!(canvas instanceof HTMLCanvasElement)) {
@@ -1071,19 +1678,20 @@ namespace JokerDBDTracker
                                 if (clearOverlay && this.jpegCanvas) {
                                     this.jpegCanvas.style.removeProperty('transform');
                                     this.jpegCanvas.style.removeProperty('transform-origin');
+                                    this.jpegCanvas.style.filter = 'none';
                                     this.jpegCanvas.style.display = 'none';
+                                    this.jpegCanvas.style.opacity = '1';
                                     if (this.jpegCtx) {
                                         this.jpegCtx.clearRect(0, 0, this.jpegCanvas.width, this.jpegCanvas.height);
                                     }
+                                }
+                                if (clearOverlay) {
+                                    this.hideFisheyeOverlay(true);
                                 }
                             },
                             ensurePostFxLoop() {
                                 if (!this.isPostFxActive()) {
                                     this.stopPostFxLoop(true);
-                                    return;
-                                }
-
-                                if (!this.ensureJpegOverlay()) {
                                     return;
                                 }
 
@@ -1096,26 +1704,22 @@ namespace JokerDBDTracker
                                 this.postFxRafId = requestAnimationFrame(this.postFxTick);
                             },
                             stopFisheye() {
-                                this.fisheyeEnabled = false;
-                                this.fisheyeStrength = 0;
+                                this.updateFisheyeFilter(0);
+                                this.applyJpegOverlayFisheyeFilter();
                                 this.ensurePostFxLoop();
                             },
                             startFisheye(strength) {
-                                const fisheyeNormalized = clamp11(strength);
-                                this.fisheyeStrength = fisheyeNormalized;
-                                this.fisheyeEnabled = Math.abs(fisheyeNormalized) > 0.01;
+                                this.updateFisheyeFilter(strength);
+                                this.applyJpegOverlayFisheyeFilter();
                                 this.ensurePostFxLoop();
                             },
                             stopJpegDamage() {
                                 this.jpegDamageEnabled = false;
                                 this.jpegStrength = 0;
+                                this.applyJpegOverlayFisheyeFilter();
                                 this.ensurePostFxLoop();
                             },
                             renderJpegDamageFrame() {
-                                if (!this.jpegCanvas || !this.jpegCtx) {
-                                    return;
-                                }
-
                                 if (!this.isPostFxActive()) {
                                     this.stopPostFxLoop(true);
                                     return;
@@ -1130,65 +1734,100 @@ namespace JokerDBDTracker
                                 const strength = this.jpegDamageEnabled ? clamp01(this.jpegStrength) : 0;
                                 const fisheye = this.fisheyeEnabled ? clamp11(this.fisheyeStrength) : 0;
                                 const fisheyeAbs = Math.abs(fisheye);
+                                const jpegActive = strength > 0.0001;
+                                const fisheyeActive = fisheyeAbs > 0.01;
 
                                 try {
-                                    this.jpegCanvas.style.display = 'block';
-                                    this.jpegCanvas.style.left = `${rect.left.toFixed(3)}px`;
-                                    this.jpegCanvas.style.top = `${rect.top.toFixed(3)}px`;
-                                    this.jpegCanvas.style.width = `${rect.width.toFixed(3)}px`;
-                                    this.jpegCanvas.style.height = `${rect.height.toFixed(3)}px`;
-                                    const fxFlags = Array.isArray(this.settings?.Flags) ? this.settings.Flags : [];
-                                    const overlayScaleX = fxFlags[11] === true ? -1 : 1;
-                                    const overlayScaleY = fxFlags[14] === true ? -1 : 1;
-                                    this.jpegCanvas.style.transformOrigin = 'center center';
-                                    this.jpegCanvas.style.transform = `scale(${overlayScaleX}, ${overlayScaleY})`;
+                                    let jpegRendered = false;
 
-                                    const maxSide = strength > 0.0001 ? 1280 : 1024;
-                                    const renderScale = Math.min(1, maxSide / Math.max(rect.width, rect.height));
-                                    const targetWidth = Math.max(2, Math.round(rect.width * renderScale));
-                                    const targetHeight = Math.max(2, Math.round(rect.height * renderScale));
-                                    if (this.jpegCanvas.width !== targetWidth || this.jpegCanvas.height !== targetHeight) {
-                                        this.jpegCanvas.width = targetWidth;
-                                        this.jpegCanvas.height = targetHeight;
-                                    }
+                                    if (jpegActive) {
+                                        if (!this.ensureJpegOverlay()) {
+                                            return;
+                                        }
+                                        if (!this.jpegCanvas || !this.jpegCtx) {
+                                            return;
+                                        }
 
-                                    if (!this.jpegScratchCanvas || this.jpegScratchCanvas.width !== targetWidth || this.jpegScratchCanvas.height !== targetHeight) {
-                                        this.jpegScratchCanvas = document.createElement('canvas');
-                                        this.jpegScratchCanvas.width = targetWidth;
-                                        this.jpegScratchCanvas.height = targetHeight;
-                                        this.jpegScratchCtx = this.jpegScratchCanvas.getContext('2d', { alpha: true, desynchronized: true, willReadFrequently: true });
-                                    }
+                                        this.jpegCanvas.style.display = 'block';
+                                        const parentRect = this.jpegCanvas.parentElement?.getBoundingClientRect?.() || null;
+                                        const useFixedPosition = !parentRect ||
+                                            this.jpegCanvas.parentElement === document.body ||
+                                            this.jpegCanvas.parentElement === document.documentElement;
+                                        const cssLeft = useFixedPosition ? rect.left : (rect.left - parentRect.left);
+                                        const cssTop = useFixedPosition ? rect.top : (rect.top - parentRect.top);
+                                        this.jpegCanvas.style.position = useFixedPosition ? 'fixed' : 'absolute';
+                                        this.jpegCanvas.style.left = `${cssLeft.toFixed(3)}px`;
+                                        this.jpegCanvas.style.top = `${cssTop.toFixed(3)}px`;
+                                        this.jpegCanvas.style.width = `${rect.width.toFixed(3)}px`;
+                                        this.jpegCanvas.style.height = `${rect.height.toFixed(3)}px`;
+                                        const fxFlags = Array.isArray(this.settings?.Flags) ? this.settings.Flags : [];
+                                        const overlayScaleX = fxFlags[11] === true ? -1 : 1;
+                                        const overlayScaleY = fxFlags[14] === true ? -1 : 1;
+                                        const shakeEnabled = fxFlags[10] === true;
+                                        const tx = shakeEnabled ? this.shakeX : 0;
+                                        const ty = shakeEnabled ? this.shakeY : 0;
+                                        this.jpegCanvas.style.transformOrigin = 'center center';
+                                        this.jpegCanvas.style.transform = `translate3d(${tx.toFixed(2)}px, ${ty.toFixed(2)}px, 0) scale(${overlayScaleX}, ${overlayScaleY})`;
 
-                                    if (!this.jpegScratchCtx) {
-                                        this.stopPostFxLoop(true);
-                                        return;
-                                    }
+                                        const maxSide = 1280;
+                                        const renderScale = Math.min(1, maxSide / Math.max(rect.width, rect.height));
+                                        const targetWidth = Math.max(2, Math.round(rect.width * renderScale));
+                                        const targetHeight = Math.max(2, Math.round(rect.height * renderScale));
+                                        if (this.jpegCanvas.width !== targetWidth || this.jpegCanvas.height !== targetHeight) {
+                                            this.jpegCanvas.width = targetWidth;
+                                            this.jpegCanvas.height = targetHeight;
+                                        }
 
-                                    // Capture current video frame and emulate CSS filter stack in-canvas.
-                                    this.jpegScratchCtx.clearRect(0, 0, targetWidth, targetHeight);
-                                    this.jpegScratchCtx.filter = this.postFxBaseFilter;
-                                    this.jpegScratchCtx.imageSmoothingEnabled = true;
-                                    this.jpegScratchCtx.drawImage(this.video, 0, 0, targetWidth, targetHeight);
-                                    this.jpegScratchCtx.filter = 'none';
+                                        if (!this.jpegScratchCanvas || this.jpegScratchCanvas.width !== targetWidth || this.jpegScratchCanvas.height !== targetHeight) {
+                                            this.jpegScratchCanvas = document.createElement('canvas');
+                                            this.jpegScratchCanvas.width = targetWidth;
+                                            this.jpegScratchCanvas.height = targetHeight;
+                                            this.jpegScratchCtx = this.jpegScratchCanvas.getContext('2d', { alpha: true, desynchronized: true, willReadFrequently: true });
+                                        }
 
-                                    let sourceForDamage = this.jpegScratchCanvas;
-                                    if (fisheyeAbs > 0.01) {
-                                        sourceForDamage = this.applyFisheyeDistortion(this.jpegScratchCanvas, targetWidth, targetHeight, fisheye);
-                                    }
+                                        if (!this.jpegScratchCtx) {
+                                            this.stopPostFxLoop(true);
+                                            return;
+                                        }
 
-                                    this.jpegCanvas.style.mixBlendMode = 'normal';
-                                    this.jpegCanvas.style.opacity = '1';
-                                    this.jpegCtx.clearRect(0, 0, targetWidth, targetHeight);
-                                    this.jpegCtx.imageSmoothingEnabled = true;
-                                    this.jpegCtx.drawImage(sourceForDamage, 0, 0, targetWidth, targetHeight);
+                                        this.jpegScratchCtx.clearRect(0, 0, targetWidth, targetHeight);
+                                        this.jpegScratchCtx.filter = this.postFxBaseFilter;
+                                        this.jpegScratchCtx.imageSmoothingEnabled = true;
+                                        this.jpegScratchCtx.drawImage(this.video, 0, 0, targetWidth, targetHeight);
+                                        this.jpegScratchCtx.filter = 'none';
 
-                                    if (strength > 0.0001) {
+                                        const sourceForDamage = this.jpegScratchCanvas;
+
+                                        this.jpegCanvas.style.mixBlendMode = 'normal';
+                                        this.jpegCanvas.style.opacity = fisheyeActive ? '0' : '1';
+                                        this.jpegCanvas.style.filter = 'none';
+                                        this.jpegCtx.clearRect(0, 0, targetWidth, targetHeight);
+                                        this.jpegCtx.imageSmoothingEnabled = true;
+                                        this.jpegCtx.drawImage(sourceForDamage, 0, 0, targetWidth, targetHeight);
                                         this.applyJpegArtifacts(sourceForDamage, targetWidth, targetHeight, strength);
+                                        jpegRendered = true;
+                                    } else if (this.jpegCanvas) {
+                                        this.jpegCanvas.style.display = 'none';
+                                        this.jpegCanvas.style.opacity = '1';
+                                        this.jpegCanvas.style.filter = 'none';
                                     }
 
-                                    // Keep native video visible; overlay is fully opaque and this avoids source video reselection bugs.
+                                    if (fisheyeActive) {
+                                        const fisheyeSource = jpegRendered ? this.jpegCanvas : this.video;
+                                        const fisheyeOk = this.renderFisheyeOverlayFrame(fisheyeSource, rect, jpegRendered);
+                                        if (!fisheyeOk && this.jpegCanvas) {
+                                            // If GPU fisheye failed, at least keep JPEG visible.
+                                            this.jpegCanvas.style.opacity = jpegRendered ? '1' : this.jpegCanvas.style.opacity;
+                                        }
+                                    } else {
+                                        this.hideFisheyeOverlay(false);
+                                    }
                                 } catch {
-                                    this.jpegCanvas.style.display = 'none';
+                                    if (this.jpegCanvas) {
+                                        this.jpegCanvas.style.display = 'none';
+                                        this.jpegCanvas.style.opacity = '1';
+                                    }
+                                    this.hideFisheyeOverlay(false);
                                 }
                             },
                             postFxTick: () => {
@@ -1208,8 +1847,8 @@ namespace JokerDBDTracker
                                 const fisheyeNormalized = clamp11(fisheyeStrength);
                                 this.jpegDamageEnabled = normalized > 0.0001;
                                 this.jpegStrength = normalized;
-                                this.fisheyeStrength = fisheyeNormalized;
-                                this.fisheyeEnabled = Math.abs(fisheyeNormalized) > 0.01;
+                                this.updateFisheyeFilter(fisheyeNormalized);
+                                this.applyJpegOverlayFisheyeFilter();
                                 this.ensurePostFxLoop();
                             },
                             tick: () => {
@@ -1244,6 +1883,8 @@ namespace JokerDBDTracker
                                 this.stopJpegDamage();
                                 removeNode('stwfx-vhs');
                                 removeNode('stwfx-jpeg');
+                                removeNode('stwfx-fisheye');
+                                removeNode('stwfx-fisheye-svg');
                             }
                         };
 
@@ -1326,10 +1967,8 @@ namespace JokerDBDTracker
                         filters.push(`hue-rotate(${Math.round(toneHue)}deg) saturate(${toneSat.toFixed(2)})`);
                     }
 
-                    runtime.setPostFxBaseFilter(filters.join(' '));
-
-                    video.style.setProperty('filter', filters.length > 0 ? filters.join(' ') : 'none', 'important');
-                    runtime.applyTransform();
+                    const baseFilterCss = filters.length > 0 ? filters.join(' ') : 'none';
+                    runtime.setPostFxBaseFilter(baseFilterCss);
 
                     if (flags[10]) {
                         runtime.startShake();
@@ -1344,6 +1983,8 @@ namespace JokerDBDTracker
                         runtime.stopFisheye();
                         runtime.stopJpegDamage();
                     }
+                    video.style.setProperty('filter', runtime.composeVideoFilter(baseFilterCss), 'important');
+                    runtime.applyTransform();
 
                     const vhsOverlay = ensureOverlay('stwfx-vhs', (overlay) => {
                         overlay.style.position = 'fixed';
