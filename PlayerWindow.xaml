@@ -257,7 +257,7 @@
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="Height" Value="22"/>
-            <Setter Property="IsMoveToPointEnabled" Value="False"/>
+            <Setter Property="IsMoveToPointEnabled" Value="True"/>
             <Setter Property="UseLayoutRounding" Value="True"/>
             <Setter Property="SnapsToDevicePixels" Value="True"/>
             <Setter Property="Minimum" Value="-1"/>
@@ -665,15 +665,15 @@
                                 </Grid>
                             </Border>
 
-                            <CheckBox x:Name="Fx9" Content="9. Красное свечение" Style="{StaticResource EffectCheckBoxStyle}" Checked="EffectToggle_Changed" Unchecked="EffectToggle_Changed"/>
+                            <CheckBox x:Name="Fx9" Content="9. Фишай" Style="{StaticResource EffectCheckBoxStyle}" Checked="EffectToggle_Changed" Unchecked="EffectToggle_Changed"/>
                             <Border x:Name="Fx9Details" Margin="44,-8,0,10" Padding="0,0,6,0" MaxHeight="0" Opacity="0" Visibility="Collapsed">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="64"/>
                                     </Grid.ColumnDefinitions>
-                                    <Slider x:Name="RedGlowStrengthSlider" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="0" Maximum="1" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
-                                    <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CFEAFF" FontSize="14" Text="{Binding ElementName=RedGlowStrengthSlider, Path=Value, StringFormat={}{0:0.00}}"/>
+                                    <Slider x:Name="FisheyeStrengthSlider" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="-1" Maximum="1" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
+                                    <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CFEAFF" FontSize="14" Text="{Binding ElementName=FisheyeStrengthSlider, Path=Value, StringFormat={}{0:+0.00;-0.00;0.00}}"/>
                                 </Grid>
                             </Border>
 
@@ -701,16 +701,16 @@
                                 </Grid>
                             </Border>
 
-                            <CheckBox x:Name="Fx12" Content="12. Зеркало" Style="{StaticResource EffectCheckBoxStyle}" Checked="EffectToggle_Changed" Unchecked="EffectToggle_Changed"/>
-                            <CheckBox x:Name="Fx13" Content="13. Пикселизация" Style="{StaticResource EffectCheckBoxStyle}" Checked="EffectToggle_Changed" Unchecked="EffectToggle_Changed"/>
+                            <CheckBox x:Name="Fx12" Content="12. Горизонтальное зеркало" Style="{StaticResource EffectCheckBoxStyle}" Checked="EffectToggle_Changed" Unchecked="EffectToggle_Changed"/>
+                            <CheckBox x:Name="Fx13" Content="13. JPEG-помехи" Style="{StaticResource EffectCheckBoxStyle}" Checked="EffectToggle_Changed" Unchecked="EffectToggle_Changed"/>
                             <Border x:Name="Fx13Details" Margin="44,-8,0,10" Padding="0,0,6,0" MaxHeight="0" Opacity="0" Visibility="Collapsed">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="64"/>
                                     </Grid.ColumnDefinitions>
-                                    <Slider x:Name="PixelationStrengthSlider" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="0" Maximum="1" Value="0.45" ValueChanged="StrengthSlider_ValueChanged"/>
-                                    <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CFEAFF" FontSize="14" Text="{Binding ElementName=PixelationStrengthSlider, Path=Value, StringFormat={}{0:0.00}}"/>
+                                    <Slider x:Name="JpegDamageStrengthSlider" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="0" Maximum="1" Value="0.4" ValueChanged="StrengthSlider_ValueChanged"/>
+                                    <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CFEAFF" FontSize="14" Text="{Binding ElementName=JpegDamageStrengthSlider, Path=Value, StringFormat={}{0:0.00}}"/>
                                 </Grid>
                             </Border>
 
@@ -726,16 +726,121 @@
                                 </Grid>
                             </Border>
 
-                            <CheckBox x:Name="Fx15" Content="15. Фиолетовое свечение" Style="{StaticResource EffectCheckBoxStyle}" Checked="EffectToggle_Changed" Unchecked="EffectToggle_Changed"/>
-                            <Border x:Name="Fx15Details" Margin="44,-8,0,10" Padding="0,0,6,0" MaxHeight="0" Opacity="0" Visibility="Collapsed">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="64"/>
-                                    </Grid.ColumnDefinitions>
-                                    <Slider x:Name="VioletGlowStrengthSlider" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="0" Maximum="1" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
-                                    <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CFEAFF" FontSize="14" Text="{Binding ElementName=VioletGlowStrengthSlider, Path=Value, StringFormat={}{0:0.00}}"/>
-                                </Grid>
+                            <CheckBox x:Name="Fx15" Content="15. Вертикальное зеркало" Style="{StaticResource EffectCheckBoxStyle}" Checked="EffectToggle_Changed" Unchecked="EffectToggle_Changed"/>
+                            <Border Margin="0,12,0,0"
+                                    Padding="12"
+                                    Background="#B21A2733"
+                                    BorderBrush="#547A97AE"
+                                    BorderThickness="1"
+                                    CornerRadius="12">
+                                <StackPanel>
+                                    <TextBlock x:Name="AudioFxHeaderText"
+                                               Text="Audio FX"
+                                               Foreground="#EDF7FF"
+                                               FontSize="20"
+                                               FontWeight="Bold"/>
+                                    <TextBlock x:Name="AudioFxHintText"
+                                               Margin="0,4,0,10"
+                                               Text="EQ, pitch, reverb and basic sound effects for the current video."
+                                               TextWrapping="Wrap"
+                                               Foreground="#BFDCF0"
+                                               FontSize="13"/>
+                                    <Button x:Name="ResetAudioFxButton"
+                                            Margin="0,0,0,10"
+                                            Padding="10,6"
+                                            FontSize="13"
+                                            HorizontalAlignment="Left"
+                                            Content="Reset Audio FX"
+                                            Click="ResetAudioFxButton_Click"/>
+
+                                    <Grid Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="140"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="64"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock x:Name="AudioFxVolumeLabelText" Text="Volume boost" VerticalAlignment="Center" Foreground="#DDF1FF" FontSize="14"/>
+                                        <Slider x:Name="AudioVolumeBoostSlider" Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="0" Maximum="1" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
+                                        <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CFEAFF" FontSize="14" Text="{Binding ElementName=AudioVolumeBoostSlider, Path=Value, StringFormat={}{0:0.00}}"/>
+                                    </Grid>
+
+                                    <Grid Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="140"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="64"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock x:Name="AudioFxEqLowLabelText" Text="EQ Low (dB)" VerticalAlignment="Center" Foreground="#DDF1FF" FontSize="14"/>
+                                        <Slider x:Name="AudioEqLowDbSlider" Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="-18" Maximum="18" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
+                                        <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CFEAFF" FontSize="14" Text="{Binding ElementName=AudioEqLowDbSlider, Path=Value, StringFormat={}{0:+0.0;-0.0;0.0}}"/>
+                                    </Grid>
+
+                                    <Grid Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="140"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="64"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock x:Name="AudioFxEqMidLabelText" Text="EQ Mid (dB)" VerticalAlignment="Center" Foreground="#DDF1FF" FontSize="14"/>
+                                        <Slider x:Name="AudioEqMidDbSlider" Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="-18" Maximum="18" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
+                                        <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CFEAFF" FontSize="14" Text="{Binding ElementName=AudioEqMidDbSlider, Path=Value, StringFormat={}{0:+0.0;-0.0;0.0}}"/>
+                                    </Grid>
+
+                                    <Grid Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="140"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="64"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock x:Name="AudioFxEqHighLabelText" Text="EQ High (dB)" VerticalAlignment="Center" Foreground="#DDF1FF" FontSize="14"/>
+                                        <Slider x:Name="AudioEqHighDbSlider" Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="-18" Maximum="18" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
+                                        <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CFEAFF" FontSize="14" Text="{Binding ElementName=AudioEqHighDbSlider, Path=Value, StringFormat={}{0:+0.0;-0.0;0.0}}"/>
+                                    </Grid>
+
+                                    <Grid Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="140"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="64"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock x:Name="AudioFxPitchLabelText" Text="Pitch (semitones)" VerticalAlignment="Center" Foreground="#DDF1FF" FontSize="14"/>
+                                        <Slider x:Name="AudioPitchSemitonesSlider" Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="-8" Maximum="8" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
+                                        <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CFEAFF" FontSize="14" Text="{Binding ElementName=AudioPitchSemitonesSlider, Path=Value, StringFormat={}{0:+0.0;-0.0;0.0}}"/>
+                                    </Grid>
+
+                                    <Grid Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="140"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="64"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock x:Name="AudioFxReverbLabelText" Text="Reverb" VerticalAlignment="Center" Foreground="#DDF1FF" FontSize="14"/>
+                                        <Slider x:Name="AudioReverbStrengthSlider" Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="0" Maximum="1" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
+                                        <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CFEAFF" FontSize="14" Text="{Binding ElementName=AudioReverbStrengthSlider, Path=Value, StringFormat={}{0:0.00}}"/>
+                                    </Grid>
+
+                                    <Grid Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="140"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="64"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock x:Name="AudioFxEchoLabelText" Text="Echo" VerticalAlignment="Center" Foreground="#DDF1FF" FontSize="14"/>
+                                        <Slider x:Name="AudioEchoStrengthSlider" Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="0" Maximum="1" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
+                                        <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CFEAFF" FontSize="14" Text="{Binding ElementName=AudioEchoStrengthSlider, Path=Value, StringFormat={}{0:0.00}}"/>
+                                    </Grid>
+
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="140"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="64"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock x:Name="AudioFxDistortionLabelText" Text="Distortion" VerticalAlignment="Center" Foreground="#DDF1FF" FontSize="14"/>
+                                        <Slider x:Name="AudioDistortionStrengthSlider" Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="0" Maximum="1" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
+                                        <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CFEAFF" FontSize="14" Text="{Binding ElementName=AudioDistortionStrengthSlider, Path=Value, StringFormat={}{0:0.00}}"/>
+                                    </Grid>
+                                </StackPanel>
                             </Border>
                         </StackPanel>
                     </ScrollViewer>

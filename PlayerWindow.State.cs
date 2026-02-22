@@ -100,12 +100,19 @@ namespace JokerDBDTracker
             public double Saturation { get; init; }
             public double HueShift { get; init; }
             public double Blur { get; init; }
-            public double RedGlow { get; init; }
+            public double Fisheye { get; init; }
             public double Vhs { get; init; }
             public double Shake { get; init; }
-            public double Pixelation { get; init; }
+            public double JpegDamage { get; init; }
             public double ColdTone { get; init; }
-            public double VioletGlow { get; init; }
+            public double AudioVolumeBoost { get; init; }
+            public double AudioPitchSemitones { get; init; }
+            public double AudioReverb { get; init; }
+            public double AudioEcho { get; init; }
+            public double AudioDistortion { get; init; }
+            public double AudioEqLowDb { get; init; }
+            public double AudioEqMidDb { get; init; }
+            public double AudioEqHighDb { get; init; }
         }
 
         public int LastPlaybackSeconds { get; private set; }

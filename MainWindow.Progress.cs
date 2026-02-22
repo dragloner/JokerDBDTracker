@@ -54,16 +54,24 @@ namespace JokerDBDTracker
             new("daily_watch_60m", "60 минут просмотра", "60 minutes watch", "Набери 60 минут просмотра за день.", "Reach 60 minutes of watch time today.", 1450, 60 * 60, QuestMetric.DailyWatchSeconds, "sec"),
             new("daily_watch_90m", "90 минут просмотра", "90 minutes watch", "Набери 90 минут просмотра за день.", "Reach 90 minutes of watch time today.", 2200, 90 * 60, QuestMetric.DailyWatchSeconds, "sec"),
             new("daily_watch_120m", "2 часа просмотра", "2 hours watch", "Набери 2 часа просмотра за день.", "Reach 2 hours of watch time today.", 2900, 120 * 60, QuestMetric.DailyWatchSeconds, "sec"),
+            new("daily_watch_150m", "2.5 часа просмотра", "2.5 hours watch", "Набери 2.5 часа просмотра за день.", "Reach 2.5 hours of watch time today.", 3650, 150 * 60, QuestMetric.DailyWatchSeconds, "sec"),
+            new("daily_watch_180m", "3 часа просмотра", "3 hours watch", "Набери 3 часа просмотра за день.", "Reach 3 hours of watch time today.", 4500, 180 * 60, QuestMetric.DailyWatchSeconds, "sec"),
             new("daily_streams_2", "2 стрима в день", "2 streams a day", "Открой два разных стрима сегодня.", "Open two different streams today.", 820, 2, QuestMetric.DailyStreamsCount, "count"),
             new("daily_streams_3", "3 стрима в день", "3 streams a day", "Открой три разных стрима сегодня.", "Open three different streams today.", 1180, 3, QuestMetric.DailyStreamsCount, "count"),
             new("daily_streams_4", "4 стрима в день", "4 streams a day", "Открой четыре разных стрима сегодня.", "Open four different streams today.", 1540, 4, QuestMetric.DailyStreamsCount, "count"),
             new("daily_streams_5", "5 стримов в день", "5 streams a day", "Открой пять разных стримов сегодня.", "Open five different streams today.", 2050, 5, QuestMetric.DailyStreamsCount, "count"),
+            new("daily_streams_6", "6 стримов в день", "6 streams a day", "Открой шесть разных стримов сегодня.", "Open six different streams today.", 2720, 6, QuestMetric.DailyStreamsCount, "count"),
+            new("daily_streams_8", "8 стримов в день", "8 streams a day", "Открой восемь разных стримов сегодня.", "Open eight different streams today.", 3900, 8, QuestMetric.DailyStreamsCount, "count"),
             new("daily_session_15m", "Сессия 15 минут", "15-minute session", "Сделай одну сессию минимум 15 минут.", "Complete one session of at least 15 minutes.", 980, 15 * 60, QuestMetric.DailyBestSessionSeconds, "sec"),
             new("daily_session_25m", "Сессия 25 минут", "25-minute session", "Сделай одну сессию минимум 25 минут.", "Complete one session of at least 25 minutes.", 1500, 25 * 60, QuestMetric.DailyBestSessionSeconds, "sec"),
             new("daily_session_35m", "Сессия 35 минут", "35-minute session", "Сделай одну сессию минимум 35 минут.", "Complete one session of at least 35 minutes.", 2100, 35 * 60, QuestMetric.DailyBestSessionSeconds, "sec"),
+            new("daily_session_50m", "Сессия 50 минут", "50-minute session", "Сделай одну сессию минимум 50 минут.", "Complete one session of at least 50 minutes.", 3000, 50 * 60, QuestMetric.DailyBestSessionSeconds, "sec"),
+            new("daily_session_70m", "Сессия 70 минут", "70-minute session", "Сделай одну сессию минимум 70 минут.", "Complete one session of at least 70 minutes.", 4100, 70 * 60, QuestMetric.DailyBestSessionSeconds, "sec"),
             new("daily_effects_1", "Эффект-сессия", "Effect session", "Проведи хотя бы 1 сессию с эффектами.", "Complete at least 1 session with effects.", 1200, 1, QuestMetric.DailyEffectSessionsCount, "count"),
             new("daily_effects_2", "2 эффект-сессии", "2 effect sessions", "Проведи 2 сессии с эффектами.", "Complete 2 sessions with effects.", 1750, 2, QuestMetric.DailyEffectSessionsCount, "count"),
-            new("daily_effects_3", "3 эффект-сессии", "3 effect sessions", "Проведи 3 сессии с эффектами.", "Complete 3 sessions with effects.", 2450, 3, QuestMetric.DailyEffectSessionsCount, "count")
+            new("daily_effects_3", "3 эффект-сессии", "3 effect sessions", "Проведи 3 сессии с эффектами.", "Complete 3 sessions with effects.", 2450, 3, QuestMetric.DailyEffectSessionsCount, "count"),
+            new("daily_effects_4", "4 эффект-сессии", "4 effect sessions", "Проведи 4 сессии с эффектами.", "Complete 4 sessions with effects.", 3380, 4, QuestMetric.DailyEffectSessionsCount, "count"),
+            new("daily_effects_5", "5 эффект-сессий", "5 effect sessions", "Проведи 5 сессий с эффектами.", "Complete 5 sessions with effects.", 4550, 5, QuestMetric.DailyEffectSessionsCount, "count")
         ];
 
         private static readonly WeeklyQuestTemplate[] WeeklyQuestPool =
@@ -72,17 +80,26 @@ namespace JokerDBDTracker
             new("weekly_days_4", "4 активных дня", "4 active days", "Смотри стримы минимум в 4 дня этой недели.", "Watch streams on at least 4 days this week.", 3600, 4, QuestMetric.WeeklyWatchDaysCount, "count"),
             new("weekly_days_5", "5 активных дней", "5 active days", "Смотри стримы минимум в 5 днях этой недели.", "Watch streams on at least 5 days this week.", 4700, 5, QuestMetric.WeeklyWatchDaysCount, "count"),
             new("weekly_days_6", "6 активных дней", "6 active days", "Смотри стримы минимум в 6 днях этой недели.", "Watch streams on at least 6 days this week.", 6200, 6, QuestMetric.WeeklyWatchDaysCount, "count"),
+            new("weekly_days_7", "7 активных дней", "7 active days", "Смотри стримы каждый день этой недели.", "Watch streams every day this week.", 8400, 7, QuestMetric.WeeklyWatchDaysCount, "count"),
             new("weekly_watch_4h", "4 часа за неделю", "4 hours this week", "Набери 4 часа просмотра в текущей неделе.", "Accumulate 4 watch hours this week.", 3900, 4 * 60 * 60, QuestMetric.WeeklyWatchSeconds, "sec"),
             new("weekly_watch_6h", "6 часов за неделю", "6 hours this week", "Набери 6 часов просмотра в текущей неделе.", "Accumulate 6 watch hours this week.", 5600, 6 * 60 * 60, QuestMetric.WeeklyWatchSeconds, "sec"),
             new("weekly_watch_8h", "8 часов за неделю", "8 hours this week", "Набери 8 часов просмотра в текущей неделе.", "Accumulate 8 watch hours this week.", 7600, 8 * 60 * 60, QuestMetric.WeeklyWatchSeconds, "sec"),
             new("weekly_watch_12h", "12 часов за неделю", "12 hours this week", "Набери 12 часов просмотра в текущей неделе.", "Accumulate 12 watch hours this week.", 9800, 12 * 60 * 60, QuestMetric.WeeklyWatchSeconds, "sec"),
+            new("weekly_watch_16h", "16 часов за неделю", "16 hours this week", "Набери 16 часов просмотра в текущей неделе.", "Accumulate 16 watch hours this week.", 12800, 16 * 60 * 60, QuestMetric.WeeklyWatchSeconds, "sec"),
+            new("weekly_watch_20h", "20 часов за неделю", "20 hours this week", "Набери 20 часов просмотра в текущей неделе.", "Accumulate 20 watch hours this week.", 16200, 20 * 60 * 60, QuestMetric.WeeklyWatchSeconds, "sec"),
             new("weekly_streams_8", "8 стримов за неделю", "8 streams this week", "Открой 8 разных стримов за неделю.", "Open 8 different streams this week.", 4300, 8, QuestMetric.WeeklyStreamsCount, "count"),
             new("weekly_streams_12", "12 стримов за неделю", "12 streams this week", "Открой 12 разных стримов за неделю.", "Open 12 different streams this week.", 6500, 12, QuestMetric.WeeklyStreamsCount, "count"),
             new("weekly_streams_16", "16 стримов за неделю", "16 streams this week", "Открой 16 разных стримов за неделю.", "Open 16 different streams this week.", 9100, 16, QuestMetric.WeeklyStreamsCount, "count"),
+            new("weekly_streams_20", "20 стримов за неделю", "20 streams this week", "Открой 20 разных стримов за неделю.", "Open 20 different streams this week.", 11800, 20, QuestMetric.WeeklyStreamsCount, "count"),
+            new("weekly_streams_28", "28 стримов за неделю", "28 streams this week", "Открой 28 разных стримов за неделю.", "Open 28 different streams this week.", 15600, 28, QuestMetric.WeeklyStreamsCount, "count"),
             new("weekly_best_session_45m", "Сильная сессия", "Strong session", "Сделай сессию минимум 45 минут в течение недели.", "Complete a session of at least 45 minutes this week.", 5200, 45 * 60, QuestMetric.WeeklyBestSessionSeconds, "sec"),
             new("weekly_best_session_75m", "Мощная сессия", "Power session", "Сделай сессию минимум 75 минут в течение недели.", "Complete a session of at least 75 minutes this week.", 7900, 75 * 60, QuestMetric.WeeklyBestSessionSeconds, "sec"),
+            new("weekly_best_session_105m", "Железная сессия", "Iron session", "Сделай сессию минимум 105 минут в течение недели.", "Complete a session of at least 105 minutes this week.", 11200, 105 * 60, QuestMetric.WeeklyBestSessionSeconds, "sec"),
+            new("weekly_best_session_150m", "Легендарная сессия", "Legendary session", "Сделай сессию минимум 150 минут в течение недели.", "Complete a session of at least 150 minutes this week.", 14600, 150 * 60, QuestMetric.WeeklyBestSessionSeconds, "sec"),
             new("weekly_effect_sessions_5", "Эффект-марафон", "Effect marathon", "Проведи 5 сессий с эффектами за неделю.", "Complete 5 effect sessions this week.", 5800, 5, QuestMetric.WeeklyEffectSessionsCount, "count"),
-            new("weekly_effect_sessions_8", "Эффект-шторм", "Effect storm", "Проведи 8 сессий с эффектами за неделю.", "Complete 8 effect sessions this week.", 8600, 8, QuestMetric.WeeklyEffectSessionsCount, "count")
+            new("weekly_effect_sessions_8", "Эффект-шторм", "Effect storm", "Проведи 8 сессий с эффектами за неделю.", "Complete 8 effect sessions this week.", 8600, 8, QuestMetric.WeeklyEffectSessionsCount, "count"),
+            new("weekly_effect_sessions_12", "Эффект-буря", "Effect tempest", "Проведи 12 сессий с эффектами за неделю.", "Complete 12 effect sessions this week.", 12200, 12, QuestMetric.WeeklyEffectSessionsCount, "count"),
+            new("weekly_effect_sessions_16", "Эффект-хаос", "Effect chaos", "Проведи 16 сессий с эффектами за неделю.", "Complete 16 effect sessions this week.", 15900, 16, QuestMetric.WeeklyEffectSessionsCount, "count")
         ];
 
         private sealed class QuestState

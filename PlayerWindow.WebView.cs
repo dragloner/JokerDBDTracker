@@ -558,6 +558,54 @@ namespace JokerDBDTracker
                         document.addEventListener('mousedown', blockForeignWatchClick, { capture: true });
                     };
 
+                    const installYouTubeSidePanelGuard = () => {
+                        if (window.__jdbdSidePanelGuardInstalled) {
+                            return;
+                        }
+
+                        window.__jdbdSidePanelGuardInstalled = true;
+
+                        const isCommentOrChatControl = (target) => {
+                            if (!target || !target.closest) {
+                                return false;
+                            }
+
+                            const button = target.closest('.ytp-button, button, a[role="button"]');
+                            if (!button) {
+                                return false;
+                            }
+
+                            if (!button.closest('.ytp-right-controls, .ytp-chrome-controls')) {
+                                return false;
+                            }
+
+                            const text = `${button.getAttribute('aria-label') || ''} ${button.getAttribute('title') || ''}`.toLowerCase();
+                            if (!text) {
+                                return false;
+                            }
+
+                            return text.includes('comment') ||
+                                   text.includes('comments') ||
+                                   text.includes('комментар') ||
+                                   text.includes('chat') ||
+                                   text.includes('чат');
+                        };
+
+                        const blockPanelToggle = (event) => {
+                            if (!isCommentOrChatControl(event.target)) {
+                                return;
+                            }
+
+                            event.preventDefault();
+                            event.stopImmediatePropagation();
+                            event.stopPropagation();
+                        };
+
+                        document.addEventListener('click', blockPanelToggle, { capture: true });
+                        document.addEventListener('mousedown', blockPanelToggle, { capture: true });
+                        document.addEventListener('pointerdown', blockPanelToggle, { capture: true });
+                    };
+
                     const applyImmersiveVideoLayout = () => {
                         if (!location.hostname.endsWith('youtube.com')) {
                             return;
@@ -580,12 +628,20 @@ namespace JokerDBDTracker
                                 }
 
                                 #columns {
+                                    display: grid !important;
+                                    grid-template-columns: minmax(0, 1fr) !important;
+                                    grid-template-areas: "primary" !important;
+                                    column-gap: 0 !important;
+                                    row-gap: 0 !important;
                                     max-width: none !important;
                                     width: 100% !important;
                                     height: 100% !important;
                                 }
 
                                 #primary {
+                                    grid-area: primary !important;
+                                    grid-column: 1 / -1 !important;
+                                    margin: 0 !important;
                                     width: 100% !important;
                                     max-width: none !important;
                                     height: 100% !important;
@@ -645,6 +701,17 @@ namespace JokerDBDTracker
                                 .ytp-title-expanded-content {
                                     pointer-events: none !important;
                                 }
+
+                                .ytp-right-controls .ytp-button[aria-label*="comment" i],
+                                .ytp-right-controls .ytp-button[title*="comment" i],
+                                .ytp-right-controls .ytp-button[aria-label*="комментар" i],
+                                .ytp-right-controls .ytp-button[title*="комментар" i],
+                                .ytp-right-controls .ytp-button[aria-label*="chat" i],
+                                .ytp-right-controls .ytp-button[title*="chat" i],
+                                .ytp-right-controls .ytp-button[aria-label*="чат" i],
+                                .ytp-right-controls .ytp-button[title*="чат" i] {
+                                    display: none !important;
+                                }
                             `;
                             (document.head || document.documentElement).appendChild(style);
                         };
@@ -654,8 +721,35 @@ namespace JokerDBDTracker
                         const flexy = document.querySelector('ytd-watch-flexy');
                         if (flexy) {
                             flexy.setAttribute('theater', '');
-                            flexy.removeAttribute('is-two-columns_');
-                            flexy.removeAttribute('is-two-columns');
+                            for (const attr of Array.from(flexy.attributes)) {
+                                const name = (attr.name || '').toLowerCase();
+                                if (name.includes('two-columns') ||
+                                    name.includes('engagement') ||
+                                    name.includes('chat') ||
+                                    name.includes('comment') ||
+                                    name.includes('panel'))
+                                {
+                                    try {
+                                        flexy.removeAttribute(attr.name);
+                                    } catch {
+                                        // no-op
+                                    }
+                                }
+                            }
+                        }
+
+                        const columns = document.getElementById('columns');
+                        if (columns) {
+                            columns.style.setProperty('grid-template-columns', 'minmax(0, 1fr)', 'important');
+                            columns.style.setProperty('grid-template-areas', '"primary"', 'important');
+                            columns.style.setProperty('column-gap', '0', 'important');
+                            columns.style.setProperty('row-gap', '0', 'important');
+                        }
+
+                        const primary = document.getElementById('primary');
+                        if (primary) {
+                            primary.style.setProperty('grid-column', '1 / -1', 'important');
+                            primary.style.setProperty('width', '100%', 'important');
                         }
                     };
 
@@ -677,6 +771,7 @@ namespace JokerDBDTracker
 
                     installPanelToggleBridge();
                     installForeignWatchGuard();
+                    installYouTubeSidePanelGuard();
                     enforceExpectedVideoId();
                     applyImmersiveVideoLayout();
                     const observer = new MutationObserver(() => {
@@ -712,7 +807,24 @@ namespace JokerDBDTracker
                                 height: 100% !important;
                             }
 
+                            #columns {
+                                display: grid !important;
+                                grid-template-columns: minmax(0, 1fr) !important;
+                                grid-template-areas: "primary" !important;
+                                column-gap: 0 !important;
+                                row-gap: 0 !important;
+                            }
+
+                            #primary {
+                                grid-area: primary !important;
+                                grid-column: 1 / -1 !important;
+                                width: 100% !important;
+                                max-width: none !important;
+                                margin: 0 !important;
+                            }
+
                             #primary-inner {
+                                width: 100% !important;
                                 height: 100vh !important;
                             }
 
@@ -738,6 +850,17 @@ namespace JokerDBDTracker
                             .ytp-title-expanded-heading,
                             .ytp-title-expanded-content {
                                 pointer-events: none !important;
+                            }
+
+                            .ytp-right-controls .ytp-button[aria-label*="comment" i],
+                            .ytp-right-controls .ytp-button[title*="comment" i],
+                            .ytp-right-controls .ytp-button[aria-label*="комментар" i],
+                            .ytp-right-controls .ytp-button[title*="комментар" i],
+                            .ytp-right-controls .ytp-button[aria-label*="chat" i],
+                            .ytp-right-controls .ytp-button[title*="chat" i],
+                            .ytp-right-controls .ytp-button[aria-label*="чат" i],
+                            .ytp-right-controls .ytp-button[title*="чат" i] {
+                                display: none !important;
                             }
                         `;
                         (document.head || document.documentElement).appendChild(style);

@@ -23,8 +23,7 @@ namespace JokerDBDTracker
                 (Fx10, Fx10Details),
                 (Fx11, Fx11Details),
                 (Fx13, Fx13Details),
-                (Fx14, Fx14Details),
-                (Fx15, Fx15Details)
+                (Fx14, Fx14Details)
             ];
 
             Loaded += PlayerWindow_Loaded;
@@ -37,7 +36,7 @@ namespace JokerDBDTracker
 
             _positionTimer.Interval = TimeSpan.FromSeconds(2);
             _positionTimer.Tick += PositionTimer_Tick;
-            _effectsApplyDebounceTimer.Interval = TimeSpan.FromMilliseconds(70);
+            _effectsApplyDebounceTimer.Interval = TimeSpan.FromMilliseconds(35);
             _effectsApplyDebounceTimer.Tick += EffectsApplyDebounceTimer_Tick;
             _resizeSettleDebounceTimer.Interval = TimeSpan.FromMilliseconds(ResizeSettleDelayMilliseconds);
             _resizeSettleDebounceTimer.Tick += ResizeSettleDebounceTimer_Tick;

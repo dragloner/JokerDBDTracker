@@ -882,6 +882,7 @@
                                                 Minimum="0.85"
                                                 Maximum="1.35"
                                                 TickFrequency="0.05"
+                                                IsMoveToPointEnabled="True"
                                                 IsSnapToTickEnabled="False"
                                                 ValueChanged="UiScaleSlider_ValueChanged"/>
                                          <TextBlock x:Name="UiScaleValueText"

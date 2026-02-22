@@ -30,7 +30,82 @@ namespace JokerDBDTracker
             {
                 const string script = """
                     (() => {
-                        const video = document.querySelector('video');
+                        const pickMainVideo = () => {
+                            const pinnedRuntimeVideo = window.__stwfxRuntime?.video;
+                            if (pinnedRuntimeVideo instanceof HTMLVideoElement && pinnedRuntimeVideo.isConnected) {
+                                return pinnedRuntimeVideo;
+                            }
+
+                            const nodes = Array.from(document.querySelectorAll('video'))
+                                .filter((node) => node instanceof HTMLVideoElement);
+                            if (nodes.length === 0) {
+                                return null;
+                            }
+
+                            const scoreVideo = (node) => {
+                                const rect = node.getBoundingClientRect();
+                                const style = window.getComputedStyle(node);
+                                const area = Math.max(0, rect.width) * Math.max(0, rect.height);
+                                if (style.display === 'none' || style.visibility === 'hidden' || area <= 0) {
+                                    return Number.NEGATIVE_INFINITY;
+                                }
+
+                                let score = area;
+                                const opacity = Number.parseFloat(style.opacity || '1');
+                                if (!Number.isFinite(opacity) || opacity < 0.01) {
+                                    return Number.NEGATIVE_INFINITY;
+                                }
+
+                                if (rect.width < 120 || rect.height < 68) {
+                                    score -= 1_000_000_000;
+                                }
+
+                                if (node.classList.contains('html5-main-video')) {
+                                    score += 1_000_000_000_000;
+                                }
+                                if (node.classList.contains('video-stream')) {
+                                    score += 100_000_000_000;
+                                }
+                                if (node.closest('.html5-video-player')) {
+                                    score += 10_000_000_000;
+                                }
+
+                                const badAncestor = node.closest(
+                                    '[id*="cinematic" i], [class*="cinematic" i], [id*="ambient" i], [class*="ambient" i], [id*="blur" i], [class*="blur" i]');
+                                if (badAncestor) {
+                                    score -= 2_000_000_000_000;
+                                }
+
+                                const filterText = (style.filter || '').toLowerCase();
+                                if (filterText.includes('blur(')) {
+                                    score -= 500_000_000_000;
+                                }
+
+                                if (opacity < 0.95) {
+                                    score -= 100_000_000_000;
+                                }
+
+                                if (node.readyState >= 2) {
+                                    score += 50_000_000;
+                                }
+
+                                return score;
+                            };
+
+                            let best = null;
+                            let bestScore = Number.NEGATIVE_INFINITY;
+                            for (const node of nodes) {
+                                const score = scoreVideo(node);
+                                if (score > bestScore) {
+                                    best = node;
+                                    bestScore = score;
+                                }
+                            }
+
+                            return best || nodes[0] || null;
+                        };
+
+                        const video = pickMainVideo();
                         if (!video || !Number.isFinite(video.currentTime) || !Number.isFinite(video.duration)) {
                             return { current: -1, duration: 0, paused: true, seeking: false, playbackRate: 1 };
                         }
