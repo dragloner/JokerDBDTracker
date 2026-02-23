@@ -54,8 +54,8 @@
             <Border Grid.Row="0"
                     Padding="18"
                     CornerRadius="18"
-                    Background="#CC213241"
-                    BorderBrush="#5F8099"
+                    Background="#D2162330"
+                    BorderBrush="#4D728C"
                     BorderThickness="1"
                     MouseLeftButtonDown="TopHeaderBorder_MouseLeftButtonDown">
                 <Grid>
@@ -74,7 +74,7 @@
                                    FontWeight="ExtraBold"/>
                         <StackPanel Margin="3,-2,0,0" Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock x:Name="AppVersionText"
-                                       Text="v1.2.1.1"
+                                       Text="v1.2.3"
                                        Foreground="#B9CFDF"
                                        FontSize="14"
                                        FontWeight="SemiBold"
@@ -108,9 +108,9 @@
                     <Border Grid.Column="1"
                             Margin="8,0,0,0"
                             CornerRadius="22"
-                            BorderBrush="#6E91A9"
+                            BorderBrush="#547B97"
                             BorderThickness="1"
-                            Background="#E6E4EEF6"
+                            Background="#D5172431"
                             Height="50"
                             VerticalAlignment="Center">
                         <Grid>
@@ -122,7 +122,7 @@
                                      Background="Transparent"
                                      TextChanged="SearchBox_TextChanged"/>
                         <TextBlock x:Name="SearchPlaceholderText" Text="Поиск стримов..."
-                                    Foreground="#6A8294"
+                                    Foreground="#8FB4CC"
                                     FontWeight="Bold"
                                    FontSize="18"
                                    IsHitTestVisible="False"
@@ -226,6 +226,25 @@
             </TabControl>
 
             <Grid Grid.Row="4" Grid.RowSpan="3" Margin="0,10,0,0">
+                <Grid.Resources>
+                    <LinearGradientBrush x:Key="HomePanelBackgroundBrush" StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Color="#D514202C" Offset="0"/>
+                        <GradientStop Color="#D5192837" Offset="0.55"/>
+                        <GradientStop Color="#D61C3142" Offset="1"/>
+                    </LinearGradientBrush>
+                    <Style x:Key="HomeGlassPanelStyle" TargetType="Border">
+                        <Setter Property="CornerRadius" Value="18"/>
+                        <Setter Property="BorderThickness" Value="1"/>
+                        <Setter Property="BorderBrush" Value="#4E728C"/>
+                        <Setter Property="Background" Value="{StaticResource HomePanelBackgroundBrush}"/>
+                    </Style>
+                    <Style x:Key="HomeInnerGlassStyle" TargetType="Border">
+                        <Setter Property="CornerRadius" Value="14"/>
+                        <Setter Property="BorderThickness" Value="1"/>
+                        <Setter Property="BorderBrush" Value="#36556D"/>
+                        <Setter Property="Background" Value="#A9111922"/>
+                    </Style>
+                </Grid.Resources>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="10"/>
@@ -240,96 +259,181 @@
                 <Border x:Name="HomeSummaryPanel"
                         Grid.Row="0"
                         Grid.ColumnSpan="3"
-                        Padding="12"
-                        CornerRadius="16"
-                        Background="#CC213241"
-                        BorderBrush="#5F8099"
-                        BorderThickness="1">
-                    <StackPanel>
+                        Padding="16"
+                        Style="{StaticResource HomeGlassPanelStyle}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="300"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
                         <TextBlock x:Name="HomeOverviewHeaderText"
                                    Text="Обзор главной"
-                                   Foreground="#EDF7FF"
-                                   FontSize="22"
+                                   Foreground="#F2FBFF"
+                                   FontSize="24"
                                    FontWeight="Bold"/>
                         <TextBlock x:Name="HomeStatsText"
                                    Foreground="#D5E6F3"
                                    FontSize="17"
-                                   Margin="0,6,0,0"/>
+                                   Margin="0,6,0,0"
+                                   Visibility="Collapsed"/>
                         <TextBlock x:Name="HomeHintText"
-                                   Foreground="#BFD8EA"
+                                   Foreground="#BCD7EA"
                                    FontSize="15"
-                                   Margin="0,4,0,0"
+                                   Margin="0,6,0,0"
                                    TextWrapping="Wrap"/>
-                    </StackPanel>
+                        </StackPanel>
+                        <Border Grid.Column="1"
+                                Margin="14,0,0,0"
+                                Padding="12"
+                                Style="{StaticResource HomeInnerGlassStyle}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="10"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Rectangle Height="3"
+                                           RadiusX="1.5"
+                                           RadiusY="1.5"
+                                           Fill="#8FD6FF"
+                                           HorizontalAlignment="Stretch"/>
+                                <TextBlock Grid.Row="2"
+                                           Foreground="#D6ECFB"
+                                           FontSize="14"
+                                           FontWeight="SemiBold"
+                                           TextWrapping="Wrap"
+                                           Text="{Binding Text, ElementName=HomeStatsText}"/>
+                            </Grid>
+                        </Border>
+                    </Grid>
                 </Border>
 
                 <Border x:Name="StreamsPanel"
                         Grid.Row="2"
                         Grid.Column="2"
-                        Padding="10"
-                        CornerRadius="18"
-                        Background="#CC213241"
-                        BorderBrush="#5F8099"
-                        BorderThickness="1">
+                        Padding="12"
+                        Style="{StaticResource HomeGlassPanelStyle}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="10"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Border Grid.Row="0"
+                                Padding="12,10"
+                                Style="{StaticResource HomeInnerGlassStyle}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Rectangle Width="56"
+                                           Height="3"
+                                           RadiusX="1.5"
+                                           RadiusY="1.5"
+                                           Fill="#90D6FF"
+                                           HorizontalAlignment="Left"
+                                           VerticalAlignment="Center"/>
+                                <Border Grid.Column="1"
+                                        Padding="8,5"
+                                        CornerRadius="10"
+                                        BorderBrush="#40637B"
+                                        BorderThickness="1"
+                                        Background="#9E12202B">
+                                    <DockPanel LastChildFill="False">
+                                        <Rectangle Width="22"
+                                                   Height="2"
+                                                   Fill="#90D6FF"
+                                                   Margin="0,0,6,0"
+                                                   VerticalAlignment="Center"/>
+                                        <Ellipse Width="6"
+                                                 Height="6"
+                                                 Fill="#90D6FF"
+                                                 VerticalAlignment="Center"/>
+                                    </DockPanel>
+                                </Border>
+                            </Grid>
+                        </Border>
+                        <Border Grid.Row="2"
+                                Padding="8"
+                                CornerRadius="14"
+                                BorderBrush="#34546B"
+                                BorderThickness="1"
+                                Background="#99101923">
                     <ListBox x:Name="VideoList"
+                             Margin="0,2,6,2"
                              Background="Transparent"
                              BorderThickness="0"
                              ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                              ScrollViewer.CanContentScroll="True"
                              ScrollViewer.VerticalScrollBarVisibility="Auto"
                              VirtualizingPanel.IsVirtualizing="True"
+                             VirtualizingPanel.ScrollUnit="Pixel"
                              VirtualizingPanel.VirtualizationMode="Recycling"
                              ItemContainerStyle="{StaticResource VideoItemStyle}"
                              SelectionChanged="VideoList_SelectionChanged">
                         <ListBox.Resources>
+                            <Style x:Key="UnifiedScrollThumbStyle"
+                                   TargetType="Thumb"
+                                   BasedOn="{StaticResource UnifiedScrollThumbStyle}">
+                                <Setter Property="MinHeight" Value="22"/>
+                                <Setter Property="Margin" Value="0"/>
+                            </Style>
                             <Style TargetType="ScrollBar" BasedOn="{StaticResource UnifiedScrollBarStyle}"/>
                         </ListBox.Resources>
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <Grid>
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="180"/>
-                                        <ColumnDefinition Width="12"/>
+                                        <ColumnDefinition Width="190"/>
+                                        <ColumnDefinition Width="14"/>
                                         <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="40"/>
+                                        <ColumnDefinition Width="42"/>
                                     </Grid.ColumnDefinitions>
 
-                                    <Border Width="180"
-                                            Height="102"
-                                            CornerRadius="8"
-                                            Background="#C334485A"
+                                    <Border Width="190"
+                                            Height="108"
+                                            CornerRadius="10"
+                                            Background="#B415222C"
+                                            BorderBrush="#35556C"
+                                            BorderThickness="1"
                                             ClipToBounds="True"
                                             VerticalAlignment="Top">
-                                        <Image Source="{Binding ThumbnailUrl}" Stretch="UniformToFill"/>
+                                        <Grid>
+                                            <Image Source="{Binding ThumbnailUrl}" Stretch="UniformToFill"/>
+                                            <Border Background="#22081116"/>
+                                        </Grid>
                                     </Border>
 
-                                    <StackPanel Grid.Column="2" Margin="0,0,6,0">
+                                    <StackPanel Grid.Column="2" Margin="0,1,6,0">
                                         <TextBlock Text="{Binding Title}"
-                                                   Foreground="#F5EDE8"
+                                                   Foreground="#F1F8FD"
                                                    FontWeight="Bold"
-                                                   FontSize="24"
+                                                   FontSize="22"
                                                    TextWrapping="Wrap"/>
                                         <TextBlock Text="{Binding PublishedAtText}"
-                                                   Foreground="#EAD0BF"
-                                                   FontSize="18"
+                                                   Foreground="#A8CDE6"
+                                                   FontSize="16"
                                                    Margin="0,6,0,0"/>
                                         <TextBlock Text="{Binding LastViewedText}"
-                                                   Foreground="#C9A1A5"
-                                                   FontSize="18"
-                                                   Margin="0,3,0,0"/>
+                                                   Foreground="#8EB1C8"
+                                                   FontSize="15"
+                                                   Margin="0,2,0,0"/>
                                         <TextBlock Text="{Binding ResumeText}"
-                                                   Foreground="#D7B8BC"
-                                                   FontSize="17"
-                                                   Margin="0,3,0,0"/>
+                                                   Foreground="#BCDCEE"
+                                                   FontSize="15"
+                                                   Margin="0,2,0,0"/>
                                     </StackPanel>
 
                                     <Button Grid.Column="3"
-                                            Width="30"
-                                            Height="30"
+                                            Width="32"
+                                            Height="32"
                                             Padding="0"
-                                            FontSize="17"
+                                            FontSize="16"
                                             FontWeight="Bold"
-                                            Background="#D0554145"
+                                            Background="#B3162632"
+                                            BorderBrush="#4D7188"
                                             Foreground="#FFD45A"
                                             Content="{Binding FavoriteGlyph}"
                                             Tag="{Binding VideoId}"
@@ -339,30 +443,63 @@
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
+                        </Border>
+                    </Grid>
                 </Border>
 
                 <Border x:Name="RecommendationsPanel"
                         Grid.Row="2"
                         Grid.Column="0"
                         Padding="12"
-                        CornerRadius="18"
-                        Background="#CC213241"
-                        BorderBrush="#5F8099"
-                        BorderThickness="1">
+                        Style="{StaticResource HomeGlassPanelStyle}">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="10"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
-                        <TextBlock x:Name="RecommendationsHeaderText"
-                                   Grid.Row="0"
+                        <Border Grid.Row="0"
+                                Padding="12,10"
+                                Style="{StaticResource HomeInnerGlassStyle}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Name="RecommendationsHeaderText"
                                    Text="Рекомендации"
-                                   Foreground="#EDF7FF"
+                                   Foreground="#F2FBFF"
                                    FontWeight="Bold"
-                                   FontSize="24"/>
+                                   FontSize="22"
+                                   VerticalAlignment="Center"/>
+                                <Border Grid.Column="1"
+                                        Padding="8,5"
+                                        CornerRadius="10"
+                                        BorderBrush="#40637B"
+                                        BorderThickness="1"
+                                        Background="#9E12202B">
+                                    <DockPanel LastChildFill="False">
+                                        <Rectangle Width="22"
+                                                   Height="2"
+                                                   Fill="#90D6FF"
+                                                   Margin="0,0,6,0"
+                                                   VerticalAlignment="Center"/>
+                                        <Ellipse Width="6"
+                                                 Height="6"
+                                                 Fill="#90D6FF"
+                                                 VerticalAlignment="Center"/>
+                                    </DockPanel>
+                                </Border>
+                            </Grid>
+                        </Border>
+                        <Border Grid.Row="2"
+                                Padding="8"
+                                CornerRadius="14"
+                                BorderBrush="#34546B"
+                                BorderThickness="1"
+                                Background="#99101923">
                         <ListBox x:Name="RecommendationsList"
-                                 Grid.Row="1"
-                                  Margin="0,8,0,0"
+                                  Margin="0,2,6,2"
                                   BorderThickness="0"
                                   Background="Transparent"
                                   Foreground="#EAD0BF"
@@ -388,27 +525,33 @@
                                         <Border Width="130"
                                                 Height="74"
                                                 CornerRadius="8"
-                                                Background="#C334485A"
+                                                Background="#B415222C"
+                                                BorderBrush="#35556C"
+                                                BorderThickness="1"
                                                 ClipToBounds="True"
                                                 VerticalAlignment="Top">
-                                            <Image Source="{Binding ThumbnailUrl}" Stretch="UniformToFill"/>
+                                            <Grid>
+                                                <Image Source="{Binding ThumbnailUrl}" Stretch="UniformToFill"/>
+                                                <Border Background="#22081116"/>
+                                            </Grid>
                                         </Border>
 
                                         <StackPanel Grid.Column="2" Margin="0,0,4,0">
                                             <TextBlock Text="{Binding Title}"
-                                                       Foreground="#F5EDE8"
+                                                       Foreground="#F1F8FD"
                                                        FontWeight="Bold"
                                                        FontSize="16"
                                                        TextWrapping="Wrap"/>
                                             <TextBlock Text="{Binding PublishedAtText}"
-                                                       Foreground="#EAD0BF"
-                                                       FontSize="14"
+                                                       Foreground="#A8CDE6"
+                                                       FontSize="13"
                                                        Margin="0,4,0,0"/>
                                         </StackPanel>
                                     </Grid>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
+                        </Border>
                     </Grid>
                 </Border>
             </Grid>
@@ -418,8 +561,8 @@
                     Grid.RowSpan="3"
                     Padding="14"
                     CornerRadius="18"
-                    Background="#CC213241"
-                    BorderBrush="#5F8099"
+                    Background="#D3172431"
+                    BorderBrush="#4D728C"
                     BorderThickness="1"
                     Visibility="Collapsed">
                 <Grid>
@@ -429,7 +572,7 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <Border Grid.Row="0" Background="#C82A3D4E" BorderBrush="#6887A0" BorderThickness="1" CornerRadius="14" Padding="12">
+                    <Border Grid.Row="0" Background="#CC192736" BorderBrush="#4F738E" BorderThickness="1" CornerRadius="14" Padding="12">
                         <StackPanel>
                             <TextBlock x:Name="ProfileHeaderText" Text="Профиль" Foreground="#EDF7FF" FontWeight="Bold" FontSize="28"/>
                             <Grid Margin="0,8,0,0" HorizontalAlignment="Left">
@@ -460,6 +603,7 @@
                                     <TextBlock x:Name="ProfileXpText" Foreground="#D7B8BC" FontSize="18" Margin="0,0,0,4"/>
                                     <TextBlock x:Name="ProfileStreakText" Foreground="#F1C98E" FontSize="18" FontWeight="Bold" Margin="0,2,0,0"/>
                                     <TextBlock x:Name="ProfileTodayText" Foreground="#D8EAF8" FontSize="16" Margin="0,2,0,0"/>
+                                    <TextBlock x:Name="ProfileHoursText" Foreground="#B8DDF6" FontSize="16" Margin="0,2,0,0"/>
                                 </StackPanel>
                             </Grid>
                             <ProgressBar x:Name="ProfileXpProgress" Margin="0,10,0,0" Height="22" Minimum="0"/>
@@ -495,7 +639,7 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
-                        <Border Grid.Column="0" Background="#C82A3D4E" BorderBrush="#6887A0" BorderThickness="1" CornerRadius="14" Padding="12">
+                        <Border Grid.Column="0" Background="#CC192736" BorderBrush="#4F738E" BorderThickness="1" CornerRadius="14" Padding="12">
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
@@ -567,7 +711,7 @@
                             </Grid>
                         </Border>
 
-                        <Border Grid.Column="2" Background="#C82A3D4E" BorderBrush="#6887A0" BorderThickness="1" CornerRadius="14" Padding="12">
+                        <Border Grid.Column="2" Background="#CC192736" BorderBrush="#4F738E" BorderThickness="1" CornerRadius="14" Padding="12">
                             <StackPanel>
                                 <TextBlock x:Name="RecentStreamsHeaderText"
                                            Text="Последние просмотренные"
@@ -635,8 +779,8 @@
                     Grid.RowSpan="3"
                     Padding="14"
                     CornerRadius="18"
-                    Background="#CC213241"
-                    BorderBrush="#5F8099"
+                    Background="#D3172431"
+                    BorderBrush="#4D728C"
                     BorderThickness="1"
                     Visibility="Collapsed">
                 <Grid>
@@ -677,7 +821,7 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
-                        <Border Grid.Column="0" Background="#C82A3D4E" BorderBrush="#6887A0" BorderThickness="1" CornerRadius="14" Padding="12">
+                        <Border Grid.Column="0" Background="#CC192736" BorderBrush="#4F738E" BorderThickness="1" CornerRadius="14" Padding="12">
                             <StackPanel>
                                 <TextBlock x:Name="QuestsDailyHeaderText" Text="Ежедневные задания" Foreground="#EDF7FF" FontWeight="Bold" FontSize="24"/>
                                 <TextBlock x:Name="QuestsDailyResetText"
@@ -726,7 +870,7 @@
                             </StackPanel>
                         </Border>
 
-                        <Border Grid.Column="2" Background="#C82A3D4E" BorderBrush="#6887A0" BorderThickness="1" CornerRadius="14" Padding="12">
+                        <Border Grid.Column="2" Background="#CC192736" BorderBrush="#4F738E" BorderThickness="1" CornerRadius="14" Padding="12">
                             <StackPanel>
                                 <TextBlock x:Name="QuestsWeeklyHeaderText" Text="Еженедельные задания" Foreground="#EDF7FF" FontWeight="Bold" FontSize="24"/>
                                 <TextBlock x:Name="QuestsWeeklyResetText"
@@ -783,8 +927,8 @@
                     Grid.RowSpan="3"
                     Padding="14"
                     CornerRadius="18"
-                    Background="#CC213241"
-                    BorderBrush="#5F8099"
+                    Background="#D3172431"
+                    BorderBrush="#4D728C"
                     BorderThickness="1"
                     Visibility="Collapsed">
                 <Grid>
@@ -1219,23 +1363,25 @@
             <Grid x:Name="LoadingOverlay"
                   Grid.RowSpan="9"
                   Panel.ZIndex="1000"
+                  Margin="-28"
+                  ClipToBounds="True"
                   Background="#0B141D">
                 <Image x:Name="LoadingBackgroundImage"
                         Stretch="UniformToFill"
                        Opacity="1.0"/>
                 <Grid HorizontalAlignment="Center"
                       VerticalAlignment="Center"
-                      Width="820">
-                    <Border Padding="22,18"
+                      Width="760">
+                    <Border Padding="24,22"
                             CornerRadius="18"
-                            BorderBrush="#88D0EAFF"
+                            BorderBrush="#78C7E6FA"
                             BorderThickness="1"
-                            Background="#87202A34">
+                            Background="#D61D2731">
                         <StackPanel>
                             <TextBlock Text="JokerDBD Tracker"
                                        Foreground="#F8FCFF"
-                                       FontSize="58"
-                                       FontWeight="Black"
+                                       FontSize="50"
+                                       FontWeight="ExtraBold"
                                        TextOptions.TextFormattingMode="Display"
                                        HorizontalAlignment="Center"
                                        TextAlignment="Center">
@@ -1245,9 +1391,9 @@
                             </TextBlock>
                             <TextBlock x:Name="LoadingTitleText"
                                        Text="Загрузка приложения"
-                                       Margin="0,8,0,0"
+                                       Margin="0,6,0,0"
                                        Foreground="#E8F4FC"
-                                       FontSize="30"
+                                       FontSize="24"
                                        FontWeight="Bold"
                                        HorizontalAlignment="Center"
                                        TextAlignment="Center">
@@ -1262,10 +1408,18 @@
                                        FontWeight="Bold"
                                        TextAlignment="Center"
                                        TextWrapping="Wrap"/>
-                            <ProgressBar Margin="0,18,0,0"
+                            <Border Margin="0,16,0,0"
+                                    Padding="10"
+                                    CornerRadius="12"
+                                    Background="#13202B"
+                                    BorderBrush="#47657C"
+                                    BorderThickness="1">
+                                <ProgressBar
+                                         Margin="0"
                                          x:Name="LoadingProgressBar"
                                          Height="18"
                                          IsIndeterminate="True"/>
+                            </Border>
                             <TextBlock x:Name="LoadingProgressText"
                                        Margin="0,10,0,0"
                                        Foreground="#DDF1FF"

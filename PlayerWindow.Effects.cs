@@ -51,6 +51,11 @@ namespace JokerDBDTracker
 
         private void EffectToggle_Changed(object sender, RoutedEventArgs e)
         {
+            if (_suppressEffectUiEvents)
+            {
+                return;
+            }
+
             UpdateStrengthSlidersEnabledState();
             UpdateEffectDetailsVisibility(animate: true);
             RequestApplyEffects(immediate: true);
@@ -58,12 +63,133 @@ namespace JokerDBDTracker
 
         private void StrengthSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            if (!IsLoaded)
+            if (!IsLoaded || _suppressEffectUiEvents)
             {
                 return;
             }
 
             RequestApplyEffects(immediate: false);
+        }
+
+        private void FisheyeCenterPad_Loaded(object sender, RoutedEventArgs e)
+        {
+            UpdateFisheyeCenterPadVisual();
+        }
+
+        private void FisheyeCenterPad_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            UpdateFisheyeCenterPadVisual();
+        }
+
+        private void FisheyeCenterPad_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is not FrameworkElement pad || !pad.IsEnabled)
+            {
+                return;
+            }
+
+            MarkUserInteraction();
+            _isDraggingFisheyeCenter = true;
+            pad.CaptureMouse();
+            SetFisheyeCenterFromPadPoint(pad, e.GetPosition(pad), requestApply: true);
+            e.Handled = true;
+        }
+
+        private void FisheyeCenterPad_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (!_isDraggingFisheyeCenter || sender is not FrameworkElement pad || !pad.IsMouseCaptured)
+            {
+                return;
+            }
+
+            SetFisheyeCenterFromPadPoint(pad, e.GetPosition(pad), requestApply: true);
+            e.Handled = true;
+        }
+
+        private void FisheyeCenterPad_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is not FrameworkElement pad)
+            {
+                return;
+            }
+
+            if (pad.IsMouseCaptured)
+            {
+                pad.ReleaseMouseCapture();
+            }
+
+            _isDraggingFisheyeCenter = false;
+            e.Handled = true;
+        }
+
+        private void FisheyeCenterPad_LostMouseCapture(object sender, MouseEventArgs e)
+        {
+            _isDraggingFisheyeCenter = false;
+        }
+
+        private void SetFisheyeCenterFromPadPoint(FrameworkElement pad, Point point, bool requestApply)
+        {
+            var width = pad.ActualWidth > 1 ? pad.ActualWidth : (double.IsNaN(pad.Width) ? 0 : pad.Width);
+            var height = pad.ActualHeight > 1 ? pad.ActualHeight : (double.IsNaN(pad.Height) ? 0 : pad.Height);
+            if (width <= 1 || height <= 1)
+            {
+                return;
+            }
+
+            var nextX = Math.Clamp(point.X / width, 0, 1);
+            var nextY = Math.Clamp(point.Y / height, 0, 1);
+            if (Math.Abs(nextX - _fisheyeCenterX) < 0.0005 &&
+                Math.Abs(nextY - _fisheyeCenterY) < 0.0005)
+            {
+                return;
+            }
+
+            _fisheyeCenterX = nextX;
+            _fisheyeCenterY = nextY;
+            UpdateFisheyeCenterPadVisual();
+
+            if (requestApply && IsLoaded)
+            {
+                RequestApplyEffects(immediate: false);
+            }
+        }
+
+        private void UpdateFisheyeCenterPadVisual()
+        {
+            if (FisheyeCenterCoordsText is not null)
+            {
+                FisheyeCenterCoordsText.Text = $"X: {_fisheyeCenterX:0.00}  Y: {_fisheyeCenterY:0.00}";
+            }
+
+            if (FisheyeCenterPad is null)
+            {
+                return;
+            }
+
+            var width = FisheyeCenterPad.ActualWidth > 1 ? FisheyeCenterPad.ActualWidth : (double.IsNaN(FisheyeCenterPad.Width) ? 0 : FisheyeCenterPad.Width);
+            var height = FisheyeCenterPad.ActualHeight > 1 ? FisheyeCenterPad.ActualHeight : (double.IsNaN(FisheyeCenterPad.Height) ? 0 : FisheyeCenterPad.Height);
+            if (width <= 1 || height <= 1)
+            {
+                return;
+            }
+
+            PositionFisheyeCenterPadMarker(FisheyeCenterHandleOuter, width, height);
+            PositionFisheyeCenterPadMarker(FisheyeCenterHandleInner, width, height);
+        }
+
+        private void PositionFisheyeCenterPadMarker(FrameworkElement marker, double padWidth, double padHeight)
+        {
+            if (marker is null)
+            {
+                return;
+            }
+
+            var markerWidth = marker.ActualWidth > 0 ? marker.ActualWidth : (double.IsNaN(marker.Width) ? 0 : marker.Width);
+            var markerHeight = marker.ActualHeight > 0 ? marker.ActualHeight : (double.IsNaN(marker.Height) ? 0 : marker.Height);
+            var left = Math.Clamp(_fisheyeCenterX * padWidth - markerWidth * 0.5, 0, Math.Max(0, padWidth - markerWidth));
+            var top = Math.Clamp(_fisheyeCenterY * padHeight - markerHeight * 0.5, 0, Math.Max(0, padHeight - markerHeight));
+            Canvas.SetLeft(marker, left);
+            Canvas.SetTop(marker, top);
         }
 
         private async void EffectsApplyDebounceTimer_Tick(object? sender, EventArgs e)
@@ -172,6 +298,8 @@ namespace JokerDBDTracker
                 HueShift = NormalizeSigned(HueShiftStrengthSlider),
                 Blur = NormalizePositive(BlurStrengthSlider),
                 Fisheye = NormalizeSigned(FisheyeStrengthSlider),
+                FisheyeCenterX = Math.Clamp(_fisheyeCenterX, 0, 1),
+                FisheyeCenterY = Math.Clamp(_fisheyeCenterY, 0, 1),
                 Vhs = NormalizePositive(VhsStrengthSlider),
                 Shake = NormalizePositive(ShakeStrengthSlider),
                 JpegDamage = NormalizePositive(JpegDamageStrengthSlider),
@@ -344,6 +472,8 @@ namespace JokerDBDTracker
                             fisheyeMapStrength: 999,
                             fisheyeImageData: null,
                             fisheyeStrength: 0,
+                            fisheyeCenterX: 0.5,
+                            fisheyeCenterY: 0.5,
                             fisheyeSvgRoot: null,
                             fisheyeSvgFilter: null,
                             fisheyeDisplacementNode: null,
@@ -358,6 +488,7 @@ namespace JokerDBDTracker
                             fisheyeGlUvBuffer: null,
                             fisheyeGlUniformTex: null,
                             fisheyeGlUniformStrength: null,
+                            fisheyeGlUniformCenter: null,
                             fisheyeGlAttribPos: -1,
                             fisheyeGlAttribUv: -1,
                             fisheyeGlSupported: null,
@@ -378,6 +509,10 @@ namespace JokerDBDTracker
                             audioReverbWetGain: null,
                             audioOutputGain: null,
                             audioLastPitchFactor: 1,
+                            audioBasePlaybackRate: 1,
+                            audioExpectedPlaybackRate: 1,
+                            audioIgnoreRateChanges: 0,
+                            audioRateChangeHandler: null,
                             audioLastReverbKey: '',
                             audioLastDistortionKey: '',
                             stopShake() {
@@ -586,10 +721,12 @@ namespace JokerDBDTracker
                                 ctx.putImageData(image, 0, 0);
                                 return canvas.toDataURL('image/png');
                             },
-                            updateFisheyeFilter(strength) {
+                            updateFisheyeFilter(strength, centerX, centerY) {
                                 const signed = clamp11(strength);
                                 const absStrength = Math.abs(signed);
                                 this.fisheyeStrength = signed;
+                                this.fisheyeCenterX = clamp01(centerX ?? 0.5);
+                                this.fisheyeCenterY = clamp01(centerY ?? 0.5);
                                 this.fisheyeEnabled = absStrength > 0.01;
                                 // SVG-based fisheye is unstable in WebView2/Chromium on HTML video/canvas and
                                 // often degenerates into frame shifts. Keep runtime state only; actual fisheye is
@@ -621,17 +758,79 @@ namespace JokerDBDTracker
                                 this.jpegCanvas.style.filter = 'none';
                                 this.jpegCanvas.style.willChange = 'transform';
                             },
+                            clampPlaybackRate(rate) {
+                                const value = Number(rate);
+                                if (!Number.isFinite(value)) {
+                                    return 1;
+                                }
+
+                                return Math.max(0.1, Math.min(4.0, value));
+                            },
+                            getConfiguredPitchSemitones() {
+                                return Math.max(-12, Math.min(12, Number(this.settings?.AudioPitchSemitones) || 0));
+                            },
+                            ensurePitchRateObserver() {
+                                if (this.audioRateChangeHandler) {
+                                    return;
+                                }
+
+                                this.audioRateChangeHandler = () => {
+                                    if (!this.video) {
+                                        return;
+                                    }
+
+                                    const currentRate = this.clampPlaybackRate(this.video.playbackRate);
+                                    if (this.audioIgnoreRateChanges > 0 &&
+                                        Math.abs(currentRate - this.audioExpectedPlaybackRate) <= 0.02)
+                                    {
+                                        this.audioIgnoreRateChanges = Math.max(0, this.audioIgnoreRateChanges - 1);
+                                        return;
+                                    }
+
+                                    const pitchSemitones = this.getConfiguredPitchSemitones();
+                                    const targetFactor = Math.pow(2, pitchSemitones / 12);
+                                    this.audioBasePlaybackRate = currentRate;
+
+                                    if (Math.abs(targetFactor - 1) > 0.001) {
+                                        this.applyPitchPlaybackRate(pitchSemitones);
+                                        return;
+                                    }
+
+                                    this.audioLastPitchFactor = 1;
+                                    try {
+                                        if ('preservesPitch' in this.video) {
+                                            this.video.preservesPitch = true;
+                                        }
+                                        if ('webkitPreservesPitch' in this.video) {
+                                            this.video.webkitPreservesPitch = true;
+                                        }
+                                        if ('mozPreservesPitch' in this.video) {
+                                            this.video.mozPreservesPitch = true;
+                                        }
+                                    } catch {
+                                        // Ignore unsupported pitch-preservation properties.
+                                    }
+                                };
+
+                                this.video.addEventListener('ratechange', this.audioRateChangeHandler, true);
+                            },
                             applyPitchPlaybackRate(semitones) {
                                 const clampedSemitones = Math.max(-12, Math.min(12, Number(semitones) || 0));
                                 const targetFactor = Math.pow(2, clampedSemitones / 12);
-                                const currentRate = Number.isFinite(this.video.playbackRate) ? this.video.playbackRate : 1;
+                                const currentRate = this.clampPlaybackRate(this.video.playbackRate);
                                 const previousFactor = Number.isFinite(this.audioLastPitchFactor) && this.audioLastPitchFactor > 0.001
                                     ? this.audioLastPitchFactor
                                     : 1;
-                                const estimatedBaseRate = Math.max(0.1, Math.min(4.0, currentRate / previousFactor));
-                                const targetRate = Math.max(0.1, Math.min(4.0, estimatedBaseRate * targetFactor));
+                                if (!Number.isFinite(this.audioBasePlaybackRate) || this.audioBasePlaybackRate < 0.1) {
+                                    this.audioBasePlaybackRate = this.clampPlaybackRate(currentRate / previousFactor);
+                                }
+
+                                const baseRate = this.clampPlaybackRate(this.audioBasePlaybackRate);
+                                const targetRate = this.clampPlaybackRate(baseRate * targetFactor);
                                 if (Math.abs(currentRate - targetRate) > 0.001) {
                                     try {
+                                        this.audioExpectedPlaybackRate = targetRate;
+                                        this.audioIgnoreRateChanges = Math.max(this.audioIgnoreRateChanges, 2);
                                         this.video.playbackRate = targetRate;
                                     } catch {
                                         // Some players may temporarily reject playbackRate updates.
@@ -878,6 +1077,9 @@ namespace JokerDBDTracker
                                 this.audioLastDistortionKey = '';
                             },
                             resetAudioEffects() {
+                                this.audioBasePlaybackRate = this.clampPlaybackRate(this.video?.playbackRate ?? 1);
+                                this.audioExpectedPlaybackRate = this.audioBasePlaybackRate;
+                                this.audioIgnoreRateChanges = 0;
                                 this.applyPitchPlaybackRate(0);
                                 this.resetAudioNodeEffects();
                             },
@@ -885,6 +1087,8 @@ namespace JokerDBDTracker
                                 if (!this.settings) {
                                     return;
                                 }
+
+                                this.ensurePitchRateObserver();
 
                                 const volumeBoost = clamp01(this.settings.AudioVolumeBoost);
                                 const pitchSemitones = Math.max(-12, Math.min(12, Number(this.settings.AudioPitchSemitones) || 0));
@@ -1268,6 +1472,7 @@ namespace JokerDBDTracker
                                     this.fisheyeGlUvBuffer = null;
                                     this.fisheyeGlUniformTex = null;
                                     this.fisheyeGlUniformStrength = null;
+                                    this.fisheyeGlUniformCenter = null;
                                     this.fisheyeGlAttribPos = -1;
                                     this.fisheyeGlAttribUv = -1;
                                 }
@@ -1408,22 +1613,28 @@ namespace JokerDBDTracker
                                     varying vec2 vUv;
                                     uniform sampler2D uTex;
                                     uniform float uStrength;
-                                    const float MAX_R = 1.41421356237;
+                                    uniform vec2 uCenter;
 
                                     void main() {
-                                        vec2 p = vUv * 2.0 - 1.0;
+                                        vec2 center = clamp(uCenter, vec2(0.0), vec2(1.0));
+                                        vec2 p = (vUv - center) * 2.0;
                                         float r = length(p);
                                         vec2 uv = vUv;
                                         float s = clamp(uStrength, -1.0, 1.0);
                                         if (abs(s) > 0.0001 && r > 0.00001) {
-                                            float rn = clamp(r / MAX_R, 0.0, 1.0);
+                                            vec2 edge = vec2(
+                                                max(center.x, 1.0 - center.x),
+                                                max(center.y, 1.0 - center.y)
+                                            ) * 2.0;
+                                            float maxR = max(0.0001, length(edge));
+                                            float rn = clamp(r / maxR, 0.0, 1.0);
                                             float pw = 1.0 + abs(s) * 1.85;
                                             float srcRn = s >= 0.0
                                                 ? pow(rn, pw)
                                                 : (1.0 - pow(1.0 - rn, pw));
-                                            float srcR = srcRn * MAX_R;
+                                            float srcR = srcRn * maxR;
                                             vec2 srcP = (p / r) * srcR;
-                                            uv = clamp(srcP * 0.5 + 0.5, 0.0, 1.0);
+                                            uv = clamp(center + srcP * 0.5, 0.0, 1.0);
                                         }
                                         gl_FragColor = texture2D(uTex, uv);
                                     }
@@ -1500,6 +1711,7 @@ namespace JokerDBDTracker
                                 const attribUv = gl.getAttribLocation(program, 'aUv');
                                 const uniformTex = gl.getUniformLocation(program, 'uTex');
                                 const uniformStrength = gl.getUniformLocation(program, 'uStrength');
+                                const uniformCenter = gl.getUniformLocation(program, 'uCenter');
 
                                 this.fisheyeGl = gl;
                                 this.fisheyeGlProgram = program;
@@ -1508,6 +1720,7 @@ namespace JokerDBDTracker
                                 this.fisheyeGlUvBuffer = uvBuffer;
                                 this.fisheyeGlUniformTex = uniformTex;
                                 this.fisheyeGlUniformStrength = uniformStrength;
+                                this.fisheyeGlUniformCenter = uniformCenter;
                                 this.fisheyeGlAttribPos = attribPos;
                                 this.fisheyeGlAttribUv = attribUv;
                                 this.fisheyeGlSupported = true;
@@ -1588,6 +1801,12 @@ namespace JokerDBDTracker
                                     }
                                     if (this.fisheyeGlUniformStrength) {
                                         gl.uniform1f(this.fisheyeGlUniformStrength, clamp11(this.fisheyeStrength));
+                                    }
+                                    if (this.fisheyeGlUniformCenter) {
+                                        gl.uniform2f(
+                                            this.fisheyeGlUniformCenter,
+                                            clamp01(this.fisheyeCenterX),
+                                            1.0 - clamp01(this.fisheyeCenterY));
                                     }
 
                                     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -1704,12 +1923,12 @@ namespace JokerDBDTracker
                                 this.postFxRafId = requestAnimationFrame(this.postFxTick);
                             },
                             stopFisheye() {
-                                this.updateFisheyeFilter(0);
+                                this.updateFisheyeFilter(0, this.fisheyeCenterX, this.fisheyeCenterY);
                                 this.applyJpegOverlayFisheyeFilter();
                                 this.ensurePostFxLoop();
                             },
-                            startFisheye(strength) {
-                                this.updateFisheyeFilter(strength);
+                            startFisheye(strength, centerX, centerY) {
+                                this.updateFisheyeFilter(strength, centerX, centerY);
                                 this.applyJpegOverlayFisheyeFilter();
                                 this.ensurePostFxLoop();
                             },
@@ -1842,12 +2061,12 @@ namespace JokerDBDTracker
                                 }
                                 state.postFxRafId = requestAnimationFrame(state.postFxTick);
                             },
-                            startJpegDamage(strength, fisheyeStrength) {
+                            startJpegDamage(strength, fisheyeStrength, fisheyeCenterX, fisheyeCenterY) {
                                 const normalized = clamp01(strength);
                                 const fisheyeNormalized = clamp11(fisheyeStrength);
                                 this.jpegDamageEnabled = normalized > 0.0001;
                                 this.jpegStrength = normalized;
-                                this.updateFisheyeFilter(fisheyeNormalized);
+                                this.updateFisheyeFilter(fisheyeNormalized, fisheyeCenterX, fisheyeCenterY);
                                 this.applyJpegOverlayFisheyeFilter();
                                 this.ensurePostFxLoop();
                             },
@@ -1876,6 +2095,14 @@ namespace JokerDBDTracker
                                 this.tick();
                             },
                             destroy() {
+                                if (this.audioRateChangeHandler && this.video) {
+                                    try {
+                                        this.video.removeEventListener('ratechange', this.audioRateChangeHandler, true);
+                                    } catch {
+                                        // no-op
+                                    }
+                                }
+                                this.audioRateChangeHandler = null;
                                 this.resetAudioEffects();
                                 this.closeAudioGraph();
                                 this.stopShake();
@@ -1958,6 +2185,8 @@ namespace JokerDBDTracker
                     if (flags[6]) filters.push(`hue-rotate(${Math.round(settings.HueShift * 260)}deg)`);
                     if (flags[7]) filters.push(`blur(${(0.6 + settings.Blur * 9.4).toFixed(1)}px)`);
                     const fisheyeAmount = flags[8] ? clamp11(settings.Fisheye) : 0;
+                    const fisheyeCenterX = clamp01(Number(settings.FisheyeCenterX) || 0.5);
+                    const fisheyeCenterY = clamp01(Number(settings.FisheyeCenterY) || 0.5);
                     const jpegStrength = flags[12] ? clamp01(settings.JpegDamage) : 0;
                     if (flags[13]) {
                         const toneHue = settings.ColdTone >= 0
@@ -1978,7 +2207,7 @@ namespace JokerDBDTracker
                     }
 
                     if (Math.abs(fisheyeAmount) > 0.01 || jpegStrength > 0.0001) {
-                        runtime.startJpegDamage(jpegStrength, fisheyeAmount);
+                        runtime.startJpegDamage(jpegStrength, fisheyeAmount, fisheyeCenterX, fisheyeCenterY);
                     } else {
                         runtime.stopFisheye();
                         runtime.stopJpegDamage();
@@ -2035,6 +2264,9 @@ namespace JokerDBDTracker
             HueShiftStrengthSlider.Value = 0;
             BlurStrengthSlider.Value = 0;
             FisheyeStrengthSlider.Value = 0;
+            _fisheyeCenterX = 0.5;
+            _fisheyeCenterY = 0.5;
+            UpdateFisheyeCenterPadVisual();
             VhsStrengthSlider.Value = 0;
             ShakeStrengthSlider.Value = 0;
             JpegDamageStrengthSlider.Value = 0.4;
@@ -2073,7 +2305,16 @@ namespace JokerDBDTracker
             SaturationStrengthSlider.IsEnabled = Fx6.IsChecked == true;
             HueShiftStrengthSlider.IsEnabled = Fx7.IsChecked == true;
             BlurStrengthSlider.IsEnabled = Fx8.IsChecked == true;
-            FisheyeStrengthSlider.IsEnabled = Fx9.IsChecked == true;
+            var fisheyeEnabled = Fx9.IsChecked == true;
+            FisheyeStrengthSlider.IsEnabled = fisheyeEnabled;
+            if (FisheyeCenterPad is not null)
+            {
+                FisheyeCenterPad.IsEnabled = fisheyeEnabled;
+            }
+            if (FisheyeCenterPadContainer is not null)
+            {
+                FisheyeCenterPadContainer.Opacity = fisheyeEnabled ? 1 : 0.55;
+            }
             VhsStrengthSlider.IsEnabled = Fx10.IsChecked == true;
             ShakeStrengthSlider.IsEnabled = Fx11.IsChecked == true;
             JpegDamageStrengthSlider.IsEnabled = Fx13.IsChecked == true;
@@ -2090,7 +2331,17 @@ namespace JokerDBDTracker
 
         private static void AnimateDetailsPanel(FrameworkElement details, bool expand, bool animate)
         {
-            const double expandedHeight = 44;
+            var expandedHeight = 44d;
+            if (details.Tag is double taggedHeight && taggedHeight > 0)
+            {
+                expandedHeight = taggedHeight;
+            }
+            else if (details.Tag is string taggedHeightText &&
+                     double.TryParse(taggedHeightText, out var parsedTaggedHeight) &&
+                     parsedTaggedHeight > 0)
+            {
+                expandedHeight = parsedTaggedHeight;
+            }
             details.BeginAnimation(FrameworkElement.MaxHeightProperty, null);
             details.BeginAnimation(UIElement.OpacityProperty, null);
 

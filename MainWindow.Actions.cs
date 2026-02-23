@@ -62,11 +62,11 @@ namespace JokerDBDTracker
 
                 AddXp((int)Math.Round(player.WatchXpEarned * WatchSessionXpMultiplier));
                 ApplySessionXpBonuses(player.EligibleWatchSeconds);
+                var today = GetTrustedToday();
 
                 if (player.WatchedWithAnyEffects)
                 {
                     _effectSessionsAny++;
-                    var today = GetTrustedToday();
                     _effectSessionsByDay.TryGetValue(today, out var effectSessionsToday);
                     _effectSessionsByDay[today] = effectSessionsToday + 1;
                 }
@@ -99,6 +99,33 @@ namespace JokerDBDTracker
                 if (player.UsedStrongShake)
                 {
                     _effectSessionsStrongShake++;
+                }
+
+                if (player.UsedAnyPreset)
+                {
+                    _effectPresetSessionsAny++;
+                    _presetSessionsByDay.TryGetValue(today, out var presetSessionsToday);
+                    _presetSessionsByDay[today] = presetSessionsToday + 1;
+                }
+
+                if (player.UsedCustomPreset)
+                {
+                    _effectPresetSessionsCustom++;
+                }
+
+                if (player.UsedRetroPreset)
+                {
+                    _effectPresetSessionsRetro++;
+                }
+
+                if (player.UsedChaosPreset)
+                {
+                    _effectPresetSessionsChaos++;
+                }
+
+                if (player.UsedDreamPreset)
+                {
+                    _effectPresetSessionsDream++;
                 }
 
                 if (player.CursedMasterUnlocked && !_unlockedAchievements.Contains(AchievementCursed15))
@@ -209,6 +236,8 @@ namespace JokerDBDTracker
         {
             try
             {
+                e.Handled = true;
+
                 if (sender is not Button button || button.Tag is not string videoId)
                 {
                     return;
@@ -235,6 +264,7 @@ namespace JokerDBDTracker
                 RefreshProfile();
                 RefreshHomeSummary();
                 RefreshVisibleVideos(video.VideoId);
+                ClearAllSelections();
             }
             catch
             {

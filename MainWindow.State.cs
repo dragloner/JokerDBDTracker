@@ -31,6 +31,11 @@ namespace JokerDBDTracker
         private int _effectSessionsStrongRedGlow;
         private int _effectSessionsStrongVioletGlow;
         private int _effectSessionsStrongShake;
+        private int _effectPresetSessionsAny;
+        private int _effectPresetSessionsCustom;
+        private int _effectPresetSessionsRetro;
+        private int _effectPresetSessionsChaos;
+        private int _effectPresetSessionsDream;
 
         // Services and async coordination.
         private readonly YouTubeStreamsService _streamsService = new();
@@ -72,11 +77,11 @@ namespace JokerDBDTracker
         private readonly DispatcherTimer _questUiRefreshTimer = new();
 
         // Shared UI brushes.
-        private static readonly Brush TopNavSelectedBackground = BrushFromHex("#E4EEF6");
-        private static readonly Brush TopNavSelectedForeground = BrushFromHex("#173041");
-        private static readonly Brush TopNavSelectedBorder = BrushFromHex("#8FB4CD");
-        private static readonly Brush TopNavDefaultBackground = BrushFromHex("#2C4357");
+        private static readonly Brush TopNavSelectedBackground = BrushFromHex("#223A4D");
+        private static readonly Brush TopNavSelectedForeground = BrushFromHex("#F3FBFF");
+        private static readonly Brush TopNavSelectedBorder = BrushFromHex("#7BC8F4");
+        private static readonly Brush TopNavDefaultBackground = BrushFromHex("#1A3143");
         private static readonly Brush TopNavDefaultForeground = BrushFromHex("#EAF6FF");
-        private static readonly Brush TopNavDefaultBorder = BrushFromHex("#6E91A9");
+        private static readonly Brush TopNavDefaultBorder = BrushFromHex("#5C86A2");
     }
 }

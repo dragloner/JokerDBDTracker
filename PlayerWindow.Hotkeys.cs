@@ -33,7 +33,7 @@ namespace JokerDBDTracker
 
         private void PlayerWindow_Activated(object? sender, EventArgs e)
         {
-            RegisterGlobalHotkeys();
+            UpdateGlobalHotkeysForTypingFocusState();
         }
 
         private void PlayerWindow_Deactivated(object? sender, EventArgs e)
@@ -185,6 +185,12 @@ namespace JokerDBDTracker
             }
 
             MarkUserInteraction();
+            if (ShouldBypassPlayerKeyHandlingBecauseTyping())
+            {
+                handled = true;
+                return IntPtr.Zero;
+            }
+
             if (ShouldSuppressDuplicateAppKeybind(key))
             {
                 handled = true;

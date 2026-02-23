@@ -92,6 +92,11 @@ namespace JokerDBDTracker
             ProfileTodayText.Text = T(
                 $"Сегодня: {localNow:yyyy-MM-dd} • цель дня {todayGoalPercent}%",
                 $"Today: {localNow:yyyy-MM-dd} • daily goal {todayGoalPercent}%");
+            var totalWatchedSeconds = Math.Max(0, _watchedSecondsByDay.Values.Sum(v => Math.Max(0, v)));
+            var totalHours = totalWatchedSeconds / 3600.0;
+            ProfileHoursText.Text = T(
+                $"Время в программе: {totalHours:0.0} ч ({totalWatchedSeconds / 60} мин)",
+                $"Time in app: {totalHours:0.0} h ({totalWatchedSeconds / 60} min)");
             ProfileXpProgress.Maximum = requiredInLevel;
             ProfileXpProgress.Value = clampedCurrentLevelXp;
             PrestigeButton.IsEnabled = level >= MaxLevel && _prestige < MaxPrestige;
@@ -99,6 +104,10 @@ namespace JokerDBDTracker
 
         private List<ProfileAchievement> BuildAchievements(int streakDays)
         {
+            var totalWatchedSeconds = Math.Max(0, _watchedSecondsByDay.Values.Sum(v => Math.Max(0, v)));
+            var totalWatchedHours = totalWatchedSeconds / 3600.0;
+            var claimedQuestsCount = _rewardedQuestKeys.Count;
+
             return
             [
                 BuildAchievement(T("Первый просмотр", "First watch"), T("Открой любой стрим хотя бы один раз.", "Open any stream at least once."), _watchHistory.Count >= 1),
@@ -111,12 +120,17 @@ namespace JokerDBDTracker
                 BuildAchievement(T("Серия 7 дней", "7-day streak"), T("Смотри стримы 7 дней подряд.", "Watch streams 7 days in a row."), streakDays >= 7),
                 BuildAchievement(T("Серия 14 дней", "14-day streak"), T("Смотри стримы 14 дней подряд.", "Watch streams 14 days in a row."), streakDays >= 14),
                 BuildAchievement(T("Серия 30 дней", "30-day streak"), T("Смотри стримы 30 дней подряд.", "Watch streams 30 days in a row."), streakDays >= 30),
+                BuildAchievement(T("Серия 60 дней", "60-day streak"), T("Смотри стримы 60 дней подряд.", "Watch streams 60 days in a row."), streakDays >= 60),
+                BuildAchievement(T("Серия 100 дней", "100-day streak"), T("Смотри стримы 100 дней подряд.", "Watch streams 100 days in a row."), streakDays >= 100),
                 BuildAchievement(T("Избранное x5", "Favorites x5"), T("Добавь 5 стримов в избранное.", "Add five streams to favorites."), _favoriteVideoIds.Count >= 5),
                 BuildAchievement(T("Избранное x15", "Favorites x15"), T("Добавь 15 стримов в избранное.", "Add 15 streams to favorites."), _favoriteVideoIds.Count >= 15),
                 BuildAchievement(T("Избранное x30", "Favorites x30"), T("Добавь 30 стримов в избранное.", "Add 30 streams to favorites."), _favoriteVideoIds.Count >= 30),
+                BuildAchievement(T("Избранное x50", "Favorites x50"), T("Добавь 50 стримов в избранное.", "Add 50 streams to favorites."), _favoriteVideoIds.Count >= 50),
                 BuildAchievement(T("Эффекты x3", "Effects x3"), T("Сделай 3 сессии с любыми эффектами.", "Watch 3 sessions with any effects."), _effectSessionsAny >= 3),
                 BuildAchievement(T("Эффекты x15", "Effects x15"), T("Сделай 15 сессий с включенными эффектами.", "Watch 15 sessions with enabled effects."), _effectSessionsAny >= 15),
                 BuildAchievement(T("Эффекты x50", "Effects x50"), T("Сделай 50 сессий с включенными эффектами.", "Watch 50 sessions with enabled effects."), _effectSessionsAny >= 50),
+                BuildAchievement(T("Эффекты x100", "Effects x100"), T("Сделай 100 сессий с включенными эффектами.", "Watch 100 sessions with enabled effects."), _effectSessionsAny >= 100),
+                BuildAchievement(T("Эффекты x250", "Effects x250"), T("Сделай 250 сессий с включенными эффектами.", "Watch 250 sessions with enabled effects."), _effectSessionsAny >= 250),
                 BuildAchievement(T("5 эффектов разом", "5 effects at once"), T("Сделай 5 сессий с 5+ эффектами.", "Do 5 sessions with 5+ effects enabled."), _effectSessionsFivePlus >= 5),
                 BuildAchievement(T("10 эффектов разом", "10 effects at once"), T("Сделай 3 сессии с 10+ эффектами.", "Do 3 sessions with 10+ effects enabled."), _effectSessionsTenPlus >= 3),
                 BuildAchievement(T("10 эффектов x12", "10 effects x12"), T("Сделай 12 сессий с 10+ эффектами.", "Do 12 sessions with 10+ effects enabled."), _effectSessionsTenPlus >= 12),
@@ -128,8 +142,33 @@ namespace JokerDBDTracker
                 BuildAchievement(T("JPEG-помехи x10", "Heavy JPEG x10"), T("Сделай 10 сессий с сильными JPEG-помехами (75%+).", "Watch 10 sessions with heavy JPEG damage (75%+)."), _effectSessionsStrongVioletGlow >= 10),
                 BuildAchievement(T("Сильная тряска", "Heavy shake"), T("Сделай 3 сессии с сильной тряской (75%+).", "Watch 3 sessions with strong shake (75%+)."), _effectSessionsStrongShake >= 3),
                 BuildAchievement(T("Тряска x10", "Heavy shake x10"), T("Сделай 10 сессий с сильной тряской (75%+).", "Watch 10 sessions with strong shake (75%+)."), _effectSessionsStrongShake >= 10),
+                BuildAchievement(T("Пресет: старт", "Preset: first run"), T("Посмотри стрим, используя любой пресет эффектов.", "Watch a stream using any effect preset."), _effectPresetSessionsAny >= 1),
+                BuildAchievement(T("Пресеты x10", "Presets x10"), T("Сделай 10 сессий с применением пресетов.", "Do 10 sessions with presets applied."), _effectPresetSessionsAny >= 10),
+                BuildAchievement(T("Пресеты x25", "Presets x25"), T("Сделай 25 сессий с применением пресетов.", "Do 25 sessions with presets applied."), _effectPresetSessionsAny >= 25),
+                BuildAchievement(T("Пресеты x50", "Presets x50"), T("Сделай 50 сессий с применением пресетов.", "Do 50 sessions with presets applied."), _effectPresetSessionsAny >= 50),
+                BuildAchievement(T("Пресеты x100", "Presets x100"), T("Сделай 100 сессий с применением пресетов.", "Do 100 sessions with presets applied."), _effectPresetSessionsAny >= 100),
+                BuildAchievement(T("Свой стиль", "Custom style"), T("Сделай 3 сессии с кастомным пресетом.", "Do 3 sessions with a custom preset."), _effectPresetSessionsCustom >= 3),
+                BuildAchievement(T("Свой стиль x10", "Custom style x10"), T("Сделай 10 сессий с кастомным пресетом.", "Do 10 sessions with a custom preset."), _effectPresetSessionsCustom >= 10),
+                BuildAchievement(T("Свой стиль x25", "Custom style x25"), T("Сделай 25 сессий с кастомным пресетом.", "Do 25 sessions with a custom preset."), _effectPresetSessionsCustom >= 25),
+                BuildAchievement(T("Ретро-удар", "Retro hit"), T("Сделай 3 сессии с пресетом Retro/VHS.", "Do 3 sessions with the Retro/VHS preset."), _effectPresetSessionsRetro >= 3),
+                BuildAchievement(T("Ретро-удар x10", "Retro hit x10"), T("Сделай 10 сессий с пресетом Retro/VHS.", "Do 10 sessions with the Retro/VHS preset."), _effectPresetSessionsRetro >= 10),
+                BuildAchievement(T("Хаос-картинка", "Chaos vision"), T("Сделай 3 сессии с пресетом Chaos.", "Do 3 sessions with the Chaos preset."), _effectPresetSessionsChaos >= 3),
+                BuildAchievement(T("Хаос-картинка x10", "Chaos vision x10"), T("Сделай 10 сессий с пресетом Chaos.", "Do 10 sessions with the Chaos preset."), _effectPresetSessionsChaos >= 10),
+                BuildAchievement(T("Сонный режим", "Dream mode"), T("Сделай 3 сессии с пресетом Dream.", "Do 3 sessions with the Dream preset."), _effectPresetSessionsDream >= 3),
+                BuildAchievement(T("Сонный режим x10", "Dream mode x10"), T("Сделай 10 сессий с пресетом Dream.", "Do 10 sessions with the Dream preset."), _effectPresetSessionsDream >= 10),
+                BuildAchievement(T("10 часов в приложении", "10 hours in app"), T("Проведи в просмотре суммарно 10 часов.", "Accumulate 10 hours of watch time."), totalWatchedHours >= 10),
+                BuildAchievement(T("25 часов в приложении", "25 hours in app"), T("Проведи в просмотре суммарно 25 часов.", "Accumulate 25 hours of watch time."), totalWatchedHours >= 25),
+                BuildAchievement(T("50 часов в приложении", "50 hours in app"), T("Проведи в просмотре суммарно 50 часов.", "Accumulate 50 hours of watch time."), totalWatchedHours >= 50),
+                BuildAchievement(T("100 часов в приложении", "100 hours in app"), T("Проведи в просмотре суммарно 100 часов.", "Accumulate 100 hours of watch time."), totalWatchedHours >= 100),
+                BuildAchievement(T("250 часов в приложении", "250 hours in app"), T("Проведи в просмотре суммарно 250 часов.", "Accumulate 250 hours of watch time."), totalWatchedHours >= 250),
+                BuildAchievement(T("Охотник за XP", "XP hunter"), T("Набери 500 000 общего XP.", "Reach 500,000 total XP."), _totalXp >= 500_000),
+                BuildAchievement(T("Миллион XP", "1M XP"), T("Набери 1 000 000 общего XP.", "Reach 1,000,000 total XP."), _totalXp >= 1_000_000),
+                BuildAchievement(T("Квестоман", "Quest runner"), T("Забери награды за 10 заданий.", "Claim rewards from 10 quests."), claimedQuestsCount >= 10),
+                BuildAchievement(T("Квестоман x50", "Quest runner x50"), T("Забери награды за 50 заданий.", "Claim rewards from 50 quests."), claimedQuestsCount >= 50),
+                BuildAchievement(T("Квестоман x100", "Quest runner x100"), T("Забери награды за 100 заданий.", "Claim rewards from 100 quests."), claimedQuestsCount >= 100),
                 BuildAchievement(T("Путь престижа", "Prestige path"), T("Достигни 1 престижа.", "Reach prestige 1."), _prestige >= 1),
                 BuildAchievement(T("Ветеран престижа", "Prestige veteran"), T("Достигни 5 престижа.", "Reach prestige 5."), _prestige >= 5),
+                BuildAchievement(T("Легенда престижа", "Prestige legend"), T("Достигни 10 престижа.", "Reach prestige 10."), _prestige >= 10),
                 BuildAchievement(T("100k XP", "100k XP"), T("Набери 100 000 общего XP.", "Reach 100,000 total XP."), _totalXp >= 100_000),
                 BuildAchievement(T("250k XP", "250k XP"), T("Набери 250 000 общего XP.", "Reach 250,000 total XP."), _totalXp >= 250_000),
                 BuildAchievement(T("Мастер проклятия", "Cursed master"), T("Досмотри полный стрим с 15 проклятыми эффектами.", "Finish a full stream with all 15 cursed effects."), _unlockedAchievements.Contains(AchievementCursed15))

@@ -63,6 +63,11 @@ namespace JokerDBDTracker
                 _effectSessionsStrongRedGlow = Math.Max(0, history.EffectSessionsStrongRedGlow);
                 _effectSessionsStrongVioletGlow = Math.Max(0, history.EffectSessionsStrongVioletGlow);
                 _effectSessionsStrongShake = Math.Max(0, history.EffectSessionsStrongShake);
+                _effectPresetSessionsAny = Math.Max(0, history.EffectPresetSessionsAny);
+                _effectPresetSessionsCustom = Math.Max(0, history.EffectPresetSessionsCustom);
+                _effectPresetSessionsRetro = Math.Max(0, history.EffectPresetSessionsRetro);
+                _effectPresetSessionsChaos = Math.Max(0, history.EffectPresetSessionsChaos);
+                _effectPresetSessionsDream = Math.Max(0, history.EffectPresetSessionsDream);
 
                 _watchedSecondsByDay.Clear();
                 foreach (var pair in history.WatchedSecondsByDay)
@@ -88,6 +93,15 @@ namespace JokerDBDTracker
                     if (DateOnly.TryParse(pair.Key, out var day))
                     {
                         _effectSessionsByDay[day] = Math.Max(0, pair.Value);
+                    }
+                }
+
+                _presetSessionsByDay.Clear();
+                foreach (var pair in history.PresetSessionsByDay)
+                {
+                    if (DateOnly.TryParse(pair.Key, out var day))
+                    {
+                        _presetSessionsByDay[day] = Math.Max(0, pair.Value);
                     }
                 }
 
@@ -305,6 +319,11 @@ namespace JokerDBDTracker
             payload.EffectSessionsStrongRedGlow = _effectSessionsStrongRedGlow;
             payload.EffectSessionsStrongVioletGlow = _effectSessionsStrongVioletGlow;
             payload.EffectSessionsStrongShake = _effectSessionsStrongShake;
+            payload.EffectPresetSessionsAny = _effectPresetSessionsAny;
+            payload.EffectPresetSessionsCustom = _effectPresetSessionsCustom;
+            payload.EffectPresetSessionsRetro = _effectPresetSessionsRetro;
+            payload.EffectPresetSessionsChaos = _effectPresetSessionsChaos;
+            payload.EffectPresetSessionsDream = _effectPresetSessionsDream;
             foreach (var pair in _watchedSecondsByDay)
             {
                 payload.WatchedSecondsByDay[pair.Key.ToString("yyyy-MM-dd")] = pair.Value;
@@ -318,6 +337,11 @@ namespace JokerDBDTracker
             foreach (var pair in _effectSessionsByDay)
             {
                 payload.EffectSessionsByDay[pair.Key.ToString("yyyy-MM-dd")] = pair.Value;
+            }
+
+            foreach (var pair in _presetSessionsByDay)
+            {
+                payload.PresetSessionsByDay[pair.Key.ToString("yyyy-MM-dd")] = pair.Value;
             }
 
             foreach (var key in _rewardedQuestKeys)

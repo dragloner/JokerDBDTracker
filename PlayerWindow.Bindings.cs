@@ -28,6 +28,16 @@ namespace JokerDBDTracker
         {
             MarkUserInteraction();
             var key = e.Key == Key.System ? e.SystemKey : e.Key;
+            if (ShouldBypassPlayerKeyHandlingBecauseTyping())
+            {
+                return;
+            }
+
+            if (TryMirrorPlaybackKeyFromEffectsPanel(e, key))
+            {
+                e.Handled = true;
+                return;
+            }
             if (ShouldSuppressDuplicateAppKeybind(key))
             {
                 e.Handled = true;
@@ -40,9 +50,92 @@ namespace JokerDBDTracker
             }
         }
 
+        private void PlayerWindow_PreviewGotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            UpdateGlobalHotkeysForTypingFocusState();
+        }
+
+        private void PlayerWindow_PreviewLostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            Dispatcher.BeginInvoke(UpdateGlobalHotkeysForTypingFocusState, System.Windows.Threading.DispatcherPriority.Input);
+        }
+
+        private void UpdateGlobalHotkeysForTypingFocusState()
+        {
+            if (!IsActive)
+            {
+                return;
+            }
+
+            if (ShouldBypassPlayerKeyHandlingBecauseTyping())
+            {
+                UnregisterGlobalHotkeys();
+                return;
+            }
+
+            RegisterGlobalHotkeys();
+        }
+
+        private bool TryMirrorPlaybackKeyFromEffectsPanel(KeyEventArgs e, Key key)
+        {
+            if (Keyboard.Modifiers != ModifierKeys.None)
+            {
+                return false;
+            }
+
+            if (e.IsRepeat && key == Key.Space)
+            {
+                return false;
+            }
+
+            if (key is not (Key.Space or Key.Left or Key.Right or Key.Up or Key.Down))
+            {
+                return false;
+            }
+
+            if (!CanProcessPlayerCommands() ||
+                EffectsPanel is null ||
+                !EffectsPanel.IsVisible ||
+                !EffectsPanel.IsKeyboardFocusWithin ||
+                Player is null ||
+                Player.IsKeyboardFocusWithin)
+            {
+                return false;
+            }
+
+            _ = MirrorPlaybackKeyToWebViewAsync(key);
+            return key == Key.Space && IsEffectCheckBoxFocused();
+        }
+
+        private bool IsEffectCheckBoxFocused()
+        {
+            var current = Keyboard.FocusedElement as DependencyObject;
+            while (current is not null)
+            {
+                if (current is CheckBox)
+                {
+                    return true;
+                }
+
+                current = current switch
+                {
+                    Visual or System.Windows.Media.Media3D.Visual3D => VisualTreeHelper.GetParent(current),
+                    FrameworkContentElement frameworkContent => frameworkContent.Parent,
+                    _ => null
+                };
+            }
+
+            return false;
+        }
+
         private bool TryHandleAppKeybind(Key key)
         {
             if (!CanProcessPlayerCommands())
+            {
+                return false;
+            }
+
+            if (ShouldBypassPlayerKeyHandlingBecauseTyping())
             {
                 return false;
             }
@@ -123,6 +216,42 @@ namespace JokerDBDTracker
             {
                 PlaySoundEffect(SoundEffectKind.Respect);
                 return true;
+            }
+
+            return false;
+        }
+
+        private bool ShouldBypassPlayerKeyHandlingBecauseTyping()
+        {
+            if (Keyboard.FocusedElement is not DependencyObject focusedElement)
+            {
+                return false;
+            }
+
+            DependencyObject? current = focusedElement;
+            while (current is not null)
+            {
+                if (current is TextBox or PasswordBox or RichTextBox)
+                {
+                    return true;
+                }
+
+                if (current is ComboBox)
+                {
+                    return true;
+                }
+
+                if (current is ComboBoxItem)
+                {
+                    return true;
+                }
+
+                current = current switch
+                {
+                    Visual or System.Windows.Media.Media3D.Visual3D => VisualTreeHelper.GetParent(current),
+                    FrameworkContentElement frameworkContent => frameworkContent.Parent,
+                    _ => null
+                };
             }
 
             return false;
@@ -286,15 +415,35 @@ namespace JokerDBDTracker
         {
             if (BindsHintText is not null)
             {
-                var effects = BuildEffectBindHintText();
                 var hide = FormatBindLabel(_appSettings.HideEffectsPanelBind);
                 var aura = FormatBindLabel(_appSettings.AuraFarmSoundBind);
                 var laugh = FormatBindLabel(_appSettings.LaughSoundBind);
                 var psi = FormatBindLabel(_appSettings.PsiSoundBind);
                 var respect = FormatBindLabel(_appSettings.RespectSoundBind);
+                var fxRow1 = string.Join("/", new[]
+                {
+                    FormatBindLabel(_appSettings.Effect1Bind),
+                    FormatBindLabel(_appSettings.Effect2Bind),
+                    FormatBindLabel(_appSettings.Effect3Bind),
+                    FormatBindLabel(_appSettings.Effect4Bind),
+                    FormatBindLabel(_appSettings.Effect5Bind),
+                    FormatBindLabel(_appSettings.Effect6Bind),
+                    FormatBindLabel(_appSettings.Effect7Bind),
+                    FormatBindLabel(_appSettings.Effect8Bind),
+                    FormatBindLabel(_appSettings.Effect9Bind),
+                    FormatBindLabel(_appSettings.Effect10Bind)
+                });
+                var fxRow2 = string.Join("/", new[]
+                {
+                    FormatBindLabel(_appSettings.Effect11Bind),
+                    FormatBindLabel(_appSettings.Effect12Bind),
+                    FormatBindLabel(_appSettings.Effect13Bind),
+                    FormatBindLabel(_appSettings.Effect14Bind),
+                    FormatBindLabel(_appSettings.Effect15Bind)
+                });
                 BindsHintText.Text = PT(
-                    $"Эффекты: {effects}. Панель: {hide}. Звуки: Aura {aura}, Смех {laugh}, Пси {psi}, +Respect {respect}.",
-                    $"Effects: {effects}. Panel: {hide}. Sounds: Aura {aura}, Laugh {laugh}, Psi {psi}, +Respect {respect}.");
+                    $"FX 1-10: {fxRow1}\nFX 11-15: {fxRow2} | H:{hide} | Y:{aura} U:{laugh} I:{psi} O:{respect}",
+                    $"FX 1-10: {fxRow1}\nFX 11-15: {fxRow2} | H:{hide} | Y:{aura} U:{laugh} I:{psi} O:{respect}");
             }
 
             if (AuraFarmSoundButton is not null)

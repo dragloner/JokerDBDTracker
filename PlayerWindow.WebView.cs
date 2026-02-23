@@ -38,6 +38,7 @@ namespace JokerDBDTracker
                 ApplyStartupMaximizedWindowed();
                 AnimatePlayerWindowEntrance();
                 VideoTitleText.Text = _video.Title;
+                InitializePresetsUi();
                 ApplyPlayerLocalization();
                 UpdateDynamicBindHints();
                 RegisterGlobalHotkeys();
@@ -558,6 +559,216 @@ namespace JokerDBDTracker
                         document.addEventListener('mousedown', blockForeignWatchClick, { capture: true });
                     };
 
+                    const getPlayerControlText = (element) => {
+                        if (!element) {
+                            return '';
+                        }
+
+                        const parts = [
+                            element.getAttribute?.('aria-label') || '',
+                            element.getAttribute?.('title') || '',
+                            element.getAttribute?.('aria-controls') || '',
+                            element.getAttribute?.('data-tooltip-target-id') || '',
+                            element.id || '',
+                            element.className || ''
+                        ];
+                        return parts.join(' ').toLowerCase();
+                    };
+
+                    const hideInlinePanelElement = (element) => {
+                        if (!element || !element.style) {
+                            return false;
+                        }
+
+                        element.style.setProperty('display', 'none', 'important');
+                        element.style.setProperty('visibility', 'hidden', 'important');
+                        element.style.setProperty('pointer-events', 'none', 'important');
+                        element.style.setProperty('width', '0px', 'important');
+                        element.style.setProperty('min-width', '0px', 'important');
+                        element.style.setProperty('max-width', '0px', 'important');
+                        element.style.setProperty('flex', '0 0 0px', 'important');
+                        element.style.setProperty('opacity', '0', 'important');
+                        return true;
+                    };
+
+                    const collapseInlinePlayerSidePanels = () => {
+                        try {
+                            const player = document.getElementById('movie_player');
+                            if (!player) {
+                                return false;
+                            }
+
+                            let changed = false;
+                            const knownPanelSelectors = [
+                                '#movie_player [class*="watch-comments" i]',
+                                '#movie_player [class*="comments-panel" i]',
+                                '#movie_player [class*="comment-panel" i]',
+                                '#movie_player [class*="chat-panel" i]',
+                                '#movie_player [class*="engagement-panel" i]',
+                                '#movie_player [id*="watch-comments" i]',
+                                '#movie_player [id*="comments-panel" i]',
+                                '#movie_player [id*="chat-panel" i]',
+                                '#movie_player [id*="engagement-panel" i]',
+                                '#movie_player [data-panel-target-id]',
+                                '#movie_player [data-panel-id]'
+                            ];
+
+                            for (const selector of knownPanelSelectors) {
+                                for (const panel of document.querySelectorAll(selector)) {
+                                    changed = hideInlinePanelElement(panel) || changed;
+                                }
+                            }
+
+                            const playerRootCandidates = [
+                                player,
+                                player.querySelector('.html5-video-player'),
+                                player.querySelector('.ytp-embed'),
+                                player.querySelector('.ytp-player-content')
+                            ].filter(Boolean);
+
+                            for (const root of playerRootCandidates) {
+                                if (!root.classList) {
+                                    continue;
+                                }
+
+                                for (const className of Array.from(root.classList)) {
+                                    const name = String(className || '').toLowerCase();
+                                    if ((name.includes('comment') || name.includes('chat') || name.includes('engagement')) &&
+                                        (name.includes('panel') || name.includes('peek') || name.includes('sidebar') || name.includes('dock')))
+                                    {
+                                        try {
+                                            root.classList.remove(className);
+                                            changed = true;
+                                        } catch {
+                                            // no-op
+                                        }
+                                    }
+                                }
+                            }
+
+                            const playerButtons = Array.from(
+                                player.querySelectorAll('.ytp-button, button, [role="button"]'));
+                            for (const button of playerButtons) {
+                                if (!(button instanceof HTMLElement)) {
+                                    continue;
+                                }
+
+                                const text = getPlayerControlText(button);
+                                const looksLikeCommentsOrChat =
+                                    text.includes('comment') ||
+                                    text.includes('comments') ||
+                                    text.includes('комментар') ||
+                                    text.includes('chat') ||
+                                    text.includes('чат') ||
+                                    text.includes('discussion') ||
+                                    text.includes('discuss') ||
+                                    text.includes('replay chat');
+                                if (!looksLikeCommentsOrChat) {
+                                    continue;
+                                }
+
+                                const isPressed = (button.getAttribute('aria-pressed') || '').toLowerCase() === 'true';
+                                const isExpanded = (button.getAttribute('aria-expanded') || '').toLowerCase() === 'true';
+                                if (isPressed || isExpanded) {
+                                    try {
+                                        button.click();
+                                        changed = true;
+                                    } catch {
+                                        // no-op
+                                    }
+                                }
+                            }
+
+                            const video = player.querySelector('video');
+                            if (!(video instanceof HTMLElement)) {
+                                return changed;
+                            }
+
+                            const playerRect = player.getBoundingClientRect();
+                            const videoRect = video.getBoundingClientRect();
+                            if (!(playerRect.width > 0 && videoRect.width > 0)) {
+                                return changed;
+                            }
+
+                            const widthRatio = videoRect.width / playerRect.width;
+                            const suspiciousSplitLayout = widthRatio < 0.82 && playerRect.width >= 420;
+                            if (!suspiciousSplitLayout) {
+                                return changed;
+                            }
+
+                            const minPanelWidth = Math.max(140, playerRect.width * 0.14);
+                            const minPanelHeight = Math.max(120, playerRect.height * 0.2);
+                            const playerLeft = playerRect.left;
+                            const playerTop = playerRect.top;
+                            const playerRight = playerRect.right;
+                            const playerBottom = playerRect.bottom;
+                            const rightThreshold = playerLeft + (playerRect.width * 0.58);
+
+                            const isProtectedNode = (element) => {
+                                if (!(element instanceof HTMLElement)) {
+                                    return true;
+                                }
+
+                                if (element === video ||
+                                    element.contains(video) ||
+                                    video.contains(element))
+                                {
+                                    return true;
+                                }
+
+                                const idAndClass = `${element.id || ''} ${element.className || ''}`.toLowerCase();
+                                return idAndClass.includes('html5-video') ||
+                                       idAndClass.includes('ytp-chrome') ||
+                                       idAndClass.includes('ytp-gradient') ||
+                                       idAndClass.includes('ytp-progress') ||
+                                       idAndClass.includes('ytp-tooltip') ||
+                                       idAndClass.includes('ytp-ce-') ||
+                                       idAndClass.includes('caption') ||
+                                       idAndClass.includes('subtitle');
+                            };
+
+                            const candidatePanels = [];
+                            for (const element of player.querySelectorAll('*')) {
+                                if (!(element instanceof HTMLElement) || isProtectedNode(element)) {
+                                    continue;
+                                }
+
+                                const style = getComputedStyle(element);
+                                if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity || '1') <= 0.01) {
+                                    continue;
+                                }
+
+                                const rect = element.getBoundingClientRect();
+                                if (rect.width < minPanelWidth || rect.height < minPanelHeight) {
+                                    continue;
+                                }
+
+                                if (rect.left < rightThreshold) {
+                                    continue;
+                                }
+
+                                if (rect.left < playerLeft || rect.top < playerTop || rect.right > playerRight + 1 || rect.bottom > playerBottom + 1) {
+                                    continue;
+                                }
+
+                                if (rect.width > playerRect.width * 0.75 || rect.height > playerRect.height * 0.98) {
+                                    continue;
+                                }
+
+                                candidatePanels.push({ element, rect, area: rect.width * rect.height });
+                            }
+
+                            candidatePanels.sort((a, b) => b.area - a.area);
+                            for (const candidate of candidatePanels.slice(0, 4)) {
+                                changed = hideInlinePanelElement(candidate.element) || changed;
+                            }
+
+                            return changed;
+                        } catch {
+                            return false;
+                        }
+                    };
+
                     const installYouTubeSidePanelGuard = () => {
                         if (window.__jdbdSidePanelGuardInstalled) {
                             return;
@@ -604,6 +815,34 @@ namespace JokerDBDTracker
                         document.addEventListener('click', blockPanelToggle, { capture: true });
                         document.addEventListener('mousedown', blockPanelToggle, { capture: true });
                         document.addEventListener('pointerdown', blockPanelToggle, { capture: true });
+
+                        let repairQueued = false;
+                        const scheduleRepair = () => {
+                            if (repairQueued) {
+                                return;
+                            }
+
+                            repairQueued = true;
+                            requestAnimationFrame(() => {
+                                repairQueued = false;
+                                try {
+                                    applyImmersiveVideoLayout();
+                                } catch {
+                                    // no-op
+                                }
+                            });
+                        };
+
+                        window.__jdbdRepairImmersiveLayout = scheduleRepair;
+
+                        document.addEventListener('yt-page-data-updated', scheduleRepair, true);
+                        document.addEventListener('yt-navigate-finish', scheduleRepair, true);
+                        document.addEventListener('fullscreenchange', scheduleRepair, true);
+                        window.addEventListener('resize', scheduleRepair, { passive: true });
+
+                        for (const delay of [0, 80, 180, 350, 650, 1100, 1800, 2800, 4200]) {
+                            setTimeout(scheduleRepair, delay);
+                        }
                     };
 
                     const applyImmersiveVideoLayout = () => {
@@ -673,6 +912,27 @@ namespace JokerDBDTracker
                                     object-fit: contain !important;
                                     left: 0 !important;
                                     top: 0 !important;
+                                }
+
+                                #movie_player [class*="watch-comments" i],
+                                #movie_player [class*="comments-panel" i],
+                                #movie_player [class*="comment-panel" i],
+                                #movie_player [class*="chat-panel" i],
+                                #movie_player [class*="engagement-panel" i],
+                                #movie_player [id*="watch-comments" i],
+                                #movie_player [id*="comments-panel" i],
+                                #movie_player [id*="chat-panel" i],
+                                #movie_player [id*="engagement-panel" i],
+                                #movie_player [data-panel-target-id],
+                                #movie_player [data-panel-id] {
+                                    display: none !important;
+                                    visibility: hidden !important;
+                                    pointer-events: none !important;
+                                    width: 0 !important;
+                                    min-width: 0 !important;
+                                    max-width: 0 !important;
+                                    flex: 0 0 0 !important;
+                                    opacity: 0 !important;
                                 }
 
                                 #secondary, #secondary-inner, #related,
@@ -751,6 +1011,8 @@ namespace JokerDBDTracker
                             primary.style.setProperty('grid-column', '1 / -1', 'important');
                             primary.style.setProperty('width', '100%', 'important');
                         }
+
+                        collapseInlinePlayerSidePanels();
                     };
 
                     const enforceExpectedVideoId = () => {
@@ -774,10 +1036,24 @@ namespace JokerDBDTracker
                     installYouTubeSidePanelGuard();
                     enforceExpectedVideoId();
                     applyImmersiveVideoLayout();
+                    let observerRepairQueued = false;
                     const observer = new MutationObserver(() => {
-                        applyImmersiveVideoLayout();
+                        if (observerRepairQueued) {
+                            return;
+                        }
+
+                        observerRepairQueued = true;
+                        Promise.resolve().then(() => {
+                            observerRepairQueued = false;
+                            applyImmersiveVideoLayout();
+                        });
                     });
-                    observer.observe(document.documentElement, { childList: true, subtree: true });
+                    observer.observe(document.documentElement, {
+                        childList: true,
+                        subtree: true,
+                        attributes: true,
+                        attributeFilter: ['class', 'style', 'hidden', 'aria-hidden', 'aria-expanded']
+                    });
                 })();
                 """;
         }
@@ -826,6 +1102,27 @@ namespace JokerDBDTracker
                             #primary-inner {
                                 width: 100% !important;
                                 height: 100vh !important;
+                            }
+
+                            #movie_player [class*="watch-comments" i],
+                            #movie_player [class*="comments-panel" i],
+                            #movie_player [class*="comment-panel" i],
+                            #movie_player [class*="chat-panel" i],
+                            #movie_player [class*="engagement-panel" i],
+                            #movie_player [id*="watch-comments" i],
+                            #movie_player [id*="comments-panel" i],
+                            #movie_player [id*="chat-panel" i],
+                            #movie_player [id*="engagement-panel" i],
+                            #movie_player [data-panel-target-id],
+                            #movie_player [data-panel-id] {
+                                display: none !important;
+                                visibility: hidden !important;
+                                pointer-events: none !important;
+                                width: 0 !important;
+                                min-width: 0 !important;
+                                max-width: 0 !important;
+                                flex: 0 0 0 !important;
+                                opacity: 0 !important;
                             }
 
                             #secondary, #secondary-inner, #related,
@@ -942,6 +1239,88 @@ namespace JokerDBDTracker
                 Key.Down => (["ARROWDOWN"], ["ArrowDown"]),
                 _ => ([key.ToString().ToUpperInvariant()], [key.ToString()])
             };
+        }
+
+        private async Task MirrorPlaybackKeyToWebViewAsync(Key key)
+        {
+            if (!CanProcessPlayerCommands() || Player.CoreWebView2 is null)
+            {
+                return;
+            }
+
+            var action = key switch
+            {
+                Key.Space => "togglePlayPause",
+                Key.Left => "seekBackward",
+                Key.Right => "seekForward",
+                Key.Up => "volumeUp",
+                Key.Down => "volumeDown",
+                _ => string.Empty
+            };
+            if (string.IsNullOrEmpty(action))
+            {
+                return;
+            }
+
+            var script = $$"""
+                (() => {
+                    try {
+                        const video = document.querySelector('video');
+                        if (!video) {
+                            return false;
+                        }
+
+                        const clamp01 = (v) => Math.max(0, Math.min(1, v));
+                        switch ('{{action}}') {
+                            case 'togglePlayPause':
+                                if (video.paused) {
+                                    const playPromise = video.play?.();
+                                    if (playPromise && typeof playPromise.catch === 'function') {
+                                        playPromise.catch(() => {});
+                                    }
+                                } else {
+                                    video.pause?.();
+                                }
+                                return true;
+
+                            case 'seekBackward':
+                                if (Number.isFinite(video.currentTime)) {
+                                    video.currentTime = Math.max(0, video.currentTime - 5);
+                                    return true;
+                                }
+                                return false;
+
+                            case 'seekForward':
+                                if (Number.isFinite(video.currentTime)) {
+                                    const duration = Number.isFinite(video.duration) ? video.duration : Number.POSITIVE_INFINITY;
+                                    video.currentTime = Math.min(duration, video.currentTime + 5);
+                                    return true;
+                                }
+                                return false;
+
+                            case 'volumeUp':
+                                video.muted = false;
+                                video.volume = clamp01((Number.isFinite(video.volume) ? video.volume : 0) + 0.05);
+                                return true;
+
+                            case 'volumeDown':
+                                video.muted = false;
+                                video.volume = clamp01((Number.isFinite(video.volume) ? video.volume : 0) - 0.05);
+                                return true;
+
+                            default:
+                                return false;
+                        }
+                    } catch {
+                        return false;
+                    }
+                })();
+                """;
+
+            await ExecuteWebScriptWithTimeoutAsync(
+                script,
+                timeoutMs: 500,
+                operation: $"MirrorPlaybackKeyToWebViewAsync.{key}");
         }
 
         private bool IsAllowedPlayerNavigation(string? uriText)

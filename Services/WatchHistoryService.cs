@@ -22,6 +22,11 @@ namespace JokerDBDTracker.Services
         public int EffectSessionsStrongRedGlow { get; set; }
         public int EffectSessionsStrongVioletGlow { get; set; }
         public int EffectSessionsStrongShake { get; set; }
+        public int EffectPresetSessionsAny { get; set; }
+        public int EffectPresetSessionsCustom { get; set; }
+        public int EffectPresetSessionsRetro { get; set; }
+        public int EffectPresetSessionsChaos { get; set; }
+        public int EffectPresetSessionsDream { get; set; }
         public Dictionary<string, int> WatchedSecondsByDay { get; set; } = new(StringComparer.Ordinal);
         public HashSet<string> DailyGoalRewardedDays { get; set; } = new(StringComparer.Ordinal);
         public HashSet<string> StreakRewardedDays { get; set; } = new(StringComparer.Ordinal);
@@ -29,6 +34,7 @@ namespace JokerDBDTracker.Services
         public HashSet<string> WeeklyWatchHoursRewardedWeeks { get; set; } = new(StringComparer.Ordinal);
         public Dictionary<string, int> BestSessionSecondsByDay { get; set; } = new(StringComparer.Ordinal);
         public Dictionary<string, int> EffectSessionsByDay { get; set; } = new(StringComparer.Ordinal);
+        public Dictionary<string, int> PresetSessionsByDay { get; set; } = new(StringComparer.Ordinal);
         public HashSet<string> RewardedQuestKeys { get; set; } = new(StringComparer.Ordinal);
         public string ActiveDailyQuestDate { get; set; } = string.Empty;
         public List<string> ActiveDailyQuestIds { get; set; } = [];

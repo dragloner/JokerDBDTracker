@@ -10,11 +10,13 @@ namespace JokerDBDTracker
             DailyStreamsCount,
             DailyBestSessionSeconds,
             DailyEffectSessionsCount,
+            DailyPresetSessionsCount,
             WeeklyWatchSeconds,
             WeeklyWatchDaysCount,
             WeeklyStreamsCount,
             WeeklyBestSessionSeconds,
-            WeeklyEffectSessionsCount
+            WeeklyEffectSessionsCount,
+            WeeklyPresetSessionsCount
         }
 
         private sealed record DailyQuestTemplate(
@@ -45,6 +47,7 @@ namespace JokerDBDTracker
         private readonly Dictionary<DateOnly, int> _watchedSecondsByDay = [];
         private readonly Dictionary<DateOnly, int> _bestSessionSecondsByDay = [];
         private readonly Dictionary<DateOnly, int> _effectSessionsByDay = [];
+        private readonly Dictionary<DateOnly, int> _presetSessionsByDay = [];
         private readonly HashSet<string> _rewardedQuestKeys = new(StringComparer.Ordinal);
 
         private static readonly DailyQuestTemplate[] DailyQuestPool =
@@ -71,7 +74,12 @@ namespace JokerDBDTracker
             new("daily_effects_2", "2 эффект-сессии", "2 effect sessions", "Проведи 2 сессии с эффектами.", "Complete 2 sessions with effects.", 1750, 2, QuestMetric.DailyEffectSessionsCount, "count"),
             new("daily_effects_3", "3 эффект-сессии", "3 effect sessions", "Проведи 3 сессии с эффектами.", "Complete 3 sessions with effects.", 2450, 3, QuestMetric.DailyEffectSessionsCount, "count"),
             new("daily_effects_4", "4 эффект-сессии", "4 effect sessions", "Проведи 4 сессии с эффектами.", "Complete 4 sessions with effects.", 3380, 4, QuestMetric.DailyEffectSessionsCount, "count"),
-            new("daily_effects_5", "5 эффект-сессий", "5 effect sessions", "Проведи 5 сессий с эффектами.", "Complete 5 sessions with effects.", 4550, 5, QuestMetric.DailyEffectSessionsCount, "count")
+            new("daily_effects_5", "5 эффект-сессий", "5 effect sessions", "Проведи 5 сессий с эффектами.", "Complete 5 sessions with effects.", 4550, 5, QuestMetric.DailyEffectSessionsCount, "count"),
+            new("daily_presets_1", "1 пресет-сессия", "1 preset session", "Примени пресет хотя бы в 1 сессии сегодня.", "Use a preset in at least 1 session today.", 1250, 1, QuestMetric.DailyPresetSessionsCount, "count"),
+            new("daily_presets_2", "2 пресет-сессии", "2 preset sessions", "Примени пресет в 2 сессиях сегодня.", "Use presets in 2 sessions today.", 1820, 2, QuestMetric.DailyPresetSessionsCount, "count"),
+            new("daily_presets_3", "3 пресет-сессии", "3 preset sessions", "Примени пресет в 3 сессиях сегодня.", "Use presets in 3 sessions today.", 2480, 3, QuestMetric.DailyPresetSessionsCount, "count"),
+            new("daily_presets_4", "4 пресет-сессии", "4 preset sessions", "Примени пресет в 4 сессиях сегодня.", "Use presets in 4 sessions today.", 3320, 4, QuestMetric.DailyPresetSessionsCount, "count"),
+            new("daily_presets_5", "5 пресет-сессий", "5 preset sessions", "Примени пресет в 5 сессиях сегодня.", "Use presets in 5 sessions today.", 4300, 5, QuestMetric.DailyPresetSessionsCount, "count")
         ];
 
         private static readonly WeeklyQuestTemplate[] WeeklyQuestPool =
@@ -99,7 +107,12 @@ namespace JokerDBDTracker
             new("weekly_effect_sessions_5", "Эффект-марафон", "Effect marathon", "Проведи 5 сессий с эффектами за неделю.", "Complete 5 effect sessions this week.", 5800, 5, QuestMetric.WeeklyEffectSessionsCount, "count"),
             new("weekly_effect_sessions_8", "Эффект-шторм", "Effect storm", "Проведи 8 сессий с эффектами за неделю.", "Complete 8 effect sessions this week.", 8600, 8, QuestMetric.WeeklyEffectSessionsCount, "count"),
             new("weekly_effect_sessions_12", "Эффект-буря", "Effect tempest", "Проведи 12 сессий с эффектами за неделю.", "Complete 12 effect sessions this week.", 12200, 12, QuestMetric.WeeklyEffectSessionsCount, "count"),
-            new("weekly_effect_sessions_16", "Эффект-хаос", "Effect chaos", "Проведи 16 сессий с эффектами за неделю.", "Complete 16 effect sessions this week.", 15900, 16, QuestMetric.WeeklyEffectSessionsCount, "count")
+            new("weekly_effect_sessions_16", "Эффект-хаос", "Effect chaos", "Проведи 16 сессий с эффектами за неделю.", "Complete 16 effect sessions this week.", 15900, 16, QuestMetric.WeeklyEffectSessionsCount, "count"),
+            new("weekly_presets_3", "3 пресет-сессии", "3 preset sessions", "Примени пресеты в 3 сессиях на неделе.", "Use presets in 3 sessions this week.", 5200, 3, QuestMetric.WeeklyPresetSessionsCount, "count"),
+            new("weekly_presets_5", "5 пресет-сессий", "5 preset sessions", "Примени пресеты в 5 сессиях на неделе.", "Use presets in 5 sessions this week.", 7100, 5, QuestMetric.WeeklyPresetSessionsCount, "count"),
+            new("weekly_presets_8", "8 пресет-сессий", "8 preset sessions", "Примени пресеты в 8 сессиях на неделе.", "Use presets in 8 sessions this week.", 9800, 8, QuestMetric.WeeklyPresetSessionsCount, "count"),
+            new("weekly_presets_12", "12 пресет-сессий", "12 preset sessions", "Примени пресеты в 12 сессиях на неделе.", "Use presets in 12 sessions this week.", 12900, 12, QuestMetric.WeeklyPresetSessionsCount, "count"),
+            new("weekly_presets_16", "16 пресет-сессий", "16 preset sessions", "Примени пресеты в 16 сессиях на неделе.", "Use presets in 16 sessions this week.", 16300, 16, QuestMetric.WeeklyPresetSessionsCount, "count")
         ];
 
         private sealed class QuestState
@@ -294,11 +307,13 @@ namespace JokerDBDTracker
                 QuestMetric.DailyStreamsCount => GetWatchedStreamsCountForDay(day),
                 QuestMetric.DailyBestSessionSeconds => GetBestSessionSecondsForDay(day),
                 QuestMetric.DailyEffectSessionsCount => GetEffectSessionsForDay(day),
+                QuestMetric.DailyPresetSessionsCount => GetPresetSessionsForDay(day),
                 QuestMetric.WeeklyWatchSeconds => GetWatchedSecondsForWeek(day),
                 QuestMetric.WeeklyWatchDaysCount => GetWatchedDaysCountForWeek(day),
                 QuestMetric.WeeklyStreamsCount => GetWatchedStreamsCountForWeek(day),
                 QuestMetric.WeeklyBestSessionSeconds => GetBestSessionSecondsForWeek(day),
                 QuestMetric.WeeklyEffectSessionsCount => GetEffectSessionsForWeek(day),
+                QuestMetric.WeeklyPresetSessionsCount => GetPresetSessionsForWeek(day),
                 _ => 0
             };
         }
@@ -322,6 +337,11 @@ namespace JokerDBDTracker
         private int GetEffectSessionsForDay(DateOnly day)
         {
             return _effectSessionsByDay.TryGetValue(day, out var value) ? Math.Max(0, value) : 0;
+        }
+
+        private int GetPresetSessionsForDay(DateOnly day)
+        {
+            return _presetSessionsByDay.TryGetValue(day, out var value) ? Math.Max(0, value) : 0;
         }
 
         private int GetWatchedDaysCountForWeek(DateOnly anchorDay)
@@ -362,6 +382,14 @@ namespace JokerDBDTracker
         {
             var weekKey = GetIsoWeekKey(anchorDay);
             return _effectSessionsByDay
+                .Where(pair => string.Equals(GetIsoWeekKey(pair.Key), weekKey, StringComparison.Ordinal))
+                .Sum(pair => Math.Max(0, pair.Value));
+        }
+
+        private int GetPresetSessionsForWeek(DateOnly anchorDay)
+        {
+            var weekKey = GetIsoWeekKey(anchorDay);
+            return _presetSessionsByDay
                 .Where(pair => string.Equals(GetIsoWeekKey(pair.Key), weekKey, StringComparison.Ordinal))
                 .Sum(pair => Math.Max(0, pair.Value));
         }

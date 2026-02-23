@@ -44,6 +44,8 @@ namespace JokerDBDTracker
             PreviewMouseLeftButtonUp += PlayerWindow_PreviewMouseLeftButtonUp;
             PreviewMouseDown += PlayerWindow_PreviewMouseDown;
             PreviewKeyDown += PlayerWindow_PreviewKeyDown;
+            PreviewGotKeyboardFocus += PlayerWindow_PreviewGotKeyboardFocus;
+            PreviewLostKeyboardFocus += PlayerWindow_PreviewLostKeyboardFocus;
         }
     }
 }

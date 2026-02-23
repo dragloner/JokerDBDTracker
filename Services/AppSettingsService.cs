@@ -32,6 +32,8 @@ namespace JokerDBDTracker.Services
         public string Effect13Bind { get; set; } = "E";
         public string Effect14Bind { get; set; } = "R";
         public string Effect15Bind { get; set; } = "T";
+        public List<string> PlayerCustomPresetNames { get; set; } = [];
+        public List<string> PlayerCustomPresetPayloads { get; set; } = [];
     }
 
     public sealed class AppSettingsService
@@ -182,6 +184,8 @@ namespace JokerDBDTracker.Services
 
         private static AppSettingsData Normalize(AppSettingsData settings)
         {
+            const int maxCustomPresets = 20;
+
             settings.Language = string.Equals(settings.Language, "en", StringComparison.OrdinalIgnoreCase)
                 ? "en"
                 : "ru";
@@ -220,7 +224,38 @@ namespace JokerDBDTracker.Services
                 settings.PsiSoundBind = "I";
                 settings.RespectSoundBind = "O";
             }
+
+            settings.PlayerCustomPresetNames ??= [];
+            settings.PlayerCustomPresetPayloads ??= [];
+            TrimAndPadPresetList(settings.PlayerCustomPresetNames, maxCustomPresets, maxTextLength: 48);
+            TrimAndPadPresetList(settings.PlayerCustomPresetPayloads, maxCustomPresets, maxTextLength: 24_000);
+
             return settings;
+        }
+
+        private static void TrimAndPadPresetList(List<string> list, int targetCount, int maxTextLength)
+        {
+            if (list.Count > targetCount)
+            {
+                list.RemoveRange(targetCount, list.Count - targetCount);
+            }
+
+            for (var i = 0; i < list.Count; i++)
+            {
+                var text = list[i] ?? string.Empty;
+                text = text.Trim();
+                if (text.Length > maxTextLength)
+                {
+                    text = text[..maxTextLength];
+                }
+
+                list[i] = text;
+            }
+
+            while (list.Count < targetCount)
+            {
+                list.Add(string.Empty);
+            }
         }
 
         private static string NormalizeBind(string value, string fallback)

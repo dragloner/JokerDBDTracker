@@ -27,6 +27,13 @@ namespace JokerDBDTracker
         private string _lastAppliedEffectsSignature = string.Empty;
         private int _effectRefreshCounter;
         private bool _isEffectsBurstReapplyRunning;
+        private double _fisheyeCenterX = 0.5;
+        private double _fisheyeCenterY = 0.5;
+        private bool _isDraggingFisheyeCenter;
+        private bool _suppressEffectUiEvents;
+        private int _selectedCustomPresetSlotIndex;
+        private readonly List<PlayerPresetSlot> _customPresetSlots = [];
+        private readonly HashSet<string> _presetKeysUsedThisSession = new(StringComparer.OrdinalIgnoreCase);
 
         // Fullscreen/window chrome state.
         private bool _isPlayerElementFullScreen;
@@ -91,28 +98,49 @@ namespace JokerDBDTracker
         private const int HalfHourWatchBonusXp = 1100;
         private const int OneHourWatchBonusXp = 2300;
         private const int NinetyMinutesWatchBonusXp = 3800;
+        private const int MaxCustomPlayerPresets = 20;
 
         private sealed class EffectSettings
         {
-            public bool[] Flags { get; init; } = [];
-            public double Contrast { get; init; }
-            public double Darkness { get; init; }
-            public double Saturation { get; init; }
-            public double HueShift { get; init; }
-            public double Blur { get; init; }
-            public double Fisheye { get; init; }
-            public double Vhs { get; init; }
-            public double Shake { get; init; }
-            public double JpegDamage { get; init; }
-            public double ColdTone { get; init; }
-            public double AudioVolumeBoost { get; init; }
-            public double AudioPitchSemitones { get; init; }
-            public double AudioReverb { get; init; }
-            public double AudioEcho { get; init; }
-            public double AudioDistortion { get; init; }
-            public double AudioEqLowDb { get; init; }
-            public double AudioEqMidDb { get; init; }
-            public double AudioEqHighDb { get; init; }
+            public bool[] Flags { get; set; } = [];
+            public double Contrast { get; set; }
+            public double Darkness { get; set; }
+            public double Saturation { get; set; }
+            public double HueShift { get; set; }
+            public double Blur { get; set; }
+            public double Fisheye { get; set; }
+            public double FisheyeCenterX { get; set; }
+            public double FisheyeCenterY { get; set; }
+            public double Vhs { get; set; }
+            public double Shake { get; set; }
+            public double JpegDamage { get; set; }
+            public double ColdTone { get; set; }
+            public double AudioVolumeBoost { get; set; }
+            public double AudioPitchSemitones { get; set; }
+            public double AudioReverb { get; set; }
+            public double AudioEcho { get; set; }
+            public double AudioDistortion { get; set; }
+            public double AudioEqLowDb { get; set; }
+            public double AudioEqMidDb { get; set; }
+            public double AudioEqHighDb { get; set; }
+        }
+
+        private sealed class PlayerPresetSlot
+        {
+            public int SlotIndex { get; init; }
+            public string Name { get; set; } = string.Empty;
+            public string PayloadJson { get; set; } = string.Empty;
+            public bool HasPayload => !string.IsNullOrWhiteSpace(PayloadJson);
+        }
+
+        private sealed class PlayerPresetDefinition
+        {
+            public string Key { get; init; } = string.Empty;
+            public string DisplayNameRu { get; init; } = string.Empty;
+            public string DisplayNameEn { get; init; } = string.Empty;
+            public string DescriptionRu { get; init; } = string.Empty;
+            public string DescriptionEn { get; init; } = string.Empty;
+            public Func<EffectSettings> Factory { get; init; } = null!;
         }
 
         public int LastPlaybackSeconds { get; private set; }
@@ -125,5 +153,10 @@ namespace JokerDBDTracker
         public bool UsedStrongRedGlow { get; private set; }
         public bool UsedStrongVioletGlow { get; private set; }
         public bool UsedStrongShake { get; private set; }
+        public bool UsedAnyPreset => _presetKeysUsedThisSession.Count > 0;
+        public bool UsedCustomPreset => _presetKeysUsedThisSession.Contains("custom");
+        public bool UsedRetroPreset => _presetKeysUsedThisSession.Contains("retro_vhs");
+        public bool UsedChaosPreset => _presetKeysUsedThisSession.Contains("chaos");
+        public bool UsedDreamPreset => _presetKeysUsedThisSession.Contains("dream");
     }
 }
