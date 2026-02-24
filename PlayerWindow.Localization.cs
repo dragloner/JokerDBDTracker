@@ -38,6 +38,11 @@ namespace JokerDBDTracker
             Fx14.Content = PT("14. Холодный тон", "14. Cold tone");
             Fx15.Content = PT("15. Вертикальное зеркало", "15. Vertical mirror");
 
+            if (FisheyeCenterPadTitleText is not null)
+            {
+                FisheyeCenterPadTitleText.Text = PT("Центр Фишая", "Fisheye Center");
+            }
+
             if (AudioFxHeaderText is not null)
             {
                 AudioFxHeaderText.Text = PT("Аудио FX", "Audio FX");

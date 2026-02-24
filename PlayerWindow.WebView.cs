@@ -591,6 +591,163 @@ namespace JokerDBDTracker
                         return true;
                     };
 
+                    const nudgeYouTubePlayerLayout = () => {
+                        try {
+                            const now = Date.now();
+                            const last = Number(window.__jdbdLastLayoutNudgeTs || 0);
+                            if (now - last < 250) {
+                                return false;
+                            }
+                            window.__jdbdLastLayoutNudgeTs = now;
+
+                            const player = document.getElementById('movie_player');
+                            const html5Player = player?.querySelector?.('.html5-video-player') || null;
+                            const playerContainer = document.getElementById('player-theater-container') ||
+                                                    document.getElementById('full-bleed-container') ||
+                                                    document.getElementById('player-container-inner') ||
+                                                    document.getElementById('player-container-outer') ||
+                                                    document.getElementById('player-container');
+                            const flexy = document.querySelector('ytd-watch-flexy');
+                            let changed = false;
+
+                            if (player instanceof HTMLElement) {
+                                if (playerContainer instanceof HTMLElement) {
+                                    // Force wrapper/player width sync to trigger internal player resize observers.
+                                    playerContainer.style.setProperty('width', '100%', 'important');
+                                    playerContainer.style.setProperty('max-width', 'none', 'important');
+                                    player.style.setProperty('width', '100%', 'important');
+                                    player.style.setProperty('max-width', 'none', 'important');
+                                    player.style.setProperty('margin-left', '0', 'important');
+                                    player.style.setProperty('margin-right', '0', 'important');
+                                    changed = true;
+                                }
+
+                                if (html5Player instanceof HTMLElement) {
+                                    html5Player.style.setProperty('width', '100%', 'important');
+                                    html5Player.style.setProperty('max-width', 'none', 'important');
+                                    changed = true;
+                                }
+
+                                // Force synchronous reflow and wake internal observers without changing layout permanently.
+                                player.style.setProperty('outline', '1px solid transparent', 'important');
+                                void player.offsetWidth;
+                                player.style.removeProperty('outline');
+                                player.dispatchEvent(new Event('resize'));
+                                html5Player?.dispatchEvent?.(new Event('resize'));
+                                changed = true;
+
+                                const maybeMethods = ['updateSize', 'onResize_', 'handleGlobalResize_', 'resize_', 'handleResize'];
+                                for (const name of maybeMethods) {
+                                    const fn = player[name];
+                                    if (typeof fn === 'function') {
+                                        try {
+                                            fn.call(player);
+                                            changed = true;
+                                        } catch {
+                                            // no-op
+                                        }
+                                    }
+                                }
+
+                                // Pulse width by 1px and back to emulate the same relayout path as UI panel toggles.
+                                const previousMinWidth = player.style.getPropertyValue('min-width');
+                                player.style.setProperty('min-width', '0px', 'important');
+                                const currentWidth = Math.max(1, Math.round(player.getBoundingClientRect().width));
+                                player.style.setProperty('width', `${Math.max(1, currentWidth - 1)}px`, 'important');
+                                void player.offsetWidth;
+                                player.style.setProperty('width', '100%', 'important');
+                                if (previousMinWidth) {
+                                    player.style.setProperty('min-width', previousMinWidth, 'important');
+                                } else {
+                                    player.style.removeProperty('min-width');
+                                }
+                                changed = true;
+                            }
+
+                            if (flexy instanceof HTMLElement) {
+                                const hadTheater = flexy.hasAttribute('theater');
+                                if (hadTheater) {
+                                    flexy.removeAttribute('theater');
+                                    void flexy.offsetWidth;
+                                    flexy.setAttribute('theater', '');
+                                } else {
+                                    flexy.setAttribute('theater', '');
+                                }
+                                changed = true;
+                            }
+
+                            window.dispatchEvent(new Event('resize'));
+                            document.dispatchEvent(new Event('fullscreenchange'));
+                            return changed;
+                        } catch {
+                            return false;
+                        }
+                    };
+
+                    const pulseCommentPanelToggleForLayoutRepair = () => {
+                        try {
+                            const now = Date.now();
+                            const last = Number(window.__jdbdLastCommentPulseTs || 0);
+                            if (now - last < 1200) {
+                                return false;
+                            }
+
+                            const player = document.getElementById('movie_player');
+                            if (!player) {
+                                return false;
+                            }
+
+                            const buttons = Array.from(player.querySelectorAll('.ytp-button, button, [role="button"]'));
+                            let targetButton = null;
+                            for (const button of buttons) {
+                                if (!(button instanceof HTMLElement)) {
+                                    continue;
+                                }
+
+                                const text = getPlayerControlText(button);
+                                const looksLikeCommentsOrChat =
+                                    text.includes('comment') ||
+                                    text.includes('comments') ||
+                                    text.includes('комментар') ||
+                                    text.includes('chat') ||
+                                    text.includes('чат') ||
+                                    text.includes('discussion') ||
+                                    text.includes('replay chat');
+                                if (!looksLikeCommentsOrChat) {
+                                    continue;
+                                }
+
+                                targetButton = button;
+                                break;
+                            }
+
+                            if (!(targetButton instanceof HTMLElement)) {
+                                return false;
+                            }
+
+                            window.__jdbdLastCommentPulseTs = now;
+                            targetButton.click();
+                            setTimeout(() => {
+                                try {
+                                    targetButton.click();
+                                } catch {
+                                    // no-op
+                                }
+
+                                setTimeout(() => {
+                                    try {
+                                        collapseInlinePlayerSidePanels();
+                                    } catch {
+                                        // no-op
+                                    }
+                                }, 60);
+                            }, 60);
+                            return true;
+                        } catch {
+                            return false;
+                        }
+                    };
+
                     const collapseInlinePlayerSidePanels = () => {
                         try {
                             const player = document.getElementById('movie_player');
@@ -686,8 +843,54 @@ namespace JokerDBDTracker
 
                             const playerRect = player.getBoundingClientRect();
                             const videoRect = video.getBoundingClientRect();
+                            const hostCandidates = [
+                                document.getElementById('player-theater-container'),
+                                document.getElementById('full-bleed-container'),
+                                document.getElementById('player-container-inner'),
+                                document.getElementById('player-container-outer'),
+                                document.getElementById('player-container'),
+                                document.getElementById('player'),
+                                player.parentElement
+                            ].filter(Boolean);
+
+                            let hostRect = null;
+                            for (const candidate of hostCandidates) {
+                                if (!(candidate instanceof HTMLElement)) {
+                                    continue;
+                                }
+
+                                const rect = candidate.getBoundingClientRect();
+                                if (rect.width <= 0 || rect.height <= 0) {
+                                    continue;
+                                }
+
+                                if (!hostRect || rect.width > hostRect.width) {
+                                    hostRect = rect;
+                                }
+                            }
+
                             if (!(playerRect.width > 0 && videoRect.width > 0)) {
                                 return changed;
+                            }
+
+                            const playerToHostWidthRatio = hostRect && hostRect.width > 0
+                                ? playerRect.width / hostRect.width
+                                : 1;
+                            const playerTopOffset = hostRect
+                                ? Math.max(0, playerRect.top - hostRect.top)
+                                : 0;
+                            const suspiciousUndersizedPlayer =
+                                !!hostRect &&
+                                hostRect.width >= 520 &&
+                                playerToHostWidthRatio < 0.90;
+                            const suspiciousVerticalOffset =
+                                !!hostRect &&
+                                hostRect.height >= 320 &&
+                                playerTopOffset > Math.max(18, hostRect.height * 0.08);
+
+                            if (suspiciousUndersizedPlayer || suspiciousVerticalOffset) {
+                                changed = nudgeYouTubePlayerLayout() || changed;
+                                changed = pulseCommentPanelToggleForLayoutRepair() || changed;
                             }
 
                             const widthRatio = videoRect.width / playerRect.width;
@@ -695,6 +898,9 @@ namespace JokerDBDTracker
                             if (!suspiciousSplitLayout) {
                                 return changed;
                             }
+
+                            changed = nudgeYouTubePlayerLayout() || changed;
+                            changed = pulseCommentPanelToggleForLayoutRepair() || changed;
 
                             const minPanelWidth = Math.max(140, playerRect.width * 0.14);
                             const minPanelHeight = Math.max(120, playerRect.height * 0.2);
@@ -803,6 +1009,10 @@ namespace JokerDBDTracker
                         };
 
                         const blockPanelToggle = (event) => {
+                            if (!event.isTrusted) {
+                                return;
+                            }
+
                             if (!isCommentOrChatControl(event.target)) {
                                 return;
                             }

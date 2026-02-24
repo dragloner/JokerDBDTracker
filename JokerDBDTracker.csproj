@@ -12,10 +12,10 @@
     <AssemblyTitle>JokerDBD Tracker</AssemblyTitle>
     <Title>JokerDBD Tracker</Title>
     <Description>JokerDBD Tracker desktop app for stream tracking and embedded playback.</Description>
-    <Version>1.2.3</Version>
-    <AssemblyVersion>1.2.3</AssemblyVersion>
-    <FileVersion>1.2.3</FileVersion>
-    <InformationalVersion>1.2.3</InformationalVersion>
+    <Version>1.2.3.1</Version>
+    <AssemblyVersion>1.2.3.1</AssemblyVersion>
+    <FileVersion>1.2.3.1</FileVersion>
+    <InformationalVersion>1.2.3.1</InformationalVersion>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <Company>dragloner</Company>
     <Authors>dragloner</Authors>

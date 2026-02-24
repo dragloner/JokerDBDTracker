@@ -465,27 +465,81 @@
         </Style>
 
         <Style x:Key="EffectStrengthThumbStyle" TargetType="Thumb">
-            <Setter Property="Width" Value="14"/>
-            <Setter Property="Height" Value="14"/>
+            <Setter Property="Width" Value="18"/>
+            <Setter Property="Height" Value="18"/>
+            <Setter Property="Background" Value="{x:Null}"/>
+            <Setter Property="BorderBrush" Value="{x:Null}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0"/>
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
             <Setter Property="OverridesDefaultStyle" Value="True"/>
             <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="UseLayoutRounding" Value="True"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Thumb">
-                        <Ellipse x:Name="Knob"
-                                 Width="{TemplateBinding Width}"
-                                 Height="{TemplateBinding Height}"
-                                 Fill="#F5FBFF"
-                                 Stroke="#6EAED5"
-                                 StrokeThickness="1.2"/>
+                        <Grid Background="{x:Null}"
+                              SnapsToDevicePixels="True"
+                              UseLayoutRounding="True">
+                            <Ellipse x:Name="Glow"
+                                     Width="24"
+                                     Height="24"
+                                     Fill="#249FDEFF"
+                                     HorizontalAlignment="Center"
+                                     VerticalAlignment="Center"
+                                     Opacity="0"
+                                     IsHitTestVisible="False"/>
+                            <Ellipse x:Name="Outer"
+                                     Width="{TemplateBinding Width}"
+                                     Height="{TemplateBinding Height}"
+                                     HorizontalAlignment="Center"
+                                     VerticalAlignment="Center"
+                                     StrokeThickness="1"
+                                     Stroke="#B4E8FFFF">
+                                <Ellipse.Fill>
+                                    <RadialGradientBrush Center="0.35,0.28" GradientOrigin="0.35,0.28" RadiusX="0.82" RadiusY="0.82">
+                                        <GradientStop Color="#FFFFFFFF" Offset="0"/>
+                                        <GradientStop Color="#EBF7FEFF" Offset="0.45"/>
+                                        <GradientStop Color="#C7DEEEFF" Offset="0.82"/>
+                                        <GradientStop Color="#A9C5D9EF" Offset="1"/>
+                                    </RadialGradientBrush>
+                                </Ellipse.Fill>
+                            </Ellipse>
+                            <Ellipse x:Name="Inner"
+                                     Width="10"
+                                     Height="10"
+                                     HorizontalAlignment="Center"
+                                     VerticalAlignment="Center"
+                                     Fill="#F6FCFF"
+                                     Stroke="#7CB7DB"
+                                     StrokeThickness="0.9"/>
+                            <Ellipse x:Name="Specular"
+                                     Width="8"
+                                     Height="3.5"
+                                     HorizontalAlignment="Center"
+                                     VerticalAlignment="Top"
+                                     Margin="0,4,0,0"
+                                     Fill="#B9FFFFFF"
+                                     IsHitTestVisible="False"/>
+                        </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Knob" Property="Stroke" Value="#8AC6EA"/>
+                                <Setter TargetName="Glow" Property="Opacity" Value="0.55"/>
+                                <Setter TargetName="Outer" Property="Stroke" Value="#E8FFFFFF"/>
+                                <Setter TargetName="Inner" Property="Stroke" Value="#8CCAF0"/>
                             </Trigger>
                             <Trigger Property="IsDragging" Value="True">
-                                <Setter TargetName="Knob" Property="Fill" Value="#FFFFFF"/>
-                                <Setter TargetName="Knob" Property="Stroke" Value="#9DD3F2"/>
+                                <Setter TargetName="Glow" Property="Opacity" Value="0.8"/>
+                                <Setter TargetName="Outer" Property="Stroke" Value="#FFFFFFFF"/>
+                                <Setter TargetName="Inner" Property="Fill" Value="#FFFFFF"/>
+                                <Setter TargetName="Inner" Property="Stroke" Value="#A6DCF9"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Glow" Property="Opacity" Value="0"/>
+                                <Setter TargetName="Outer" Property="Opacity" Value="0.55"/>
+                                <Setter TargetName="Inner" Property="Opacity" Value="0.6"/>
+                                <Setter TargetName="Specular" Property="Opacity" Value="0.35"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -496,17 +550,56 @@
         <Style x:Key="EffectSliderDecreaseButtonStyle" TargetType="RepeatButton">
             <Setter Property="Focusable" Value="False"/>
             <Setter Property="IsTabStop" Value="False"/>
+            <Setter Property="Background" Value="{x:Null}"/>
+            <Setter Property="BorderBrush" Value="{x:Null}"/>
+            <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="RepeatButton">
-                        <Border CornerRadius="5,0,0,5">
-                            <Border.Background>
-                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                    <GradientStop Color="#49ADDC" Offset="0"/>
-                                    <GradientStop Color="#66BEEA" Offset="1"/>
-                                </LinearGradientBrush>
-                            </Border.Background>
-                        </Border>
+                        <Grid Background="{x:Null}"
+                              SnapsToDevicePixels="True"
+                              UseLayoutRounding="True">
+                            <Border x:Name="FillBar"
+                                    Height="10"
+                                    VerticalAlignment="Center"
+                                    CornerRadius="5,0,0,5"
+                                    BorderThickness="1"
+                                    BorderBrush="#48B5DFFF">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                        <GradientStop Color="#273B4D5D" Offset="0"/>
+                                        <GradientStop Color="#3C5E7890" Offset="0.45"/>
+                                        <GradientStop Color="#5EA6D6F2" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                            </Border>
+                            <Border x:Name="FillGloss"
+                                    Height="4"
+                                    Margin="1,0,0,5"
+                                    VerticalAlignment="Center"
+                                    CornerRadius="4,0,0,3"
+                                    Background="#20FFFFFF"
+                                    IsHitTestVisible="False"/>
+                            <Border x:Name="FillEdge"
+                                    Height="10"
+                                    VerticalAlignment="Center"
+                                    CornerRadius="5,0,0,5"
+                                    BorderThickness="1"
+                                    BorderBrush="#48B5DFFF"
+                                    Background="Transparent"
+                                    IsHitTestVisible="False"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="FillGloss" Property="Opacity" Value="0.12"/>
+                                <Setter TargetName="FillEdge" Property="BorderBrush" Value="#7FD8F9FF"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="FillBar" Property="Opacity" Value="0.35"/>
+                                <Setter TargetName="FillGloss" Property="Opacity" Value="0"/>
+                                <Setter TargetName="FillEdge" Property="Opacity" Value="0.25"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
@@ -515,17 +608,56 @@
         <Style x:Key="EffectSliderIncreaseButtonStyle" TargetType="RepeatButton">
             <Setter Property="Focusable" Value="False"/>
             <Setter Property="IsTabStop" Value="False"/>
+            <Setter Property="Background" Value="{x:Null}"/>
+            <Setter Property="BorderBrush" Value="{x:Null}"/>
+            <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="RepeatButton">
-                        <Border CornerRadius="0,5,5,0">
-                            <Border.Background>
-                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                    <GradientStop Color="#B8D8EC" Offset="0"/>
-                                    <GradientStop Color="#D2E8F7" Offset="1"/>
-                                </LinearGradientBrush>
-                            </Border.Background>
-                        </Border>
+                        <Grid Background="{x:Null}"
+                              SnapsToDevicePixels="True"
+                              UseLayoutRounding="True">
+                            <Border x:Name="RemainBar"
+                                    Height="10"
+                                    VerticalAlignment="Center"
+                                    CornerRadius="0,5,5,0"
+                                    BorderThickness="1"
+                                    BorderBrush="#4E9BB7CC">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                        <GradientStop Color="#6B889DB0" Offset="0"/>
+                                        <GradientStop Color="#809CB0C1" Offset="0.55"/>
+                                        <GradientStop Color="#96B0C1CF" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                            </Border>
+                            <Border x:Name="RemainGloss"
+                                    Height="4"
+                                    Margin="0,0,1,5"
+                                    VerticalAlignment="Center"
+                                    CornerRadius="0,3,4,0"
+                                    Background="#16FFFFFF"
+                                    IsHitTestVisible="False"/>
+                            <Border x:Name="RemainEdge"
+                                    Height="10"
+                                    VerticalAlignment="Center"
+                                    CornerRadius="0,5,5,0"
+                                    BorderThickness="1"
+                                    BorderBrush="#4E9BB7CC"
+                                    Background="Transparent"
+                                    IsHitTestVisible="False"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="RemainGloss" Property="Opacity" Value="0.08"/>
+                                <Setter TargetName="RemainEdge" Property="BorderBrush" Value="#75BED9EC"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="RemainBar" Property="Opacity" Value="0.35"/>
+                                <Setter TargetName="RemainGloss" Property="Opacity" Value="0"/>
+                                <Setter TargetName="RemainEdge" Property="Opacity" Value="0.25"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
@@ -535,7 +667,9 @@
             <Setter Property="Margin" Value="0,4,0,0"/>
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="Height" Value="22"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Background" Value="{x:Null}"/>
+            <Setter Property="BorderBrush" Value="{x:Null}"/>
             <Setter Property="IsMoveToPointEnabled" Value="True"/>
             <Setter Property="UseLayoutRounding" Value="True"/>
             <Setter Property="SnapsToDevicePixels" Value="True"/>
@@ -545,26 +679,61 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Slider">
-                        <Grid Margin="0,2,0,2" VerticalAlignment="Center" UseLayoutRounding="True">
-                            <Border x:Name="TrackRail"
-                                    Height="10"
+                        <Grid Margin="0,2,0,2"
+                              Background="{x:Null}"
+                              VerticalAlignment="Center"
+                              UseLayoutRounding="True"
+                              SnapsToDevicePixels="True">
+                            <Border x:Name="RailShadow"
+                                    Height="12"
                                     VerticalAlignment="Center"
-                                    CornerRadius="5"
-                                    Background="#D0CFE4F2"
-                                    BorderBrush="#93B8CE"
+                                    CornerRadius="6"
+                                    Background="#320A1118"
+                                    BorderBrush="#12000000"
                                     BorderThickness="1"/>
+                            <Border x:Name="RailBody"
+                                    Height="12"
+                                    VerticalAlignment="Center"
+                                    CornerRadius="6"
+                                    BorderThickness="1"
+                                    BorderBrush="#4E86A4B8">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                        <GradientStop Color="#CE263748" Offset="0"/>
+                                        <GradientStop Color="#D11D2E3D" Offset="0.5"/>
+                                        <GradientStop Color="#DB172531" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                            </Border>
+                            <Border x:Name="RailGlass"
+                                    Height="8"
+                                    Margin="2,0,2,0"
+                                    VerticalAlignment="Center"
+                                    CornerRadius="4"
+                                    BorderThickness="1"
+                                    BorderBrush="#20FFFFFF"
+                                    Background="#10FFFFFF"
+                                    IsHitTestVisible="False"/>
+                            <Border x:Name="RailSpecular"
+                                    Height="3"
+                                    Margin="3,0,3,5"
+                                    VerticalAlignment="Center"
+                                    CornerRadius="2"
+                                    Background="#19FFFFFF"
+                                    IsHitTestVisible="False"/>
                             <Track x:Name="PART_Track"
-                                   Margin="1"
+                                   Margin="1,0,1,0"
                                    Minimum="{TemplateBinding Minimum}"
                                    Maximum="{TemplateBinding Maximum}"
                                    Value="{TemplateBinding Value}"
-                                    IsDirectionReversed="False"
-                                    VerticalAlignment="Center">
+                                   IsDirectionReversed="False"
+                                   VerticalAlignment="Stretch">
                                 <Track.DecreaseRepeatButton>
                                     <RepeatButton Style="{StaticResource EffectSliderDecreaseButtonStyle}"/>
                                 </Track.DecreaseRepeatButton>
                                 <Track.Thumb>
-                                    <Thumb Style="{StaticResource EffectStrengthThumbStyle}" VerticalAlignment="Center"/>
+                                    <Thumb Style="{StaticResource EffectStrengthThumbStyle}"
+                                           VerticalAlignment="Center"/>
                                 </Track.Thumb>
                                 <Track.IncreaseRepeatButton>
                                     <RepeatButton Style="{StaticResource EffectSliderIncreaseButtonStyle}"/>
@@ -573,11 +742,19 @@
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="TrackRail" Property="BorderBrush" Value="#B7D7EA"/>
-                                <Setter TargetName="TrackRail" Property="Background" Value="#E0DAEDF9"/>
+                                <Setter TargetName="RailBody" Property="BorderBrush" Value="#7AAFD1EA"/>
+                                <Setter TargetName="RailGlass" Property="BorderBrush" Value="#28FFFFFF"/>
+                                <Setter TargetName="RailSpecular" Property="Opacity" Value="0.95"/>
                             </Trigger>
                             <Trigger Property="IsKeyboardFocusWithin" Value="True">
-                                <Setter TargetName="TrackRail" Property="BorderBrush" Value="#C4E2F4"/>
+                                <Setter TargetName="RailBody" Property="BorderBrush" Value="#91C3E1F4"/>
+                                <Setter TargetName="RailGlass" Property="BorderBrush" Value="#32FFFFFF"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="RailShadow" Property="Opacity" Value="0.3"/>
+                                <Setter TargetName="RailBody" Property="Opacity" Value="0.45"/>
+                                <Setter TargetName="RailGlass" Property="Opacity" Value="0.25"/>
+                                <Setter TargetName="RailSpecular" Property="Opacity" Value="0.1"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -585,7 +762,7 @@
             </Setter>
             <Style.Triggers>
                 <Trigger Property="IsEnabled" Value="False">
-                    <Setter Property="Opacity" Value="0.45"/>
+                    <Setter Property="Opacity" Value="0.55"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
@@ -1083,7 +1260,7 @@
                             </Border>
 
                             <CheckBox x:Name="Fx9" Content="9. Фишай" Style="{StaticResource EffectCheckBoxStyle}" Checked="EffectToggle_Changed" Unchecked="EffectToggle_Changed"/>
-                            <Border x:Name="Fx9Details" Margin="44,-8,0,10" Padding="0,0,6,0" MaxHeight="0" Opacity="0" Visibility="Collapsed" Tag="170">
+                            <Border x:Name="Fx9Details" Margin="44,-8,0,10" Padding="0,0,6,0" MaxHeight="0" Opacity="0" Visibility="Collapsed" Tag="206">
                                 <StackPanel>
                                     <Grid>
                                         <Grid.ColumnDefinitions>
@@ -1102,7 +1279,8 @@
                                             BorderThickness="1"
                                             CornerRadius="10">
                                         <StackPanel>
-                                            <TextBlock Text="Fisheye Center"
+                                            <TextBlock x:Name="FisheyeCenterPadTitleText"
+                                                       Text="Центр Фишая"
                                                        Foreground="#DDEFFF"
                                                        FontSize="12"
                                                        FontWeight="SemiBold"/>
@@ -1115,7 +1293,7 @@
                                             <Border Margin="0,6,0,0"
                                                     Width="112"
                                                     Height="112"
-                                                    HorizontalAlignment="Left"
+                                                    HorizontalAlignment="Center"
                                                     Background="#12212C"
                                                     BorderBrush="#7EA9C6"
                                                     BorderThickness="1"
@@ -1125,7 +1303,7 @@
                                                         Width="112"
                                                         Height="112"
                                                         Background="Transparent"
-                                                        ClipToBounds="True"
+                                                        ClipToBounds="False"
                                                         Loaded="FisheyeCenterPad_Loaded"
                                                         SizeChanged="FisheyeCenterPad_SizeChanged"
                                                         MouseLeftButtonDown="FisheyeCenterPad_MouseLeftButtonDown"

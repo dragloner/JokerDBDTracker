@@ -186,8 +186,8 @@ namespace JokerDBDTracker
 
             var markerWidth = marker.ActualWidth > 0 ? marker.ActualWidth : (double.IsNaN(marker.Width) ? 0 : marker.Width);
             var markerHeight = marker.ActualHeight > 0 ? marker.ActualHeight : (double.IsNaN(marker.Height) ? 0 : marker.Height);
-            var left = Math.Clamp(_fisheyeCenterX * padWidth - markerWidth * 0.5, 0, Math.Max(0, padWidth - markerWidth));
-            var top = Math.Clamp(_fisheyeCenterY * padHeight - markerHeight * 0.5, 0, Math.Max(0, padHeight - markerHeight));
+            var left = _fisheyeCenterX * padWidth - markerWidth * 0.5;
+            var top = _fisheyeCenterY * padHeight - markerHeight * 0.5;
             Canvas.SetLeft(marker, left);
             Canvas.SetTop(marker, top);
         }

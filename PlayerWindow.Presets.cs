@@ -393,7 +393,6 @@ namespace JokerDBDTracker
 
             ApplyEffectSettingsToControls(settings!, presetKey: "custom", animateDetails: false);
             UpdatePresetStatusText(PT("Кастомный пресет применён.", "Custom preset applied."));
-            SwitchPresetsPage(showPresets: false);
         }
 
         private async void DeleteCustomPresetButton_Click(object sender, RoutedEventArgs e)
@@ -432,7 +431,6 @@ namespace JokerDBDTracker
             ApplyEffectSettingsToControls(preset.Factory(), preset.Key, animateDetails: false);
             var displayName = IsEnglishPlayerLanguage ? preset.DisplayNameEn : preset.DisplayNameRu;
             UpdatePresetStatusText(PT($"Применён пресет: {displayName}", $"Preset applied: {displayName}"));
-            SwitchPresetsPage(showPresets: false);
         }
 
         private async Task SaveCurrentPresetToSelectedSlotAsync()
@@ -705,12 +703,18 @@ namespace JokerDBDTracker
             p.Flags[9] = true;  // VHS
             p.Flags[12] = true; // JPEG
             p.Flags[10] = true; // Shake
-            p.Vhs = 0.78;
-            p.JpegDamage = 0.62;
-            p.Shake = 0.18;
-            p.AudioDistortion = 0.18;
-            p.AudioEqHighDb = -4;
-            p.AudioEqMidDb = -1;
+            p.Flags[4] = true;  // Darkness
+            p.Flags[3] = true;  // Contrast
+            p.Vhs = 0.82;
+            p.JpegDamage = 0.54;
+            p.Shake = 0.12;
+            p.Darkness = 0.12;
+            p.Contrast = 0.28;
+            p.AudioDistortion = 0.12;
+            p.AudioEqLowDb = 1.5;
+            p.AudioEqMidDb = -2.8;
+            p.AudioEqHighDb = -6.0;
+            p.AudioReverb = 0.05;
             return p;
         }
 
@@ -720,12 +724,18 @@ namespace JokerDBDTracker
             p.Flags[8] = true;  // Fisheye
             p.Flags[13] = true; // Cold tone
             p.Flags[7] = true;  // Blur
-            p.Fisheye = 0.28;
-            p.Blur = 0.22;
-            p.ColdTone = 0.45;
-            p.FisheyeCenterX = 0.52;
-            p.FisheyeCenterY = 0.46;
-            p.AudioReverb = 0.16;
+            p.Flags[5] = true;  // Saturation
+            p.Flags[6] = true;  // Hue shift
+            p.Fisheye = 0.19;
+            p.Blur = 0.30;
+            p.ColdTone = 0.34;
+            p.Saturation = 0.22;
+            p.HueShift = 0.08;
+            p.FisheyeCenterX = 0.44;
+            p.FisheyeCenterY = 0.40;
+            p.AudioReverb = 0.28;
+            p.AudioEcho = 0.07;
+            p.AudioPitchSemitones = 1.0;
             return p;
         }
 
@@ -737,12 +747,18 @@ namespace JokerDBDTracker
             p.Flags[8] = true;  // Fisheye
             p.Flags[10] = true; // Shake
             p.Flags[12] = true; // JPEG
-            p.HueShift = 0.72;
-            p.Fisheye = -0.68;
-            p.Shake = 0.54;
-            p.JpegDamage = 0.76;
-            p.AudioEcho = 0.22;
-            p.AudioPitchSemitones = -1.5;
+            p.Flags[9] = true;  // VHS
+            p.Flags[3] = true;  // Contrast
+            p.HueShift = 0.90;
+            p.Fisheye = -0.78;
+            p.Shake = 0.67;
+            p.JpegDamage = 0.83;
+            p.Vhs = 0.52;
+            p.Contrast = 0.42;
+            p.AudioEcho = 0.32;
+            p.AudioDistortion = 0.18;
+            p.AudioPitchSemitones = -2.4;
+            p.AudioEqHighDb = -5.5;
             return p;
         }
 
@@ -752,12 +768,16 @@ namespace JokerDBDTracker
             p.Flags[3] = true;  // Contrast
             p.Flags[4] = true;  // Darkness
             p.Flags[13] = true; // Cold tone
-            p.Contrast = 0.38;
-            p.Darkness = 0.22;
-            p.ColdTone = 0.35;
-            p.AudioVolumeBoost = 0.15;
-            p.AudioEqLowDb = 1.5;
-            p.AudioEqHighDb = 1.2;
+            p.Flags[6] = true;  // Hue shift
+            p.Contrast = 0.30;
+            p.Darkness = 0.18;
+            p.ColdTone = 0.24;
+            p.HueShift = -0.05;
+            p.AudioVolumeBoost = 0.20;
+            p.AudioEqLowDb = 2.8;
+            p.AudioEqMidDb = 0.8;
+            p.AudioEqHighDb = 2.2;
+            p.AudioReverb = 0.10;
             return p;
         }
 
@@ -767,7 +787,14 @@ namespace JokerDBDTracker
             p.Flags[11] = true; // H mirror
             p.Flags[14] = true; // V mirror
             p.Flags[6] = true;  // Hue shift
-            p.HueShift = -0.33;
+            p.Flags[3] = true;  // Contrast
+            p.Flags[8] = true;  // Fisheye
+            p.HueShift = -0.42;
+            p.Contrast = 0.22;
+            p.Fisheye = 0.16;
+            p.FisheyeCenterX = 0.62;
+            p.FisheyeCenterY = 0.38;
+            p.AudioEcho = 0.10;
             return p;
         }
 
@@ -777,21 +804,28 @@ namespace JokerDBDTracker
             p.Flags[7] = true;  // Blur
             p.Flags[4] = true;  // Darkness
             p.Flags[5] = true;  // Saturation
-            p.Blur = 0.64;
-            p.Darkness = 0.30;
-            p.Saturation = -0.24;
+            p.Flags[1] = true;  // Sepia
+            p.Blur = 0.72;
+            p.Darkness = 0.22;
+            p.Saturation = -0.38;
+            p.AudioReverb = 0.12;
+            p.AudioEqHighDb = -3.5;
             return p;
         }
 
         private static EffectSettings CreateRadioVoicePreset()
         {
             var p = CreateDefaultPreset();
-            p.AudioEcho = 0.24;
-            p.AudioDistortion = 0.08;
-            p.AudioEqLowDb = -5;
-            p.AudioEqMidDb = 2.5;
-            p.AudioEqHighDb = -3;
-            p.AudioPitchSemitones = -0.6;
+            p.Flags[0] = true;  // Grayscale
+            p.Flags[3] = true;  // Contrast
+            p.Contrast = 0.20;
+            p.AudioEcho = 0.30;
+            p.AudioDistortion = 0.12;
+            p.AudioReverb = 0.08;
+            p.AudioEqLowDb = -8.0;
+            p.AudioEqMidDb = 4.5;
+            p.AudioEqHighDb = -6.0;
+            p.AudioPitchSemitones = -0.9;
             return p;
         }
 
@@ -802,10 +836,18 @@ namespace JokerDBDTracker
             p.Flags[13] = true; // Cold
             p.Flags[9] = true;  // VHS
             p.Flags[6] = true;  // Hue
-            p.JpegDamage = 0.58;
-            p.ColdTone = 0.55;
-            p.Vhs = 0.42;
-            p.HueShift = 0.12;
+            p.Flags[10] = true; // Shake
+            p.Flags[8] = true;  // Fisheye
+            p.JpegDamage = 0.66;
+            p.ColdTone = 0.74;
+            p.Vhs = 0.36;
+            p.HueShift = 0.18;
+            p.Shake = 0.16;
+            p.Fisheye = -0.22;
+            p.FisheyeCenterX = 0.55;
+            p.FisheyeCenterY = 0.52;
+            p.AudioEqHighDb = -4.0;
+            p.AudioDistortion = 0.10;
             return p;
         }
 
@@ -817,13 +859,19 @@ namespace JokerDBDTracker
             p.Flags[10] = true; // Shake
             p.Flags[4] = true;  // Darkness
             p.Flags[3] = true;  // Contrast
-            p.Fisheye = -0.88;
-            p.Shake = 0.72;
-            p.Darkness = 0.34;
-            p.Contrast = 0.56;
-            p.AudioDistortion = 0.26;
-            p.AudioEcho = 0.18;
-            p.AudioPitchSemitones = -2.2;
+            p.Flags[12] = true; // JPEG
+            p.Fisheye = -0.92;
+            p.FisheyeCenterX = 0.50;
+            p.FisheyeCenterY = 0.62;
+            p.Shake = 0.74;
+            p.Darkness = 0.42;
+            p.Contrast = 0.62;
+            p.JpegDamage = 0.48;
+            p.AudioDistortion = 0.30;
+            p.AudioEcho = 0.22;
+            p.AudioReverb = 0.12;
+            p.AudioPitchSemitones = -2.8;
+            p.AudioEqLowDb = 2.0;
             return p;
         }
 
@@ -835,11 +883,13 @@ namespace JokerDBDTracker
             p.Flags[7] = true;  // Blur
             p.Flags[12] = true; // JPEG
             p.Flags[3] = true;  // Contrast
-            p.Blur = 0.42;
-            p.JpegDamage = 0.70;
-            p.Contrast = 0.34;
-            p.AudioReverb = 0.20;
-            p.AudioEcho = 0.12;
+            p.Flags[0] = true;  // Grayscale
+            p.Blur = 0.34;
+            p.JpegDamage = 0.58;
+            p.Contrast = 0.44;
+            p.AudioReverb = 0.24;
+            p.AudioEcho = 0.16;
+            p.AudioEqMidDb = -1.2;
             return p;
         }
 
@@ -851,14 +901,18 @@ namespace JokerDBDTracker
             p.Flags[6] = true;  // Hue shift
             p.Flags[5] = true;  // Saturation
             p.Flags[10] = true; // Shake
-            p.Vhs = 0.66;
-            p.JpegDamage = 0.68;
-            p.HueShift = 0.54;
-            p.Saturation = 0.31;
-            p.Shake = 0.24;
-            p.AudioDistortion = 0.22;
-            p.AudioEcho = 0.16;
-            p.AudioEqHighDb = -4.2;
+            p.Flags[13] = true; // Cold tone
+            p.Vhs = 0.70;
+            p.JpegDamage = 0.74;
+            p.HueShift = 0.63;
+            p.Saturation = 0.42;
+            p.Shake = 0.22;
+            p.ColdTone = 0.22;
+            p.AudioDistortion = 0.28;
+            p.AudioEcho = 0.18;
+            p.AudioEqLowDb = -2.0;
+            p.AudioEqMidDb = -1.0;
+            p.AudioEqHighDb = -5.2;
             return p;
         }
 
@@ -868,17 +922,23 @@ namespace JokerDBDTracker
             p.Flags[4] = true;  // Darkness
             p.Flags[13] = true; // Cold tone
             p.Flags[7] = true;  // Blur
-            p.Darkness = 0.36;
-            p.ColdTone = 0.58;
-            p.Blur = 0.18;
-            p.AudioVolumeBoost = 0.22;
-            p.AudioPitchSemitones = -3.0;
-            p.AudioReverb = 0.34;
-            p.AudioEcho = 0.30;
-            p.AudioDistortion = 0.26;
-            p.AudioEqLowDb = -6.0;
-            p.AudioEqMidDb = 2.0;
-            p.AudioEqHighDb = -7.0;
+            p.Flags[8] = true;  // Fisheye
+            p.Flags[10] = true; // Shake
+            p.Darkness = 0.40;
+            p.ColdTone = 0.64;
+            p.Blur = 0.20;
+            p.Fisheye = -0.26;
+            p.Shake = 0.10;
+            p.FisheyeCenterX = 0.48;
+            p.FisheyeCenterY = 0.58;
+            p.AudioVolumeBoost = 0.25;
+            p.AudioPitchSemitones = -3.4;
+            p.AudioReverb = 0.42;
+            p.AudioEcho = 0.34;
+            p.AudioDistortion = 0.30;
+            p.AudioEqLowDb = -7.0;
+            p.AudioEqMidDb = 1.4;
+            p.AudioEqHighDb = -8.5;
             return p;
         }
     }

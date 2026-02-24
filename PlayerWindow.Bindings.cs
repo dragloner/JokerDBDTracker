@@ -10,6 +10,7 @@ namespace JokerDBDTracker
     public partial class PlayerWindow
     {
         private readonly List<MediaPlayer> _activeSoundPlayers = [];
+        private readonly Dictionary<SoundEffectKind, MediaPlayer> _activeSoundPlayersByKind = [];
 
         private enum SoundEffectKind
         {
@@ -271,6 +272,11 @@ namespace JokerDBDTracker
         {
             try
             {
+                if (StopSoundEffect(kind))
+                {
+                    return;
+                }
+
                 var audioResourceUri = ResolveSoundEffectResourceUri(kind);
                 if (audioResourceUri is null)
                 {
@@ -278,7 +284,7 @@ namespace JokerDBDTracker
                     return;
                 }
 
-                PlayAudioFile(audioResourceUri);
+                PlayAudioFile(kind, audioResourceUri);
             }
             catch (Exception ex)
             {
@@ -350,7 +356,30 @@ namespace JokerDBDTracker
             }
         }
 
-        private void PlayAudioFile(Uri resourceUri)
+        private bool StopSoundEffect(SoundEffectKind kind)
+        {
+            if (!_activeSoundPlayersByKind.TryGetValue(kind, out var player))
+            {
+                return false;
+            }
+
+            _activeSoundPlayersByKind.Remove(kind);
+            _activeSoundPlayers.Remove(player);
+
+            try
+            {
+                player.Stop();
+                player.Close();
+            }
+            catch
+            {
+                // Ignore sound shutdown errors.
+            }
+
+            return true;
+        }
+
+        private void PlayAudioFile(SoundEffectKind kind, Uri resourceUri)
         {
             var player = new MediaPlayer();
             player.Open(resourceUri);
@@ -360,15 +389,26 @@ namespace JokerDBDTracker
                 player.Stop();
                 player.Close();
                 _activeSoundPlayers.Remove(player);
+                if (_activeSoundPlayersByKind.TryGetValue(kind, out var activePlayer) &&
+                    ReferenceEquals(activePlayer, player))
+                {
+                    _activeSoundPlayersByKind.Remove(kind);
+                }
             };
             player.MediaFailed += (_, _) =>
             {
                 player.Close();
                 _activeSoundPlayers.Remove(player);
+                if (_activeSoundPlayersByKind.TryGetValue(kind, out var activePlayer) &&
+                    ReferenceEquals(activePlayer, player))
+                {
+                    _activeSoundPlayersByKind.Remove(kind);
+                }
                 ReportSoundPlaybackFailure("MediaPlayer failed to decode sound.");
             };
 
             _activeSoundPlayers.Add(player);
+            _activeSoundPlayersByKind[kind] = player;
             player.Play();
         }
 
@@ -409,6 +449,7 @@ namespace JokerDBDTracker
             }
 
             _activeSoundPlayers.Clear();
+            _activeSoundPlayersByKind.Clear();
         }
 
         private void UpdateDynamicBindHints()
