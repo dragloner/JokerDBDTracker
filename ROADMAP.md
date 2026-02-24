@@ -3,16 +3,16 @@
 РћР±РЅРѕРІР»РµРЅРѕ: `2026-02-24`  
 РўРµРєСѓС‰Р°СЏ РІРµСЂСЃРёСЏ: `v1.2.3.1`
 
-## Patch notes `v1.2.3.1` (over `v1.2.3`)
+## Что вошло в `v1.2.3.1` (патч к `v1.2.3`)
 
-### Player / Effects / UI polish
+### Плеер / эффекты / полировка интерфейса
 
-- [x] Toggle-stop behavior for sound effect hotkeys/buttons (repeat press stops the sound).
-- [x] Fisheye mini-pad UI fixes: centering, clipping/visibility, title localization.
-- [x] Built-in presets reworked (same names, more diverse combinations).
-- [x] Presets page stays on `Presets` after apply/load (no forced tab switch).
-- [x] Slider styles reworked (thumb/track redesign and artifact-fix iterations).
-- [x] Additional embedded YouTube player startup layout repair logic.
+- [x] Поведение звуковых горячих клавиш/кнопок изменено на toggle-stop (повторное нажатие останавливает звук).
+- [x] Исправлен UI мини-пада `Fisheye`: центрирование, видимость/обрезание, локализация заголовка.
+- [x] Переработаны встроенные пресеты (названия сохранены, комбинации стали более разнообразными).
+- [x] Страница `Presets` больше не переключается принудительно на `Effects` после применения/загрузки.
+- [x] Переработаны стили слайдеров (ручка/дорожка, серия фиксов артефактов).
+- [x] Добавлена дополнительная логика исправления стартовой раскладки встроенного YouTube-плеера.
 
 ## Р§С‚Рѕ РІРѕС€Р»Рѕ РІ `v1.2.3` (РїРѕ СЃСЂР°РІРЅРµРЅРёСЋ СЃ `v1.2.2`)
 

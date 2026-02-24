@@ -4,14 +4,14 @@
 
 РўРµРєСѓС‰Р°СЏ РІРµСЂСЃРёСЏ: `v1.2.3.1`
 
-## Patch notes `v1.2.3.1` (over `v1.2.3`)
+## Что нового в `v1.2.3.1` (патч к `v1.2.3`)
 
-- Fixed sound effect toggle behavior: repeated key/button press now stops currently playing SFX instead of restarting it.
-- Improved `Fisheye` mini-pad rendering (centering, marker visibility, localization title).
-- Reworked built-in player presets (same names, more diverse visual/audio combinations).
-- Preset apply/load no longer auto-switches workspace tab from `Presets` to `Effects`.
-- Refined player-side slider visuals (custom thumb/track style updates).
-- Additional embedded YouTube player layout repair logic on startup.
+- Исправлено поведение звуковых горячих клавиш/кнопок: повторное нажатие теперь останавливает текущий звуковой эффект вместо повторного запуска.
+- Улучшен мини-пад `Fisheye`: центрирование, корректное отображение маркера и заголовок с локализацией.
+- Переработаны встроенные пресеты плеера (названия сохранены, комбинации стали более разнообразными).
+- Применение/загрузка пресета больше не переключает вкладку автоматически с `Presets` на `Effects`.
+- Обновлён визуальный стиль слайдеров в плеере (ручка/дорожка, стеклянный стиль).
+- Доработана логика исправления стартовой раскладки встроенного YouTube-плеера при запуске.
 
 ## Р§С‚Рѕ РЅРѕРІРѕРіРѕ РІ `v1.2.3` (РїРѕ СЃСЂР°РІРЅРµРЅРёСЋ СЃ `v1.2.2`)
 

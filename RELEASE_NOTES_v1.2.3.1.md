@@ -1,12 +1,12 @@
 # JokerDBDTracker v1.2.3.1
 
-Patch release focused on player UX, presets workflow, and UI polish.
+Патч-релиз с фокусом на удобство плеера, пресеты и полировку интерфейса.
 
-## Included changes
+## Что вошло в релиз
 
-- Sound effect buttons/hotkeys now work as toggle-stop (repeat press stops current SFX).
-- Fisheye mini-pad UI polish: centering, marker visibility/clipping improvements, localization title.
-- Built-in presets reworked (same names, more diverse visual/audio combinations).
-- Presets tab no longer auto-switches to Effects after apply/load.
-- Slider visuals reworked (thumb/track redesign, ongoing artifact reduction work).
-- Additional embedded YouTube startup layout-repair logic.
+- Звуковые кнопки/горячие клавиши теперь работают как toggle-stop (повторное нажатие останавливает текущий звуковой эффект).
+- Полировка UI мини-пада `Fisheye`: центрирование, видимость маркера/обрезание, локализация заголовка.
+- Переработаны встроенные пресеты плеера (названия сохранены, комбинации эффектов стали разнообразнее).
+- Вкладка пресетов больше не переключается автоматически на `Effects` после применения/загрузки.
+- Переработан визуальный стиль слайдеров (новая ручка/дорожка, стеклянный стиль, серия фиксов артефактов).
+- Добавлена дополнительная логика исправления стартовой раскладки встроенного YouTube-плеера при запуске.
