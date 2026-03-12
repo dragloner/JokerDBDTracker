@@ -272,28 +272,6 @@ namespace JokerDBDTracker
             }
         }
 
-        private async void PrestigeButton_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                var level = CalculateLevelFromXp(_prestigeXp);
-                if (level < MaxLevel || _prestige >= MaxPrestige)
-                {
-                    return;
-                }
-
-                _prestige++;
-                _prestigeXp = 0;
-
-                await SaveHistoryAsync();
-                RefreshProfile();
-            }
-            catch
-            {
-                // Keep UI alive even if an async operation fails.
-            }
-        }
-
         private void ExitButton_Click(object sender, RoutedEventArgs e)
         {
             Close();

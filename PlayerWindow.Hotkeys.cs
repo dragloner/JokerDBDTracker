@@ -63,7 +63,8 @@ namespace JokerDBDTracker
                 ReadConfiguredKey(_appSettings.AuraFarmSoundBind, Key.Y),
                 ReadConfiguredKey(_appSettings.LaughSoundBind, Key.U),
                 ReadConfiguredKey(_appSettings.PsiSoundBind, Key.I),
-                ReadConfiguredKey(_appSettings.RespectSoundBind, Key.O)
+                ReadConfiguredKey(_appSettings.RespectSoundBind, Key.O),
+                ReadConfiguredKey(_appSettings.SadSoundBind, Key.P)
             };
 
             AddHotkeyWithDigitAliases(keys, ReadConfiguredKey(_appSettings.Effect1Bind, Key.D1));

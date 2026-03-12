@@ -85,7 +85,6 @@ namespace JokerDBDTracker
             LaughBindLabelText.Text = T("Звук Смех", "Laugh sound");
             PsiBindLabelText.Text = T("Звук Пси-излучение", "Psi radiation sound");
             RespectBindLabelText.Text = T("Звук +Respect", "+Respect sound");
-            EffectBindsHeaderText.Text = T("Бинды эффектов", "Effect binds");
             EffectBindsDescriptionText.Text = T(
                 "Каждый эффект (1-15) можно назначить на любую клавишу.",
                 "Each effect (1-15) can be assigned to any key.");
@@ -111,7 +110,6 @@ namespace JokerDBDTracker
             AchievementsHeaderText.Text = T("Достижения", "Achievements");
             OpenQuestsButton.Content = T("Открыть задания", "Open quests");
             RecentStreamsHeaderText.Text = T("Последние просмотренные", "Recently watched");
-            PrestigeButton.Content = T("Престиж", "Prestige");
 
             QuestsPageHeaderText.Text = T("Задания", "Quests");
             QuestsDailyHeaderText.Text = T("Ежедневные задания", "Daily quests");

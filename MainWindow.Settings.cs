@@ -1,4 +1,4 @@
-﻿using System.IO;
+﻿﻿using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -24,6 +24,7 @@ namespace JokerDBDTracker
         private const string BindTargetLaugh = "laugh";
         private const string BindTargetPsi = "psi";
         private const string BindTargetRespect = "respect";
+        private const string BindTargetSad = "sad";
         private const int EffectBindCount = 15;
 
         private void InitializeSettingsUi()
@@ -313,6 +314,9 @@ namespace JokerDBDTracker
                 case BindTargetRespect:
                     _appSettings.RespectSoundBind = bind;
                     break;
+                case BindTargetSad:
+                    _appSettings.SadSoundBind = bind;
+                    break;
                 default:
                     if (TryParseEffectBindTarget(target, out var effectIndex))
                     {
@@ -329,7 +333,8 @@ namespace JokerDBDTracker
                 AuraFarmBindValueText is null ||
                 LaughBindValueText is null ||
                 PsiBindValueText is null ||
-                RespectBindValueText is null)
+                RespectBindValueText is null ||
+                SadBindValueText is null)
             {
                 return;
             }
@@ -339,6 +344,7 @@ namespace JokerDBDTracker
             LaughBindValueText.Text = FormatBindForUi(_appSettings.LaughSoundBind);
             PsiBindValueText.Text = FormatBindForUi(_appSettings.PsiSoundBind);
             RespectBindValueText.Text = FormatBindForUi(_appSettings.RespectSoundBind);
+            SadBindValueText.Text = FormatBindForUi(_appSettings.SadSoundBind);
             UpdateEffectBindButtons();
         }
 
@@ -375,7 +381,8 @@ namespace JokerDBDTracker
                 AssignAuraFarmBindButton is null ||
                 AssignLaughBindButton is null ||
                 AssignPsiBindButton is null ||
-                AssignRespectBindButton is null)
+                AssignRespectBindButton is null ||
+                AssignSadBindButton is null)
             {
                 return;
             }
@@ -386,7 +393,8 @@ namespace JokerDBDTracker
                 AssignAuraFarmBindButton,
                 AssignLaughBindButton,
                 AssignPsiBindButton,
-                AssignRespectBindButton
+                AssignRespectBindButton,
+                AssignSadBindButton
             };
 
             foreach (var button in buttons)
@@ -572,6 +580,7 @@ namespace JokerDBDTracker
             _appSettings.LaughSoundBind = "U";
             _appSettings.PsiSoundBind = "I";
             _appSettings.RespectSoundBind = "O";
+            _appSettings.SadSoundBind = "P";
             for (var effectIndex = 1; effectIndex <= EffectBindCount; effectIndex++)
             {
                 SetEffectBindByIndex(effectIndex, GetDefaultEffectBindByIndex(effectIndex));
@@ -642,4 +651,3 @@ namespace JokerDBDTracker
         }
     }
 }
-

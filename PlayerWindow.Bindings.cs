@@ -1,4 +1,4 @@
-﻿using System.IO;
+﻿﻿using System.IO;
 using System.Windows.Media;
 using System.Windows;
 using System.Windows.Controls;
@@ -17,7 +17,8 @@ namespace JokerDBDTracker
             AuraFarm,
             Laugh,
             PsiRadiation,
-            Respect
+            Respect,
+            Sad
         }
 
         private void PlayerWindow_PreviewMouseDown(object sender, MouseButtonEventArgs e)
@@ -219,6 +220,12 @@ namespace JokerDBDTracker
                 return true;
             }
 
+            if (key == ReadConfiguredKey(_appSettings.SadSoundBind, Key.P))
+            {
+                PlaySoundEffect(SoundEffectKind.Sad);
+                return true;
+            }
+
             return false;
         }
 
@@ -300,6 +307,7 @@ namespace JokerDBDTracker
                 SoundEffectKind.Laugh => "sitcom-laughing-1.mp3",
                 SoundEffectKind.PsiRadiation => "zvuk-psi-izlucheniia.mp3",
                 SoundEffectKind.Respect => "italian-mafia-music.mp3",
+                SoundEffectKind.Sad => "sadness.mp3",
                 _ => null
             };
 
@@ -461,6 +469,7 @@ namespace JokerDBDTracker
                 var laugh = FormatBindLabel(_appSettings.LaughSoundBind);
                 var psi = FormatBindLabel(_appSettings.PsiSoundBind);
                 var respect = FormatBindLabel(_appSettings.RespectSoundBind);
+                var sad = FormatBindLabel(_appSettings.SadSoundBind);
                 var fxRow1 = string.Join("/", new[]
                 {
                     FormatBindLabel(_appSettings.Effect1Bind),
@@ -483,8 +492,8 @@ namespace JokerDBDTracker
                     FormatBindLabel(_appSettings.Effect15Bind)
                 });
                 BindsHintText.Text = PT(
-                    $"FX 1-10: {fxRow1}\nFX 11-15: {fxRow2} | H:{hide} | Y:{aura} U:{laugh} I:{psi} O:{respect}",
-                    $"FX 1-10: {fxRow1}\nFX 11-15: {fxRow2} | H:{hide} | Y:{aura} U:{laugh} I:{psi} O:{respect}");
+                    $"FX 1-10: {fxRow1}\nFX 11-15: {fxRow2} | H:{hide} | Y:{aura} U:{laugh} I:{psi} O:{respect} P:{sad}",
+                    $"FX 1-10: {fxRow1}\nFX 11-15: {fxRow2} | H:{hide} | Y:{aura} U:{laugh} I:{psi} O:{respect} P:{sad}");
             }
 
             if (AuraFarmSoundButton is not null)
@@ -509,6 +518,12 @@ namespace JokerDBDTracker
             {
                 RespectSoundButton.Content = PT("4. +Respect Don Mafia", "4. +Respect Don Mafia") +
                                              $" [{FormatBindLabel(_appSettings.RespectSoundBind)}]";
+            }
+
+            if (SadSoundButton is not null)
+            {
+                SadSoundButton.Content = PT("5. Звук Грусть", "5. Sadness Sound") +
+                                         $" [{FormatBindLabel(_appSettings.SadSoundBind)}]";
             }
         }
 
@@ -737,7 +752,11 @@ namespace JokerDBDTracker
             MarkUserInteraction();
             PlaySoundEffect(SoundEffectKind.Respect);
         }
+
+        private void SadSoundButton_Click(object sender, RoutedEventArgs e)
+        {
+            MarkUserInteraction();
+            PlaySoundEffect(SoundEffectKind.Sad);
+        }
     }
 }
-
-

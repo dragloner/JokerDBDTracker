@@ -74,7 +74,7 @@
                                    FontWeight="ExtraBold"/>
                         <StackPanel Margin="3,-2,0,0" Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock x:Name="AppVersionText"
-                                       Text="v1.2.3"
+                                       Text="v1.2.3.2"
                                        Foreground="#B9CFDF"
                                        FontSize="14"
                                        FontWeight="SemiBold"
@@ -608,20 +608,7 @@
                             </Grid>
                             <ProgressBar x:Name="ProfileXpProgress" Margin="0,10,0,0" Height="22" Minimum="0"/>
                             <Grid Margin="0,10,0,0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="190"/>
-                                    <ColumnDefinition Width="12"/>
-                                    <ColumnDefinition Width="210"/>
-                                </Grid.ColumnDefinitions>
-                                <Button x:Name="PrestigeButton"
-                                        Grid.Column="0"
-                                        Style="{StaticResource PrestigeButtonStyle}"
-                                        Width="190"
-                                        Height="44"
-                                        Content="Престиж"
-                                        Click="PrestigeButton_Click"/>
                                 <Button x:Name="OpenQuestsButton"
-                                        Grid.Column="2"
                                         Background="#356F8E"
                                         Foreground="#F2FAFF"
                                         Width="210"
@@ -1296,6 +1283,39 @@
                                                         Padding="10,6"
                                                         Content="Назначить"
                                                         Tag="respect"
+                                                        Click="AssignBindButton_Click"/>
+                                            </Grid>
+
+                                            <Grid Margin="0,8,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="100"/>
+                                                    <ColumnDefinition Width="126"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock x:Name="SadBindLabelText"
+                                                           Text="Sadness Sound"
+                                                           Foreground="#EDF7FF"
+                                                           FontSize="15"
+                                                           VerticalAlignment="Center"/>
+                                                <Border Grid.Column="1"
+                                                        Margin="8,0,8,0"
+                                                        Padding="8,4"
+                                                        CornerRadius="10"
+                                                        BorderBrush="#85B3CC"
+                                                        BorderThickness="1"
+                                                        Background="#C620394A">
+                                                    <TextBlock x:Name="SadBindValueText"
+                                                               Text="P"
+                                                               Foreground="#F3FBFF"
+                                                               FontWeight="Bold"
+                                                               FontSize="14"
+                                                               HorizontalAlignment="Center"/>
+                                                </Border>
+                                                <Button x:Name="AssignSadBindButton"
+                                                        Grid.Column="2"
+                                                        Padding="10,6"
+                                                        Content="РќР°Р·РЅР°С‡РёС‚СЊ"
+                                                        Tag="sad"
                                                         Click="AssignBindButton_Click"/>
                                             </Grid>
 

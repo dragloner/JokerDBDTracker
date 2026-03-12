@@ -73,6 +73,10 @@ namespace JokerDBDTracker
 
             var prestigeXpCap = TotalXpForLevel(MaxLevel);
             _prestigeXp = Math.Clamp(_prestigeXp, 0, prestigeXpCap);
+            if (TryAutoPrestige(prestigeXpCap))
+            {
+                _ = SaveHistoryAsync();
+            }
             var level = CalculateLevelFromXp(_prestigeXp);
             var prev = TotalXpForLevel(level);
             var next = level >= MaxLevel ? prev : TotalXpForLevel(level + 1);
@@ -99,7 +103,6 @@ namespace JokerDBDTracker
                 $"Time in app: {totalHours:0.0} h ({totalWatchedSeconds / 60} min)");
             ProfileXpProgress.Maximum = requiredInLevel;
             ProfileXpProgress.Value = clampedCurrentLevelXp;
-            PrestigeButton.IsEnabled = level >= MaxLevel && _prestige < MaxPrestige;
         }
 
         private List<ProfileAchievement> BuildAchievements(int streakDays)
@@ -439,6 +442,25 @@ namespace JokerDBDTracker
             _totalXp += amount;
             var prestigeXpCap = TotalXpForLevel(MaxLevel);
             _prestigeXp = Math.Min(prestigeXpCap, _prestigeXp + amount);
+            TryAutoPrestige(prestigeXpCap);
+        }
+
+        private bool TryAutoPrestige(int prestigeXpCap)
+        {
+            if (_prestige >= MaxPrestige)
+            {
+                _prestigeXp = Math.Min(_prestigeXp, prestigeXpCap);
+                return false;
+            }
+
+            if (_prestigeXp < prestigeXpCap)
+            {
+                return false;
+            }
+
+            _prestige = Math.Min(MaxPrestige, _prestige + 1);
+            _prestigeXp = 0;
+            return true;
         }
     }
 }
