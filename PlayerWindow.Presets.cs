@@ -619,6 +619,7 @@ namespace JokerDBDTracker
             }
 
             RequestApplyEffects(immediate: true, force: true);
+            SendWtEffectsSync();
         }
 
         private void SyncCustomPresetSlotsBackToSettings()

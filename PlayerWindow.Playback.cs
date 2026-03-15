@@ -211,6 +211,7 @@ namespace JokerDBDTracker
 
                 _ = PersistPlaybackPositionAsync(force: false);
                 UpdateCursedAchievementState(current, duration);
+                SendWtPeriodicSync(current, paused);
             }
             catch
             {

@@ -74,7 +74,7 @@
                                    FontWeight="ExtraBold"/>
                         <StackPanel Margin="3,-2,0,0" Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock x:Name="AppVersionText"
-                                       Text="v1.2.3.2"
+                                       Text="v1.3.0"
                                        Foreground="#B9CFDF"
                                        FontSize="14"
                                        FontWeight="SemiBold"
@@ -187,6 +187,8 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="12"/>
                     <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="12"/>
+                    <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
                 <Button x:Name="HomeNavButton"
@@ -204,8 +206,13 @@
                         Style="{StaticResource TopNavButtonStyle}"
                         Content="Профиль"
                         Click="ProfileNavButton_Click"/>
-                <Button x:Name="SettingsNavButton"
+                <Button x:Name="WatchTogetherNavButton"
                         Grid.Column="6"
+                        Style="{StaticResource TopNavButtonStyle}"
+                        Content="Watch Together"
+                        Click="WatchTogetherNavButton_Click"/>
+                <Button x:Name="SettingsNavButton"
+                        Grid.Column="8"
                         Style="{StaticResource TopNavButtonStyle}"
                         Content="Настройки"
                         Click="SettingsNavButton_Click"/>
@@ -223,6 +230,7 @@
                 <TabItem Header="Профиль"/>
                 <TabItem Header="Задания"/>
                 <TabItem Header="Настройки"/>
+                <TabItem Header="Watch Together"/>
             </TabControl>
 
             <Grid Grid.Row="4" Grid.RowSpan="3" Margin="0,10,0,0">
@@ -1375,6 +1383,304 @@
                                Foreground="#88AFC5D7"
                                FontSize="9"
                                FontWeight="SemiBold"/>
+                </Grid>
+            </Border>
+
+            <Border x:Name="WatchTogetherPanel"
+                    Grid.Row="4"
+                    Grid.RowSpan="5"
+                    Padding="14"
+                    CornerRadius="18"
+                    Background="#D3172431"
+                    BorderBrush="#4D728C"
+                    BorderThickness="1"
+                    Visibility="Collapsed">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="10"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock x:Name="WatchTogetherHeaderText"
+                               Grid.Row="0"
+                               Text="Watch Together"
+                               Foreground="#EDF7FF"
+                               FontSize="30"
+                               FontWeight="Bold"/>
+
+                    <Border Grid.Row="2"
+                            CornerRadius="18"
+                            BorderBrush="#6887A0"
+                            BorderThickness="1"
+                            Padding="18">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Color="#2A3D4E" Offset="0"/>
+                                <GradientStop Color="#334C5F" Offset="0.55"/>
+                                <GradientStop Color="#274457" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Border.Background>
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="16"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock x:Name="WatchTogetherSubtitleText"
+                                       Grid.Row="0"
+                                       Text="Смотрите стримы вместе с друзьями через Radmin VPN"
+                                       Foreground="#F2FAFF"
+                                       FontSize="20"
+                                       FontWeight="Bold"/>
+
+                            <Grid Grid.Row="2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="420"/>
+                                    <ColumnDefinition Width="24"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Left: Connection panel -->
+                                <Border Grid.Column="0"
+                                        CornerRadius="14"
+                                        BorderBrush="#7EA5BF"
+                                        BorderThickness="1"
+                                        Padding="14"
+                                        Background="#CC223746">
+                                    <StackPanel>
+                                        <TextBlock x:Name="WtConnectionHeaderText"
+                                                   Text="Подключение"
+                                                   Foreground="#EDF7FF"
+                                                   FontSize="18"
+                                                   FontWeight="Bold"/>
+                                        <TextBlock x:Name="WtConnectionDescText"
+                                                   Margin="0,6,0,0"
+                                                   Text="Убедитесь, что оба игрока подключены к одной сети Radmin VPN."
+                                                   Foreground="#BFD9EA"
+                                                   FontSize="14"
+                                                   TextWrapping="Wrap"/>
+
+                                        <TextBlock x:Name="WtPortLabelText"
+                                                   Margin="0,16,0,0"
+                                                   Text="Порт"
+                                                   Foreground="#EDF7FF"
+                                                   FontSize="15"
+                                                   FontWeight="SemiBold"/>
+                                        <TextBox x:Name="WtPortBox"
+                                                 Margin="0,6,0,0"
+                                                 Text="7777"
+                                                 FontSize="18"
+                                                 FontWeight="SemiBold"
+                                                 MaxLength="5"
+                                                 Width="120"
+                                                 HorizontalAlignment="Left"/>
+
+                                        <Button x:Name="WtHostButton"
+                                                Margin="0,16,0,0"
+                                                MinHeight="48"
+                                                Content="Создать комнату (Хост)"
+                                                FontSize="16"
+                                                FontWeight="Bold"
+                                                Click="WtHostButton_Click"/>
+
+                                        <Border Margin="0,16,0,0"
+                                                Height="1"
+                                                Background="#4D728C"/>
+
+                                        <TextBlock x:Name="WtIpLabelText"
+                                                   Margin="0,16,0,0"
+                                                   Text="IP адрес хоста"
+                                                   Foreground="#EDF7FF"
+                                                   FontSize="15"
+                                                   FontWeight="SemiBold"/>
+                                        <TextBox x:Name="WtIpBox"
+                                                 Margin="0,6,0,0"
+                                                 FontSize="18"
+                                                 FontWeight="SemiBold"
+                                                 MaxLength="45"/>
+
+                                        <Button x:Name="WtConnectButton"
+                                                Margin="0,12,0,0"
+                                                MinHeight="48"
+                                                Content="Подключиться (Гость)"
+                                                FontSize="16"
+                                                FontWeight="Bold"
+                                                Click="WtConnectButton_Click"/>
+
+                                        <Button x:Name="WtDisconnectButton"
+                                                Margin="0,12,0,0"
+                                                MinHeight="44"
+                                                Content="Отключиться"
+                                                FontSize="15"
+                                                FontWeight="Bold"
+                                                Visibility="Collapsed"
+                                                Click="WtDisconnectButton_Click"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Right: Status & Info -->
+                                <Border Grid.Column="2"
+                                        CornerRadius="14"
+                                        BorderBrush="#7EA5BF"
+                                        BorderThickness="1"
+                                        Padding="14"
+                                        Background="#CC223746">
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                                  HorizontalScrollBarVisibility="Disabled">
+                                    <StackPanel>
+                                        <!-- ── Status block ── -->
+                                        <TextBlock x:Name="WtStatusHeaderText"
+                                                   Text="Статус сервера"
+                                                   Foreground="#EDF7FF"
+                                                   FontSize="18"
+                                                   FontWeight="Bold"/>
+
+                                        <Border Margin="0,10,0,0"
+                                                Padding="14"
+                                                CornerRadius="12"
+                                                BorderBrush="#5B8AA5"
+                                                BorderThickness="1"
+                                                Background="#C9203548">
+                                            <StackPanel>
+                                                <TextBlock x:Name="WtStatusText"
+                                                           Text="● Сервер не запущен"
+                                                           Foreground="#F4D89B"
+                                                           FontSize="17"
+                                                           FontWeight="Bold"/>
+                                                <TextBlock x:Name="WtRoleText"
+                                                           Margin="0,6,0,0"
+                                                           Text=""
+                                                           Foreground="#D8EAF8"
+                                                           FontSize="14"
+                                                           FontWeight="SemiBold"/>
+                                                <TextBlock x:Name="WtPortInfoText"
+                                                           Margin="0,4,0,0"
+                                                           Text=""
+                                                           Foreground="#A8C8DD"
+                                                           FontSize="13"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <!-- ── Host IP block (shown only when hosting) ── -->
+                                        <Border x:Name="WtHostIpPanel"
+                                                Margin="0,12,0,0"
+                                                Padding="12"
+                                                CornerRadius="12"
+                                                Background="#1A3448"
+                                                BorderBrush="#5FA8C8"
+                                                BorderThickness="1"
+                                                Visibility="Collapsed">
+                                            <StackPanel>
+                                                <TextBlock x:Name="WtMyIpHeaderText"
+                                                           Text="Скажи другу этот IP:"
+                                                           Foreground="#7BC8F4"
+                                                           FontSize="14"
+                                                           FontWeight="Bold"/>
+                                                <TextBlock x:Name="WtMyIpText"
+                                                           Margin="0,6,0,0"
+                                                           Text=""
+                                                           Foreground="#F3FBFF"
+                                                           FontSize="20"
+                                                           FontWeight="Bold"
+                                                           TextWrapping="Wrap"/>
+                                                <TextBlock x:Name="WtMyIpHintText"
+                                                           Margin="0,4,0,0"
+                                                           Text="Друг должен ввести этот IP в поле «IP адрес хоста» и нажать «Подключиться»."
+                                                           Foreground="#8FB4CC"
+                                                           FontSize="12"
+                                                           TextWrapping="Wrap"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <!-- ── Connected peers list ── -->
+                                        <Border x:Name="WtPeersPanel"
+                                                Margin="0,12,0,0"
+                                                Padding="12"
+                                                CornerRadius="12"
+                                                BorderBrush="#5B8AA5"
+                                                BorderThickness="1"
+                                                Background="#C91A2E40"
+                                                Visibility="Collapsed">
+                                            <StackPanel>
+                                                <TextBlock x:Name="WtPeersHeaderText"
+                                                           Text="Подключённые участники"
+                                                           Foreground="#EDF7FF"
+                                                           FontSize="15"
+                                                           FontWeight="Bold"/>
+                                                <TextBlock x:Name="WtPeersCountText"
+                                                           Margin="0,4,0,0"
+                                                           Text=""
+                                                           Foreground="#A8D4EC"
+                                                           FontSize="13"
+                                                           FontWeight="SemiBold"/>
+                                                <Border Margin="0,8,0,0"
+                                                        Padding="10"
+                                                        CornerRadius="8"
+                                                        Background="#14202C">
+                                                    <TextBlock x:Name="WtPeersListText"
+                                                               Text=""
+                                                               Foreground="#D8EAF8"
+                                                               FontSize="14"
+                                                               TextWrapping="Wrap"
+                                                               FontFamily="Consolas"/>
+                                                </Border>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <!-- ── Guest connected-to info ── -->
+                                        <Border x:Name="WtGuestInfoPanel"
+                                                Margin="0,12,0,0"
+                                                Padding="12"
+                                                CornerRadius="12"
+                                                BorderBrush="#5B8AA5"
+                                                BorderThickness="1"
+                                                Background="#C91A2E40"
+                                                Visibility="Collapsed">
+                                            <StackPanel>
+                                                <TextBlock x:Name="WtGuestConnectedText"
+                                                           Text="Подключено к хосту"
+                                                           Foreground="#7BF4A3"
+                                                           FontSize="15"
+                                                           FontWeight="Bold"/>
+                                                <TextBlock x:Name="WtGuestHostAddrText"
+                                                           Margin="0,4,0,0"
+                                                           Text=""
+                                                           Foreground="#D8EAF8"
+                                                           FontSize="14"/>
+                                                <TextBlock x:Name="WtGuestSyncHintText"
+                                                           Margin="0,6,0,0"
+                                                           Text="Ожидайте — хост откроет видео и управление будет синхронизировано."
+                                                           Foreground="#8FB4CC"
+                                                           FontSize="12"
+                                                           TextWrapping="Wrap"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <!-- ── Instructions (shown when not connected) ── -->
+                                        <Border x:Name="WtInstructionsPanel"
+                                                Margin="0,12,0,0">
+                                            <StackPanel>
+                                                <TextBlock x:Name="WtInfoHeaderText"
+                                                           Text="Как это работает"
+                                                           Foreground="#EDF7FF"
+                                                           FontSize="16"
+                                                           FontWeight="Bold"/>
+                                                <TextBlock x:Name="WtInfoText"
+                                                           Margin="0,8,0,0"
+                                                           Foreground="#BFD9EA"
+                                                           FontSize="14"
+                                                           TextWrapping="Wrap"
+                                                           Text="1. Оба игрока запускают Radmin VPN и подключаются к одной сети.&#x0a;2. Один игрок нажимает «Создать комнату» — он становится хостом.&#x0a;3. Второй игрок вводит IP хоста (из Radmin VPN) и нажимает «Подключиться».&#x0a;4. Хост открывает видео — оно автоматически откроется у гостя.&#x0a;5. Play, pause и перемотка синхронизируются автоматически."/>
+                                            </StackPanel>
+                                        </Border>
+                                    </StackPanel>
+                                    </ScrollViewer>
+                                </Border>
+                            </Grid>
+                        </Grid>
+                    </Border>
                 </Grid>
             </Border>
 

@@ -46,6 +46,7 @@ namespace JokerDBDTracker
                 UpdateStrengthSlidersEnabledState();
                 UpdateEffectDetailsVisibility(animate: false);
                 SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
+                InitializeWatchTogetherSync();
                 _isPlayerNavigationInProgress = true;
                 _isPlayerRuntimeReady = false;
                 SetPlayerInteractionsEnabled(false);
@@ -1531,6 +1532,26 @@ namespace JokerDBDTracker
                 script,
                 timeoutMs: 500,
                 operation: $"MirrorPlaybackKeyToWebViewAsync.{key}");
+
+            // Notify Watch Together peers about this playback action.
+            if (action is "togglePlayPause" or "seekBackward" or "seekForward")
+            {
+                var pos = await GetCurrentPlaybackPositionAsync();
+                if (action == "togglePlayPause")
+                {
+                    // Determine actual state after toggle by checking pause status.
+                    var stateResult = await ExecuteWebScriptWithTimeoutAsync(
+                        "(() => { const v = document.querySelector('video'); return v ? (v.paused ? 'paused' : 'playing') : 'unknown'; })()",
+                        timeoutMs: 400,
+                        operation: "WtSync.CheckPauseState");
+                    var wtType = stateResult == "\"paused\"" || stateResult == "paused" ? "pause" : "play";
+                    NotifyWtPlaybackAction(wtType, pos >= 0 ? pos : null);
+                }
+                else
+                {
+                    NotifyWtPlaybackAction(action, pos >= 0 ? pos : null);
+                }
+            }
         }
 
         private bool IsAllowedPlayerNavigation(string? uriText)

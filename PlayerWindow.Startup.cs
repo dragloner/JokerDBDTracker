@@ -1,15 +1,17 @@
 using JokerDBDTracker.Models;
+using JokerDBDTracker.Services;
 
 namespace JokerDBDTracker
 {
     public partial class PlayerWindow
     {
-        public PlayerWindow(YouTubeVideo video, int startSeconds)
+        public PlayerWindow(YouTubeVideo video, int startSeconds, WatchTogetherService? watchTogetherService = null)
         {
             InitializeComponent();
             WindowBoundsHelper.Attach(this);
             _video = video;
             _startSeconds = Math.Max(startSeconds, 0);
+            _watchTogetherService = watchTogetherService;
             LastPlaybackSeconds = _startSeconds;
             _lastPersistedPlaybackSeconds = _startSeconds;
             _effectDetails =

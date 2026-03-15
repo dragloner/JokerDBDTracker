@@ -59,6 +59,7 @@ namespace JokerDBDTracker
             UpdateStrengthSlidersEnabledState();
             UpdateEffectDetailsVisibility(animate: true);
             RequestApplyEffects(immediate: true);
+            SendWtEffectsSync();
         }
 
         private void StrengthSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -69,6 +70,7 @@ namespace JokerDBDTracker
             }
 
             RequestApplyEffects(immediate: false);
+            SendWtEffectsSync();
         }
 
         private void FisheyeCenterPad_Loaded(object sender, RoutedEventArgs e)

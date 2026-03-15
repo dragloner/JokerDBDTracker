@@ -23,13 +23,14 @@ namespace JokerDBDTracker
             HomeOverviewHeaderText.Text = T("Обзор главной", "Home overview");
             RecommendationsHeaderText.Text = T("Рекомендации", "Recommendations");
 
-            if (TopTabControl.Items.Count >= 5)
+            if (TopTabControl.Items.Count >= 6)
             {
                 ((TabItem)TopTabControl.Items[0]).Header = T("Главная", "Home");
                 ((TabItem)TopTabControl.Items[1]).Header = T("Избранное", "Favorites");
                 ((TabItem)TopTabControl.Items[2]).Header = T("Профиль", "Profile");
                 ((TabItem)TopTabControl.Items[3]).Header = T("Задания", "Quests");
                 ((TabItem)TopTabControl.Items[4]).Header = T("Настройки", "Settings");
+                ((TabItem)TopTabControl.Items[5]).Header = "Watch Together";
             }
 
             if (SearchPlaceholderText is not null)
@@ -119,6 +120,30 @@ namespace JokerDBDTracker
             BackToProfileButton.Content = T("Назад в профиль", "Back to profile");
 
             LoadingTitleText.Text = T("Загрузка приложения", "Loading app");
+
+            WatchTogetherNavButton.Content = "Watch Together";
+            WatchTogetherHeaderText.Text = "Watch Together";
+            WatchTogetherSubtitleText.Text = T(
+                "Смотрите стримы вместе с друзьями через Radmin VPN",
+                "Watch streams together with friends via Radmin VPN");
+            WtConnectionHeaderText.Text = T("Подключение", "Connection");
+            WtConnectionDescText.Text = T(
+                "Убедитесь, что оба игрока подключены к одной сети Radmin VPN.",
+                "Make sure both players are connected to the same Radmin VPN network.");
+            WtPortLabelText.Text = T("Порт", "Port");
+            WtHostButton.Content = T("Создать комнату (Хост)", "Create room (Host)");
+            WtIpLabelText.Text = T("IP адрес хоста", "Host IP address");
+            WtConnectButton.Content = T("Подключиться (Гость)", "Connect (Guest)");
+            WtDisconnectButton.Content = T("Отключиться", "Disconnect");
+            WtStatusHeaderText.Text = T("Статус сервера", "Server status");
+            WtPeersHeaderText.Text = T("Подключённые участники", "Connected participants");
+            WtGuestConnectedText.Text = T("Подключено к хосту", "Connected to host");
+            WtInfoHeaderText.Text = T("Как это работает", "How it works");
+            WtInfoText.Text = T(
+                "1. Оба игрока запускают Radmin VPN и подключаются к одной сети.\n2. Один игрок нажимает «Создать комнату» — он становится хостом.\n3. Второй игрок вводит IP хоста (из Radmin VPN) и нажимает «Подключиться».\n4. Хост открывает видео — оно автоматически откроется у гостя.\n5. Play, pause и перемотка синхронизируются автоматически.",
+                "1. Both players launch Radmin VPN and join the same network.\n2. One player clicks \"Create room\" — they become the host.\n3. The other player enters the host's IP (from Radmin VPN) and clicks \"Connect\".\n4. Host opens a video — it automatically opens for the guest.\n5. Play, pause, and seek are synced automatically.");
+            WtMyIpHeaderText.Text = T("Скажи другу этот IP:", "Tell your friend this IP:");
+            UpdateWatchTogetherUiState();
 
             UpdateBindDisplayTexts();
             UpdateBindCaptureButtons();

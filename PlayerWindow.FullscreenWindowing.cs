@@ -422,6 +422,7 @@ namespace JokerDBDTracker
                 _effectsApplyDebounceTimer.Tick -= EffectsApplyDebounceTimer_Tick;
                 _resizeSettleDebounceTimer.Tick -= ResizeSettleDebounceTimer_Tick;
                 StopAllSoundEffects();
+                CleanupWatchTogetherSync();
                 SystemEvents.DisplaySettingsChanged -= SystemEvents_DisplaySettingsChanged;
                 UnregisterGlobalHotkeys();
                 _hotkeySource?.RemoveHook(HotkeyWndProc);

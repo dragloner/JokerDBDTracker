@@ -18,8 +18,10 @@ namespace JokerDBDTracker
             try
             {
                 await MarkAsWatchedAsync(video);
+                NotifyWatchTogetherVideoOpened(video);
 
-                var player = new PlayerWindow(video, video.LastPlaybackSeconds)
+                var wtService = GetWatchTogetherService();
+                var player = new PlayerWindow(video, video.LastPlaybackSeconds, wtService)
                 {
                     Owner = this
                 };

@@ -10,6 +10,7 @@ namespace JokerDBDTracker
         private bool IsProfileTabSelected() => TopTabControl.SelectedIndex == 2;
         private bool IsQuestsTabSelected() => TopTabControl.SelectedIndex == 3;
         private bool IsSettingsTabSelected() => TopTabControl.SelectedIndex == 4;
+        private bool IsWatchTogetherTabSelected() => TopTabControl.SelectedIndex == 5;
 
         private void SelectTopTab(int index)
         {
@@ -26,6 +27,7 @@ namespace JokerDBDTracker
             ApplyTopNavState(HomeNavButton, TopTabControl.SelectedIndex == 0);
             ApplyTopNavState(FavoritesNavButton, TopTabControl.SelectedIndex == 1);
             ApplyTopNavState(ProfileNavButton, TopTabControl.SelectedIndex == 2 || TopTabControl.SelectedIndex == 3);
+            ApplyTopNavState(WatchTogetherNavButton, TopTabControl.SelectedIndex == 5);
             ApplyTopNavState(SettingsNavButton, TopTabControl.SelectedIndex == 4);
 
             void ApplyTopNavState(Button button, bool selected)
@@ -56,16 +58,19 @@ namespace JokerDBDTracker
             var questsMode = IsQuestsTabSelected();
             var settingsMode = IsSettingsTabSelected();
             var favoritesMode = IsFavoritesTabSelected();
-            StreamsPanel.Visibility = profileMode || questsMode || settingsMode ? Visibility.Collapsed : Visibility.Visible;
-            RecommendationsPanel.Visibility = profileMode || questsMode || settingsMode || favoritesMode ? Visibility.Collapsed : Visibility.Visible;
-            HomeSummaryPanel.Visibility = profileMode || questsMode || settingsMode || favoritesMode ? Visibility.Collapsed : Visibility.Visible;
+            var watchTogetherMode = IsWatchTogetherTabSelected();
+            var isOverlayTab = profileMode || questsMode || settingsMode || watchTogetherMode;
+            StreamsPanel.Visibility = isOverlayTab ? Visibility.Collapsed : Visibility.Visible;
+            RecommendationsPanel.Visibility = isOverlayTab || favoritesMode ? Visibility.Collapsed : Visibility.Visible;
+            HomeSummaryPanel.Visibility = isOverlayTab || favoritesMode ? Visibility.Collapsed : Visibility.Visible;
             ProfilePanel.Visibility = profileMode ? Visibility.Visible : Visibility.Collapsed;
             QuestsPanel.Visibility = questsMode ? Visibility.Visible : Visibility.Collapsed;
             SettingsPanel.Visibility = settingsMode ? Visibility.Visible : Visibility.Collapsed;
-            RecommendationsColumn.Width = profileMode || questsMode || settingsMode || favoritesMode
+            WatchTogetherPanel.Visibility = watchTogetherMode ? Visibility.Visible : Visibility.Collapsed;
+            RecommendationsColumn.Width = isOverlayTab || favoritesMode
                 ? new GridLength(0)
                 : new GridLength(420);
-            MainColumnsSpacer.Width = profileMode || questsMode || settingsMode || favoritesMode
+            MainColumnsSpacer.Width = isOverlayTab || favoritesMode
                 ? new GridLength(0)
                 : new GridLength(12);
 
@@ -76,6 +81,10 @@ namespace JokerDBDTracker
             else if (questsMode)
             {
                 RefreshQuestsPage();
+            }
+            else if (watchTogetherMode)
+            {
+                RefreshWatchTogetherPanel();
             }
             else if (!settingsMode)
             {
@@ -91,7 +100,8 @@ namespace JokerDBDTracker
                          HomeSummaryPanel,
                          ProfilePanel,
                          QuestsPanel,
-                         SettingsPanel
+                         SettingsPanel,
+                         WatchTogetherPanel
                      })
             {
                 AnimatePanelEntrance(panel);
@@ -111,6 +121,11 @@ namespace JokerDBDTracker
         private void ProfileNavButton_Click(object sender, RoutedEventArgs e)
         {
             SelectTopTab(2);
+        }
+
+        private void WatchTogetherNavButton_Click(object sender, RoutedEventArgs e)
+        {
+            SelectTopTab(5);
         }
 
         private void SettingsNavButton_Click(object sender, RoutedEventArgs e)
