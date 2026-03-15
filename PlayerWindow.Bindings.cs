@@ -292,6 +292,7 @@ namespace JokerDBDTracker
                 }
 
                 PlayAudioFile(kind, audioResourceUri);
+                NotifyWtSoundEffect(kind.ToString());
             }
             catch (Exception ex)
             {

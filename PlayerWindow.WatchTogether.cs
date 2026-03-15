@@ -10,9 +10,9 @@ namespace JokerDBDTracker
         private DateTime _lastSyncSendUtc = DateTime.MinValue;
         private DateTime _lastEffectsSyncSendUtc = DateTime.MinValue;
         private string _lastSentEffectsJson = string.Empty;
-        private const double SyncSendIntervalSeconds = 3.0;
-        private const double EffectsSyncSendIntervalSeconds = 0.5;
-        private const double SyncSeekThresholdSeconds = 3.0;
+        private const double SyncSendIntervalSeconds = 1.0;
+        private const double EffectsSyncSendIntervalSeconds = 0.3;
+        private const double SyncSeekThresholdSeconds = 2.0;
 
         private void InitializeWatchTogetherSync()
         {
@@ -57,6 +57,9 @@ namespace JokerDBDTracker
                     break;
                 case "effects":
                     _ = Dispatcher.InvokeAsync(() => HandleRemoteEffects(message));
+                    break;
+                case "sound_effect":
+                    _ = Dispatcher.InvokeAsync(() => HandleRemoteSoundEffect(message));
                     break;
             }
         }
@@ -163,7 +166,6 @@ namespace JokerDBDTracker
                 return;
             }
 
-            // Only seek if position differs significantly.
             var currentPos = await GetCurrentPlaybackPositionAsync();
             if (currentPos < 0)
             {
@@ -171,27 +173,42 @@ namespace JokerDBDTracker
             }
 
             var diff = Math.Abs(currentPos - message.Position.Value);
-            if (diff > SyncSeekThresholdSeconds)
+            var remotePaused = string.Equals(message.Text, "paused", StringComparison.Ordinal);
+            var posStr = message.Position.Value.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+
+            // Sync both position (if drifted) and play/pause state.
+            _isSyncingFromRemote = true;
+            try
             {
-                _isSyncingFromRemote = true;
-                try
+                var seekPart = diff > SyncSeekThresholdSeconds
+                    ? $"video.currentTime = {posStr};"
+                    : string.Empty;
+
+                var statePart = remotePaused
+                    ? "if (!video.paused) video.pause();"
+                    : "if (video.paused) { const p = video.play?.(); if (p && typeof p.catch === 'function') p.catch(() => {}); }";
+
+                if (string.IsNullOrEmpty(seekPart) && string.IsNullOrEmpty(statePart))
                 {
-                    var script = $$"""
-                        (() => {
-                            try {
-                                const video = document.querySelector('video');
-                                if (!video) return false;
-                                video.currentTime = {{message.Position.Value.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)}};
-                                return true;
-                            } catch { return false; }
-                        })();
-                        """;
-                    await ExecuteWebScriptWithTimeoutAsync(script, timeoutMs: 800, operation: "WtSync.SyncState");
+                    return;
                 }
-                finally
-                {
-                    _isSyncingFromRemote = false;
-                }
+
+                var script = $$"""
+                    (() => {
+                        try {
+                            const video = document.querySelector('video');
+                            if (!video) return false;
+                            {{seekPart}}
+                            {{statePart}}
+                            return true;
+                        } catch { return false; }
+                    })();
+                    """;
+                await ExecuteWebScriptWithTimeoutAsync(script, timeoutMs: 800, operation: "WtSync.SyncState");
+            }
+            finally
+            {
+                _isSyncingFromRemote = false;
             }
         }
 
@@ -253,7 +270,7 @@ namespace JokerDBDTracker
 
         /// <summary>
         /// Sends periodic sync state to keep peers in sync.
-        /// Called from PositionTimer_Tick.
+        /// Called from PositionTimer_Tick. Only the host sends these.
         /// </summary>
         private void SendWtPeriodicSync(double currentPosition, bool isPaused)
         {
@@ -262,7 +279,6 @@ namespace JokerDBDTracker
                 return;
             }
 
-            // Only the host sends periodic sync to avoid conflicts.
             if (!_watchTogetherService.IsHost)
             {
                 return;
@@ -286,18 +302,12 @@ namespace JokerDBDTracker
         // ── Effects synchronization ──
 
         /// <summary>
-        /// Called when host changes effects (toggle or slider).
+        /// Called when any member changes effects (toggle or slider).
         /// Broadcasts current effects state to all peers.
         /// </summary>
         private void SendWtEffectsSync()
         {
             if (_watchTogetherService is null || !_watchTogetherService.IsConnected || _isSyncingFromRemote)
-            {
-                return;
-            }
-
-            // Only the host broadcasts effects.
-            if (!_watchTogetherService.IsHost)
             {
                 return;
             }
@@ -333,12 +343,6 @@ namespace JokerDBDTracker
                 return;
             }
 
-            // Only guests apply received effects.
-            if (_watchTogetherService is not null && _watchTogetherService.IsHost)
-            {
-                return;
-            }
-
             try
             {
                 var settings = JsonSerializer.Deserialize<EffectSettings>(message.Text);
@@ -360,6 +364,47 @@ namespace JokerDBDTracker
             catch
             {
                 // Ignore malformed effects data.
+            }
+        }
+
+        // ── Sound effect synchronization ──
+
+        /// <summary>
+        /// Called when any member plays a sound effect.
+        /// Broadcasts the sound to all peers.
+        /// </summary>
+        private void NotifyWtSoundEffect(string soundKind)
+        {
+            if (_watchTogetherService is null || !_watchTogetherService.IsConnected || _isSyncingFromRemote)
+            {
+                return;
+            }
+
+            _watchTogetherService.Send(new WatchTogetherMessage
+            {
+                Type = "sound_effect",
+                Text = soundKind
+            });
+        }
+
+        private void HandleRemoteSoundEffect(WatchTogetherMessage message)
+        {
+            if (string.IsNullOrWhiteSpace(message.Text) || !CanProcessPlayerCommands())
+            {
+                return;
+            }
+
+            _isSyncingFromRemote = true;
+            try
+            {
+                if (Enum.TryParse<SoundEffectKind>(message.Text, ignoreCase: true, out var kind))
+                {
+                    PlaySoundEffect(kind);
+                }
+            }
+            finally
+            {
+                _isSyncingFromRemote = false;
             }
         }
     }

@@ -91,8 +91,10 @@ namespace JokerDBDTracker
                 WtHostIpPanel.Visibility = Visibility.Visible;
                 DetectLocalIpAddresses();
                 WtMyIpHintText.Text = T(
-                    "Друг должен ввести этот IP в поле «IP адрес хоста» и нажать «Подключиться».",
-                    "Your friend should enter this IP in the \"Host IP address\" field and click \"Connect\".");
+                    "Друг должен ввести этот IP в поле «IP адрес хоста» и нажать «Подключиться».\n" +
+                    $"Если не подключается — разрешите порт {port} в брандмауэре Windows.",
+                    "Your friend should enter this IP in the \"Host IP address\" field and click \"Connect\".\n" +
+                    $"If connection fails — allow port {port} in Windows Firewall.");
 
                 // Show peers panel.
                 WtPeersPanel.Visibility = Visibility.Visible;
@@ -281,7 +283,9 @@ namespace JokerDBDTracker
                 WtPortInfoText.Text = string.Empty;
 
                 MessageBox.Show(
-                    $"{T("Не удалось подключиться:", "Failed to connect:")}\n{ex.Message}",
+                    $"{T("Не удалось подключиться:", "Failed to connect:")}\n{ex.Message}\n\n" +
+                    T("Убедитесь, что хост разрешил порт в брандмауэре Windows и Radmin VPN запущен у обоих.",
+                      "Make sure the host has allowed the port in Windows Firewall and Radmin VPN is running on both sides."),
                     T("Watch Together", "Watch Together"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
@@ -407,7 +411,7 @@ namespace JokerDBDTracker
         /// </summary>
         private void NotifyWatchTogetherVideoOpened(YouTubeVideo video)
         {
-            if (_watchTogetherService is null || !_watchTogetherService.IsConnected || !_watchTogetherService.IsHost)
+            if (_watchTogetherService is null || !_watchTogetherService.IsConnected)
             {
                 return;
             }
