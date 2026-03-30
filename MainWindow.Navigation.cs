@@ -123,8 +123,18 @@ namespace JokerDBDTracker
             SelectTopTab(2);
         }
 
-        private void WatchTogetherNavButton_Click(object sender, RoutedEventArgs e)
+        private async void WatchTogetherNavButton_Click(object sender, RoutedEventArgs e)
         {
+            // First-time dialog: explain network setup and ask for firewall consent.
+            if (!_watchTogetherFirewallAccepted)
+            {
+                var accepted = await ShowWatchTogetherFirstTimeDialogAsync();
+                if (!accepted)
+                {
+                    return;
+                }
+            }
+
             SelectTopTab(5);
         }
 

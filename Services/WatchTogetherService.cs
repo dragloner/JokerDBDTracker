@@ -370,7 +370,43 @@ namespace JokerDBDTracker.Services
                 read += chunk;
             }
 
-            return JsonSerializer.Deserialize<WatchTogetherMessage>(messageBuf);
+            try
+            {
+                var message = JsonSerializer.Deserialize<WatchTogetherMessage>(messageBuf);
+                if (message is null || !IsValidMessageType(message.Type))
+                {
+                    return null;
+                }
+
+                // Clamp position to sane range.
+                if (message.Position.HasValue)
+                {
+                    message.Position = Math.Clamp(message.Position.Value, 0, 86400);
+                }
+
+                // Limit text payload size.
+                if (message.Text is not null && message.Text.Length > MaxMessageBytes)
+                {
+                    message.Text = message.Text[..MaxMessageBytes];
+                }
+
+                return message;
+            }
+            catch (JsonException)
+            {
+                return null;
+            }
+        }
+
+        private static readonly HashSet<string> AllowedMessageTypes =
+        [
+            "play", "pause", "seek", "sync_state", "effects",
+            "open_video", "sound_effect", "chat"
+        ];
+
+        private static bool IsValidMessageType(string type)
+        {
+            return !string.IsNullOrEmpty(type) && AllowedMessageTypes.Contains(type);
         }
 
         private static async Task WriteWithLockAsync(NetworkStream stream, SemaphoreSlim writeLock, byte[] data)

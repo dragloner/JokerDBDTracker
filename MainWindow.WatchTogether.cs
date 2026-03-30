@@ -11,6 +11,7 @@ namespace JokerDBDTracker
     {
         private WatchTogetherService? _watchTogetherService;
         private bool _isWatchTogetherActive;
+        private bool _watchTogetherFirewallAccepted;
 
         private void RefreshWatchTogetherPanel()
         {
@@ -430,6 +431,104 @@ namespace JokerDBDTracker
         internal WatchTogetherService? GetWatchTogetherService()
         {
             return _isWatchTogetherActive ? _watchTogetherService : null;
+        }
+
+        /// <summary>
+        /// Loads the firewall consent flag from saved settings.
+        /// Called during MainWindow initialization.
+        /// </summary>
+        internal void LoadWatchTogetherFirewallConsent(bool accepted)
+        {
+            _watchTogetherFirewallAccepted = accepted;
+        }
+
+        /// <summary>
+        /// Shows a first-time dialog explaining Watch Together network requirements.
+        /// Returns true if user accepted, false if declined.
+        /// </summary>
+        private async Task<bool> ShowWatchTogetherFirstTimeDialogAsync()
+        {
+            var title = T("Watch Together — Настройка сети", "Watch Together — Network Setup");
+            var message = T(
+                "Функция Watch Together позволяет смотреть стримы вместе с друзьями через локальную сеть (Radmin VPN).\n\n" +
+                "Для работы необходимо:\n" +
+                "• Открыть TCP порт в брандмауэре Windows (по умолчанию 7777)\n" +
+                "• Запустить Radmin VPN на обоих компьютерах\n\n" +
+                "Что произойдёт:\n" +
+                "• Программа автоматически создаст правило в брандмауэре Windows для порта 7777\n" +
+                "• Может появиться запрос на повышение прав (UAC) — это нормально\n" +
+                "• Правило разрешает входящие TCP-подключения только в частных сетях\n\n" +
+                "Это безопасно — порт используется только для синхронизации воспроизведения между участниками.\n" +
+                "Данные не отправляются в интернет.\n\n" +
+                "Продолжить?",
+
+                "Watch Together lets you watch streams with friends over a local network (Radmin VPN).\n\n" +
+                "Requirements:\n" +
+                "• Open a TCP port in Windows Firewall (default 7777)\n" +
+                "• Run Radmin VPN on both computers\n\n" +
+                "What will happen:\n" +
+                "• The app will automatically create a Windows Firewall rule for port 7777\n" +
+                "• A UAC elevation prompt may appear — this is normal\n" +
+                "• The rule allows inbound TCP connections on private networks only\n\n" +
+                "This is safe — the port is used only for playback sync between participants.\n" +
+                "No data is sent to the internet.\n\n" +
+                "Continue?");
+
+            var result = MessageBox.Show(
+                message,
+                title,
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Information);
+
+            if (result != MessageBoxResult.Yes)
+            {
+                return false;
+            }
+
+            // Try to create the firewall rule automatically.
+            var port = ReadWtPort();
+            var firewallOk = await FirewallService.EnsureRuleAsync(port);
+
+            if (firewallOk)
+            {
+                MessageBox.Show(
+                    T($"Правило брандмауэра для порта {port} успешно создано!",
+                      $"Firewall rule for port {port} created successfully!"),
+                    title,
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            else
+            {
+                MessageBox.Show(
+                    T($"Не удалось автоматически создать правило. Вы можете создать его вручную:\n\n" +
+                      $"Откройте PowerShell от имени администратора и выполните:\n" +
+                      $"New-NetFirewallRule -DisplayName \"JokerDBDTracker Watch Together\" -Direction Inbound -Protocol TCP -LocalPort {port} -Action Allow\n\n" +
+                      "Watch Together всё равно будет доступен.",
+                      $"Could not create firewall rule automatically. You can create it manually:\n\n" +
+                      $"Open PowerShell as Administrator and run:\n" +
+                      $"New-NetFirewallRule -DisplayName \"JokerDBDTracker Watch Together\" -Direction Inbound -Protocol TCP -LocalPort {port} -Action Allow\n\n" +
+                      "Watch Together will still be available."),
+                    title,
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+
+            // Save consent regardless of firewall result.
+            _watchTogetherFirewallAccepted = true;
+
+            try
+            {
+                var settings = await _settingsService.LoadAsync();
+                settings.WatchTogetherFirewallAccepted = true;
+                await _settingsService.SaveAsync(settings);
+            }
+            catch
+            {
+                // Best-effort save.
+            }
+
+            return true;
         }
 
         private void CleanupWatchTogether()

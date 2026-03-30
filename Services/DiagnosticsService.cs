@@ -1,10 +1,12 @@
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace JokerDBDTracker.Services
 {
     public static class DiagnosticsService
     {
+        private const long MaxLogFileSizeBytes = 5 * 1024 * 1024; // 5 MB
         private static readonly object Sync = new();
         private static volatile bool _enabled = true;
         private static string? _resolvedLogDirectory;
@@ -40,7 +42,7 @@ namespace JokerDBDTracker.Services
 
         public static void LogException(string source, Exception exception)
         {
-            var details = exception.ToString();
+            var details = SanitizeLogMessage(exception.ToString());
             WriteLine(source, details);
         }
 
@@ -61,6 +63,7 @@ namespace JokerDBDTracker.Services
 
                 lock (Sync)
                 {
+                    RotateLogIfNeeded(path);
                     File.AppendAllText(path, line, Encoding.UTF8);
                 }
             }
@@ -102,6 +105,46 @@ namespace JokerDBDTracker.Services
         private static string GetFallbackLogDirectory()
         {
             return Path.Combine(AppStoragePaths.GetCurrentLocalAppDataDirectory(), "Logs");
+        }
+
+        /// <summary>
+        /// Redacts URLs and user-profile paths from log messages to prevent data leakage.
+        /// </summary>
+        private static string SanitizeLogMessage(string message)
+        {
+            // Redact full URLs (keep domain for diagnostics).
+            message = Regex.Replace(message, @"(https?://[^/\s]+)/[^\s""'>\]]+", "$1/***");
+            // Redact Windows user profile paths.
+            message = Regex.Replace(message, @"C:\\Users\\[^\\]+", @"C:\Users\***", RegexOptions.IgnoreCase);
+            return message;
+        }
+
+        /// <summary>
+        /// Rotates log file when it exceeds max size — keeps previous log as .old.
+        /// </summary>
+        private static void RotateLogIfNeeded(string logPath)
+        {
+            try
+            {
+                if (!File.Exists(logPath))
+                {
+                    return;
+                }
+
+                var info = new FileInfo(logPath);
+                if (info.Length < MaxLogFileSizeBytes)
+                {
+                    return;
+                }
+
+                var oldPath = logPath + ".old";
+                File.Copy(logPath, oldPath, overwrite: true);
+                File.WriteAllText(logPath, string.Empty, Encoding.UTF8);
+            }
+            catch
+            {
+                // Log rotation should never crash the app.
+            }
         }
 
         private static bool CanWriteToDirectory(string directoryPath)

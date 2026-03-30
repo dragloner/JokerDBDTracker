@@ -87,12 +87,24 @@ namespace JokerDBDTracker
         private static void ExtractZipSafely(string zipPath, string destinationDirectory)
         {
             var fullDestination = Path.GetFullPath(destinationDirectory);
+            // Ensure the prefix ends with a separator so "C:\app" doesn't match "C:\app-evil".
+            if (!fullDestination.EndsWith(Path.DirectorySeparatorChar))
+            {
+                fullDestination += Path.DirectorySeparatorChar;
+            }
+
             using var archive = ZipFile.OpenRead(zipPath);
             foreach (var entry in archive.Entries)
             {
                 if (string.IsNullOrEmpty(entry.FullName))
                 {
                     continue;
+                }
+
+                // Reject entries with path traversal sequences before normalization.
+                if (entry.FullName.Contains("..", StringComparison.Ordinal))
+                {
+                    throw new InvalidOperationException($"Unsafe path inside update archive: {entry.FullName}");
                 }
 
                 var targetPath = Path.GetFullPath(Path.Combine(fullDestination, entry.FullName));
@@ -120,7 +132,24 @@ namespace JokerDBDTracker
 
         private static string BuildApplyUpdateScript(int parentProcessId, string sourceDirectory, string targetDirectory, string executableName)
         {
-            static string Esc(string value) => value.Replace("'", "''");
+            // PowerShell single-quoted strings only need '' escaping for literal quotes.
+            // Additionally strip characters that should never appear in filesystem paths.
+            static string Esc(string value) => SanitizePath(value).Replace("'", "''");
+            static string SanitizePath(string path)
+            {
+                // Remove characters that are invalid in Windows paths and could be used for injection.
+                var invalid = new HashSet<char>(Path.GetInvalidPathChars()) { '`', '$', '{', '}', '|', '&', ';' };
+                var sb = new System.Text.StringBuilder(path.Length);
+                foreach (var c in path)
+                {
+                    if (!invalid.Contains(c))
+                    {
+                        sb.Append(c);
+                    }
+                }
+                return sb.ToString();
+            }
+
             return $@"$ErrorActionPreference = 'Stop'
 $parentPid = {parentProcessId}
 $source = '{Esc(sourceDirectory)}'

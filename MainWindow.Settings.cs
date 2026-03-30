@@ -44,6 +44,7 @@ namespace JokerDBDTracker
             ApplySettingsToRuntime();
             ApplySettingsToControls();
             ApplyLocalization();
+            LoadWatchTogetherFirewallConsent(_appSettings.WatchTogetherFirewallAccepted);
         }
 
         private void ApplySettingsToRuntime()

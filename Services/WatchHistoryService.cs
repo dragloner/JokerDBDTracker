@@ -45,6 +45,8 @@ namespace JokerDBDTracker.Services
     public class WatchHistoryService
     {
         private static readonly SemaphoreSlim FileAccessLock = new(1, 1);
+        // App-specific DPAPI entropy — prevents other apps from decrypting our data even under same user.
+        private static readonly byte[] DpapiEntropy = [0x4A, 0x6F, 0x6B, 0x65, 0x72, 0x44, 0x42, 0x44, 0x54, 0x72, 0x61, 0x63, 0x6B, 0x65, 0x72, 0x48];
         private readonly string _historyPath;
         private readonly string _backupPath;
         private readonly string _legacyHistoryPath;
@@ -159,7 +161,7 @@ namespace JokerDBDTracker.Services
                                  useAsync: true))
                 {
                     var rawPayload = JsonSerializer.SerializeToUtf8Bytes(data);
-                    var encryptedPayload = ProtectedData.Protect(rawPayload, optionalEntropy: null, DataProtectionScope.CurrentUser);
+                    var encryptedPayload = ProtectedData.Protect(rawPayload, DpapiEntropy, DataProtectionScope.CurrentUser);
                     var envelope = new EncryptedEnvelope
                     {
                         Version = 1,
@@ -354,7 +356,15 @@ namespace JokerDBDTracker.Services
             }
 
             var encryptedBytes = Convert.FromBase64String(payload);
-            unprotectedJson = ProtectedData.Unprotect(encryptedBytes, optionalEntropy: null, DataProtectionScope.CurrentUser);
+            // Try with entropy first (new format), fall back to without (legacy files).
+            try
+            {
+                unprotectedJson = ProtectedData.Unprotect(encryptedBytes, DpapiEntropy, DataProtectionScope.CurrentUser);
+            }
+            catch (CryptographicException)
+            {
+                unprotectedJson = ProtectedData.Unprotect(encryptedBytes, optionalEntropy: null, DataProtectionScope.CurrentUser);
+            }
             return true;
         }
 

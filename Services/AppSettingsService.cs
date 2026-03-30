@@ -33,6 +33,7 @@ namespace JokerDBDTracker.Services
         public string Effect13Bind { get; set; } = "E";
         public string Effect14Bind { get; set; } = "R";
         public string Effect15Bind { get; set; } = "T";
+        public bool WatchTogetherFirewallAccepted { get; set; }
         public List<string> PlayerCustomPresetNames { get; set; } = [];
         public List<string> PlayerCustomPresetPayloads { get; set; } = [];
     }
@@ -40,6 +41,8 @@ namespace JokerDBDTracker.Services
     public sealed class AppSettingsService
     {
         private static readonly SemaphoreSlim FileAccessLock = new(1, 1);
+        // App-specific DPAPI entropy — prevents other apps from decrypting our data even under same user.
+        private static readonly byte[] DpapiEntropy = [0x4A, 0x6F, 0x6B, 0x65, 0x72, 0x44, 0x42, 0x44, 0x54, 0x72, 0x61, 0x63, 0x6B, 0x65, 0x72, 0x53];
         private readonly string _settingsPath;
         private readonly string _legacySettingsPath;
 
@@ -119,7 +122,7 @@ namespace JokerDBDTracker.Services
                 var normalized = Normalize(settings);
                 var tempPath = $"{_settingsPath}.tmp";
                 var rawPayload = JsonSerializer.SerializeToUtf8Bytes(normalized);
-                var encryptedPayload = ProtectedData.Protect(rawPayload, optionalEntropy: null, DataProtectionScope.CurrentUser);
+                var encryptedPayload = ProtectedData.Protect(rawPayload, DpapiEntropy, DataProtectionScope.CurrentUser);
                 var envelope = new EncryptedEnvelope
                 {
                     Version = 1,
@@ -176,7 +179,16 @@ namespace JokerDBDTracker.Services
                 }
 
                 var encryptedPayload = Convert.FromBase64String(encryptedPayloadText);
-                var rawPayload = ProtectedData.Unprotect(encryptedPayload, optionalEntropy: null, DataProtectionScope.CurrentUser);
+                // Try with entropy first (new format), fall back to without (legacy files).
+                byte[] rawPayload;
+                try
+                {
+                    rawPayload = ProtectedData.Unprotect(encryptedPayload, DpapiEntropy, DataProtectionScope.CurrentUser);
+                }
+                catch (CryptographicException)
+                {
+                    rawPayload = ProtectedData.Unprotect(encryptedPayload, optionalEntropy: null, DataProtectionScope.CurrentUser);
+                }
                 return JsonSerializer.Deserialize<AppSettingsData>(rawPayload);
             }
 

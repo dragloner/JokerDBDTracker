@@ -487,9 +487,28 @@ namespace JokerDBDTracker
             }
         }
 
+        /// <summary>
+        /// Validates and returns the video ID if it matches YouTube format, otherwise returns empty string.
+        /// YouTube IDs are alphanumeric + underscore + hyphen, typically 11 chars.
+        /// </summary>
+        private static string SanitizeVideoId(string videoId)
+        {
+            if (string.IsNullOrEmpty(videoId) ||
+                !System.Text.RegularExpressions.Regex.IsMatch(videoId, @"^[a-zA-Z0-9_\-]{1,20}$"))
+            {
+                return string.Empty;
+            }
+
+            return videoId;
+        }
+
         private static string BuildKioskModeScript(string videoId, Key panelToggleKey)
         {
-            var safeVideoId = videoId.Replace("\\", "\\\\").Replace("'", "\\'");
+            var safeVideoId = SanitizeVideoId(videoId);
+            if (string.IsNullOrEmpty(safeVideoId))
+            {
+                return string.Empty;
+            }
             var (panelToggleKeyVariants, panelToggleCodeVariants) = BuildKeyboardEventVariants(panelToggleKey);
             var panelToggleKeyJson = JsonSerializer.Serialize(panelToggleKeyVariants);
             var panelToggleCodeJson = JsonSerializer.Serialize(panelToggleCodeVariants);
@@ -1271,7 +1290,11 @@ namespace JokerDBDTracker
 
         private static string BuildEarlyKioskBootstrapScript(string videoId)
         {
-            var safeVideoId = videoId.Replace("\\", "\\\\").Replace("'", "\\'");
+            var safeVideoId = SanitizeVideoId(videoId);
+            if (string.IsNullOrEmpty(safeVideoId))
+            {
+                return string.Empty;
+            }
             return $$"""
                 (() => {
                     const expectedVideoId = '{{safeVideoId}}';
