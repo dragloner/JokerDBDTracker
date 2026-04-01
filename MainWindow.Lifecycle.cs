@@ -22,6 +22,7 @@ namespace JokerDBDTracker
                 _updateDownloadCts?.Cancel();
                 _updateDownloadCts?.Dispose();
                 _updateDownloadCts = null;
+                UninitializeLogViewer();
                 CleanupWatchTogether();
             }
             catch

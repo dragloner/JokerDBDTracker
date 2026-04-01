@@ -77,6 +77,7 @@ namespace JokerDBDTracker
             {
                 await InitializeNetworkClockAsync();
                 await LoadAndApplySettingsAsync();
+                InitializeLogViewer();
                 var loadVideosTask = LoadVideosAsync();
                 var updateCheckTask = CheckForUpdatesDuringStartupAsync();
                 await Task.WhenAll(loadVideosTask, updateCheckTask);

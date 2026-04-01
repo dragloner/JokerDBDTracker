@@ -279,9 +279,22 @@ namespace JokerDBDTracker
         {
             try
             {
-                if (StopSoundEffect(kind))
+                var spamMode = _appSettings.SoundSpamMode;
+                if (!spamMode)
                 {
-                    return;
+                    // Toggle mode: pressing again stops the sound.
+                    if (StopSoundEffect(kind))
+                    {
+                        return;
+                    }
+                }
+                else
+                {
+                    // Spam mode: allow up to 8 simultaneous sounds.
+                    if (_activeSoundPlayers.Count >= 8)
+                    {
+                        return;
+                    }
                 }
 
                 var audioResourceUri = ResolveSoundEffectResourceUri(kind);
@@ -291,7 +304,7 @@ namespace JokerDBDTracker
                     return;
                 }
 
-                PlayAudioFile(kind, audioResourceUri);
+                PlayAudioFile(kind, audioResourceUri, spamMode);
                 NotifyWtSoundEffect(kind.ToString());
             }
             catch (Exception ex)
@@ -304,10 +317,10 @@ namespace JokerDBDTracker
         {
             var fileName = kind switch
             {
-                SoundEffectKind.AuraFarm => "doue-aura.mp3",
-                SoundEffectKind.Laugh => "sitcom-laughing-1.mp3",
-                SoundEffectKind.PsiRadiation => "zvuk-psi-izlucheniia.mp3",
-                SoundEffectKind.Respect => "italian-mafia-music.mp3",
+                SoundEffectKind.AuraFarm => "aura.mp3",
+                SoundEffectKind.Laugh => "laugh.mp3",
+                SoundEffectKind.PsiRadiation => "psi.mp3",
+                SoundEffectKind.Respect => "donmafia.mp3",
                 SoundEffectKind.Sad => "sadness.mp3",
                 _ => null
             };
@@ -388,7 +401,7 @@ namespace JokerDBDTracker
             return true;
         }
 
-        private void PlayAudioFile(SoundEffectKind kind, Uri resourceUri)
+        private void PlayAudioFile(SoundEffectKind kind, Uri resourceUri, bool spamMode = false)
         {
             var player = new MediaPlayer();
             player.Open(resourceUri);
@@ -398,7 +411,8 @@ namespace JokerDBDTracker
                 player.Stop();
                 player.Close();
                 _activeSoundPlayers.Remove(player);
-                if (_activeSoundPlayersByKind.TryGetValue(kind, out var activePlayer) &&
+                if (!spamMode &&
+                    _activeSoundPlayersByKind.TryGetValue(kind, out var activePlayer) &&
                     ReferenceEquals(activePlayer, player))
                 {
                     _activeSoundPlayersByKind.Remove(kind);
@@ -408,7 +422,8 @@ namespace JokerDBDTracker
             {
                 player.Close();
                 _activeSoundPlayers.Remove(player);
-                if (_activeSoundPlayersByKind.TryGetValue(kind, out var activePlayer) &&
+                if (!spamMode &&
+                    _activeSoundPlayersByKind.TryGetValue(kind, out var activePlayer) &&
                     ReferenceEquals(activePlayer, player))
                 {
                     _activeSoundPlayersByKind.Remove(kind);
@@ -417,7 +432,11 @@ namespace JokerDBDTracker
             };
 
             _activeSoundPlayers.Add(player);
-            _activeSoundPlayersByKind[kind] = player;
+            if (!spamMode)
+            {
+                _activeSoundPlayersByKind[kind] = player;
+            }
+
             player.Play();
         }
 

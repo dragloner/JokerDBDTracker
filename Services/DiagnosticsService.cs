@@ -1,15 +1,30 @@
+using System.Collections.Concurrent;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 
 namespace JokerDBDTracker.Services
 {
+    public enum LogLevel
+    {
+        Info,
+        Error,
+    }
+
+    public record LogEntry(DateTime Timestamp, LogLevel Level, string Source, string Message);
+
     public static class DiagnosticsService
     {
         private const long MaxLogFileSizeBytes = 5 * 1024 * 1024; // 5 MB
+        private const int RingBufferCapacity = 200;
+
         private static readonly object Sync = new();
         private static volatile bool _enabled = true;
         private static string? _resolvedLogDirectory;
+        private static readonly ConcurrentQueue<LogEntry> _ringBuffer = new();
+
+        /// <summary>Fired on the calling thread whenever a new entry is added to the ring buffer.</summary>
+        public static event Action<LogEntry>? EntryLogged;
 
         public static void SetEnabled(bool enabled)
         {
@@ -37,29 +52,55 @@ namespace JokerDBDTracker.Services
 
         public static void LogInfo(string source, string message)
         {
-            WriteLine(source, message);
+            WriteEntry(LogLevel.Info, source, message);
         }
 
         public static void LogException(string source, Exception exception)
         {
             var details = SanitizeLogMessage(exception.ToString());
-            WriteLine(source, details);
+            WriteEntry(LogLevel.Error, source, details);
         }
 
-        private static void WriteLine(string source, string message)
+        /// <summary>Returns a snapshot of recent log entries (up to <see cref="RingBufferCapacity"/>).</summary>
+        public static LogEntry[] GetRecentEntries()
         {
+            return _ringBuffer.ToArray();
+        }
+
+        /// <summary>Clears the in-memory ring buffer.</summary>
+        public static void ClearInMemoryLog()
+        {
+            while (_ringBuffer.TryDequeue(out _)) { }
+        }
+
+        private static void WriteEntry(LogLevel level, string source, string message)
+        {
+            var timestamp = DateTime.UtcNow;
+            var entry = new LogEntry(timestamp, level, source, message);
+
+            // Update ring buffer (cap at RingBufferCapacity)
+            _ringBuffer.Enqueue(entry);
+            while (_ringBuffer.Count > RingBufferCapacity)
+            {
+                _ringBuffer.TryDequeue(out _);
+            }
+
+            // Notify subscribers (log viewer UI)
+            try { EntryLogged?.Invoke(entry); } catch { /* never crash */ }
+
             if (!_enabled)
             {
                 return;
             }
+
+            var levelTag = level == LogLevel.Error ? "ERROR" : "INFO ";
+            var line = $"[{timestamp:yyyy-MM-dd HH:mm:ss.fff}Z] [{levelTag}] [{source}] {message}{Environment.NewLine}";
 
             try
             {
                 var directory = GetLogDirectory();
                 Directory.CreateDirectory(directory);
                 var path = GetLogFilePath();
-                var line =
-                    $"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}Z] [{source}] {message}{Environment.NewLine}";
 
                 lock (Sync)
                 {
@@ -71,7 +112,6 @@ namespace JokerDBDTracker.Services
             {
                 try
                 {
-                    // If install directory is not writable (e.g. Program Files), switch once to fallback.
                     lock (Sync)
                     {
                         _resolvedLogDirectory = GetFallbackLogDirectory();
@@ -80,9 +120,7 @@ namespace JokerDBDTracker.Services
                     var fallbackDirectory = GetLogDirectory();
                     Directory.CreateDirectory(fallbackDirectory);
                     var fallbackPath = Path.Combine(fallbackDirectory, "app.log");
-                    var fallbackLine =
-                        $"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}Z] [{source}] {message}{Environment.NewLine}";
-                    File.AppendAllText(fallbackPath, fallbackLine, Encoding.UTF8);
+                    File.AppendAllText(fallbackPath, line, Encoding.UTF8);
                 }
                 catch
                 {
@@ -112,16 +150,11 @@ namespace JokerDBDTracker.Services
         /// </summary>
         private static string SanitizeLogMessage(string message)
         {
-            // Redact full URLs (keep domain for diagnostics).
             message = Regex.Replace(message, @"(https?://[^/\s]+)/[^\s""'>\]]+", "$1/***");
-            // Redact Windows user profile paths.
             message = Regex.Replace(message, @"C:\\Users\\[^\\]+", @"C:\Users\***", RegexOptions.IgnoreCase);
             return message;
         }
 
-        /// <summary>
-        /// Rotates log file when it exceeds max size — keeps previous log as .old.
-        /// </summary>
         private static void RotateLogIfNeeded(string logPath)
         {
             try

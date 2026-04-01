@@ -99,12 +99,28 @@ namespace JokerDBDTracker
 
         private void FisheyeCenterPad_MouseMove(object sender, MouseEventArgs e)
         {
-            if (!_isDraggingFisheyeCenter || sender is not FrameworkElement pad || !pad.IsMouseCaptured)
+            if (!_isDraggingFisheyeCenter)
             {
                 return;
             }
 
-            SetFisheyeCenterFromPadPoint(pad, e.GetPosition(pad), requestApply: true);
+            // Re-acquire capture if a parent (e.g. ScrollViewer) stole it while the button is still held.
+            if (!FisheyeCenterPad.IsMouseCaptured)
+            {
+                if (Mouse.LeftButton == MouseButtonState.Pressed)
+                {
+                    FisheyeCenterPad.CaptureMouse();
+                }
+                else
+                {
+                    _isDraggingFisheyeCenter = false;
+                    return;
+                }
+            }
+
+            // Use Mouse.GetPosition to get the actual device position relative to the pad,
+            // which stays correct even when the cursor is outside the canvas bounds.
+            SetFisheyeCenterFromPadPoint(FisheyeCenterPad, Mouse.GetPosition(FisheyeCenterPad), requestApply: true);
             e.Handled = true;
         }
 
@@ -126,6 +142,14 @@ namespace JokerDBDTracker
 
         private void FisheyeCenterPad_LostMouseCapture(object sender, MouseEventArgs e)
         {
+            // If the mouse button is still pressed, immediately re-capture so that a parent
+            // ScrollViewer cannot steal capture during an active drag operation.
+            if (_isDraggingFisheyeCenter && Mouse.LeftButton == MouseButtonState.Pressed)
+            {
+                FisheyeCenterPad.CaptureMouse();
+                return;
+            }
+
             _isDraggingFisheyeCenter = false;
         }
 
@@ -188,8 +212,9 @@ namespace JokerDBDTracker
 
             var markerWidth = marker.ActualWidth > 0 ? marker.ActualWidth : (double.IsNaN(marker.Width) ? 0 : marker.Width);
             var markerHeight = marker.ActualHeight > 0 ? marker.ActualHeight : (double.IsNaN(marker.Height) ? 0 : marker.Height);
-            var left = _fisheyeCenterX * padWidth - markerWidth * 0.5;
-            var top = _fisheyeCenterY * padHeight - markerHeight * 0.5;
+            // Clamp so the marker stays fully inside the canvas at all times.
+            var left = Math.Clamp(_fisheyeCenterX * padWidth - markerWidth * 0.5, 0, Math.Max(0, padWidth - markerWidth));
+            var top = Math.Clamp(_fisheyeCenterY * padHeight - markerHeight * 0.5, 0, Math.Max(0, padHeight - markerHeight));
             Canvas.SetLeft(marker, left);
             Canvas.SetTop(marker, top);
         }

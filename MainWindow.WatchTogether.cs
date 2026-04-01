@@ -500,15 +500,33 @@ namespace JokerDBDTracker
             }
             else
             {
+                var psCommand = $"New-NetFirewallRule -DisplayName \"JokerDBDTracker Watch Together\" -Direction Inbound -Protocol TCP -LocalPort {port} -Action Allow";
+
+                // Auto-copy to clipboard so user can paste immediately.
+                try { System.Windows.Clipboard.SetText(psCommand); } catch { /* Ignore clipboard errors */ }
+
                 MessageBox.Show(
-                    T($"Не удалось автоматически создать правило. Вы можете создать его вручную:\n\n" +
-                      $"Откройте PowerShell от имени администратора и выполните:\n" +
-                      $"New-NetFirewallRule -DisplayName \"JokerDBDTracker Watch Together\" -Direction Inbound -Protocol TCP -LocalPort {port} -Action Allow\n\n" +
-                      "Watch Together всё равно будет доступен.",
-                      $"Could not create firewall rule automatically. You can create it manually:\n\n" +
-                      $"Open PowerShell as Administrator and run:\n" +
-                      $"New-NetFirewallRule -DisplayName \"JokerDBDTracker Watch Together\" -Direction Inbound -Protocol TCP -LocalPort {port} -Action Allow\n\n" +
-                      "Watch Together will still be available."),
+                    T($"Не удалось автоматически создать правило брандмауэра.\n\n" +
+                      "Возможные причины:\n" +
+                      "• Нет прав администратора (UAC отклонён)\n" +
+                      "• Антивирус или сторонний файрвол блокирует изменения\n\n" +
+                      "Что сделать:\n" +
+                      "1. Откройте PowerShell от имени администратора\n" +
+                      "   (Win+X → «Windows PowerShell (администратор)»)\n" +
+                      "2. Вставьте и выполните команду (уже скопирована в буфер обмена):\n\n" +
+                      $"{psCommand}\n\n" +
+                      "Watch Together всё равно доступен — просто подключение с другого ПК может не работать без этого правила.",
+
+                      $"Could not create firewall rule automatically.\n\n" +
+                      "Possible reasons:\n" +
+                      "• No admin rights (UAC was declined)\n" +
+                      "• Antivirus or third-party firewall blocks changes\n\n" +
+                      "What to do:\n" +
+                      "1. Open PowerShell as Administrator\n" +
+                      "   (Win+X → \"Windows PowerShell (Administrator)\")\n" +
+                      "2. Paste and run the command (already copied to clipboard):\n\n" +
+                      $"{psCommand}\n\n" +
+                      "Watch Together is still available — connections from other PCs may just not work without this rule."),
                     title,
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);

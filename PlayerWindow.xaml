@@ -1324,12 +1324,12 @@
                                                     BorderBrush="#7EA9C6"
                                                     BorderThickness="1"
                                                     CornerRadius="8"
+                                                    ClipToBounds="True"
                                                     SnapsToDevicePixels="True">
                                                 <Canvas x:Name="FisheyeCenterPad"
                                                         Width="112"
                                                         Height="112"
                                                         Background="Transparent"
-                                                        ClipToBounds="False"
                                                         Loaded="FisheyeCenterPad_Loaded"
                                                         SizeChanged="FisheyeCenterPad_SizeChanged"
                                                         MouseLeftButtonDown="FisheyeCenterPad_MouseLeftButtonDown"

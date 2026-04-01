@@ -34,6 +34,7 @@ namespace JokerDBDTracker.Services
         public string Effect14Bind { get; set; } = "R";
         public string Effect15Bind { get; set; } = "T";
         public bool WatchTogetherFirewallAccepted { get; set; }
+        public bool SoundSpamMode { get; set; }
         public List<string> PlayerCustomPresetNames { get; set; } = [];
         public List<string> PlayerCustomPresetPayloads { get; set; } = [];
     }

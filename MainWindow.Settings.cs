@@ -76,6 +76,10 @@ namespace JokerDBDTracker
                 AnimationsEnabledCheckBox.IsChecked = _appSettings.AnimationsEnabled;
                 LoggingEnabledCheckBox.IsChecked = _appSettings.LoggingEnabled;
                 SetComboSelectionByTag(FullscreenBehaviorComboBox, _appSettings.FullscreenBehavior);
+                if (SoundSpamModeToggle is not null)
+                {
+                    SoundSpamModeToggle.IsChecked = _appSettings.SoundSpamMode;
+                }
                 UpdateUiScaleText(_appSettings.UiScale);
                 UpdateBindDisplayTexts();
                 SetBindCaptureStatus(string.Empty);
@@ -235,6 +239,17 @@ namespace JokerDBDTracker
 
             _appSettings.LoggingEnabled = LoggingEnabledCheckBox.IsChecked == true;
             DiagnosticsService.SetEnabled(_appSettings.LoggingEnabled);
+            await SaveSettingsAsync();
+        }
+
+        private async void SoundSpamModeToggle_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_isApplyingSettingsUi)
+            {
+                return;
+            }
+
+            _appSettings.SoundSpamMode = SoundSpamModeToggle.IsChecked == true;
             await SaveSettingsAsync();
         }
 

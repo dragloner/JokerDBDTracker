@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(dotnet build:*)",
-      "Bash(dotnet publish:*)"
+      "Bash(dotnet publish:*)",
+      "Bash(find 'f:\\\\Viisas taide\\\\secret\\\\VSCODE PROJ\\\\JokerDBDTracker' -name PlayerWindow.Bindings.cs -o -name AppSettingsData* -o -name *Settings*.cs)"
     ]
   }
 }

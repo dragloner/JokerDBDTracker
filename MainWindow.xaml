@@ -74,7 +74,7 @@
                                    FontWeight="ExtraBold"/>
                         <StackPanel Margin="3,-2,0,0" Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock x:Name="AppVersionText"
-                                       Text="v1.3.0.2"
+                                       Text="v1.3.1"
                                        Foreground="#B9CFDF"
                                        FontSize="14"
                                        FontWeight="SemiBold"
@@ -233,7 +233,7 @@
                 <TabItem Header="Watch Together"/>
             </TabControl>
 
-            <Grid Grid.Row="4" Grid.RowSpan="3" Margin="0,10,0,0">
+            <Grid Grid.Row="4" Grid.RowSpan="3" Margin="0,12,0,0">
                 <Grid.Resources>
                     <LinearGradientBrush x:Key="HomePanelBackgroundBrush" StartPoint="0,0" EndPoint="1,1">
                         <GradientStop Color="#D514202C" Offset="0"/>
@@ -255,19 +255,19 @@
                 </Grid.Resources>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="10"/>
+                    <RowDefinition Height="12"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition x:Name="RecommendationsColumn" Width="420"/>
-                    <ColumnDefinition x:Name="MainColumnsSpacer" Width="12"/>
+                    <ColumnDefinition x:Name="MainColumnsSpacer" Width="16"/>
                     <ColumnDefinition x:Name="StreamsColumn" Width="*"/>
                 </Grid.ColumnDefinitions>
 
                 <Border x:Name="HomeSummaryPanel"
                         Grid.Row="0"
                         Grid.ColumnSpan="3"
-                        Padding="16"
+                        Padding="14"
                         Style="{StaticResource HomeGlassPanelStyle}">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -320,12 +320,12 @@
                 <Border x:Name="StreamsPanel"
                         Grid.Row="2"
                         Grid.Column="2"
-                        Padding="12"
+                        Padding="14"
                         Style="{StaticResource HomeGlassPanelStyle}">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="10"/>
+                            <RowDefinition Height="12"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
                         <Border Grid.Row="0"
@@ -458,12 +458,12 @@
                 <Border x:Name="RecommendationsPanel"
                         Grid.Row="2"
                         Grid.Column="0"
-                        Padding="12"
+                        Padding="14"
                         Style="{StaticResource HomeGlassPanelStyle}">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="10"/>
+                            <RowDefinition Height="12"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
                         <Border Grid.Row="0"
@@ -576,13 +576,13 @@
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="14"/>
+                        <RowDefinition Height="12"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <Border Grid.Row="0" Background="#CC192736" BorderBrush="#4F738E" BorderThickness="1" CornerRadius="14" Padding="12">
+                    <Border Grid.Row="0" Background="#CC192736" BorderBrush="#4F738E" BorderThickness="1" CornerRadius="14" Padding="14">
                         <StackPanel>
-                            <TextBlock x:Name="ProfileHeaderText" Text="Профиль" Foreground="#EDF7FF" FontWeight="Bold" FontSize="28"/>
+                            <TextBlock x:Name="ProfileHeaderText" Text="Профиль" Foreground="#EDF7FF" FontWeight="Bold" FontSize="30"/>
                             <Grid Margin="0,8,0,0" HorizontalAlignment="Left">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
@@ -614,8 +614,8 @@
                                     <TextBlock x:Name="ProfileHoursText" Foreground="#B8DDF6" FontSize="16" Margin="0,2,0,0"/>
                                 </StackPanel>
                             </Grid>
-                            <ProgressBar x:Name="ProfileXpProgress" Margin="0,10,0,0" Height="22" Minimum="0"/>
-                            <Grid Margin="0,10,0,0">
+                            <ProgressBar x:Name="ProfileXpProgress" Margin="0,12,0,0" Height="22" Minimum="0"/>
+                            <Grid Margin="0,12,0,0">
                                 <Button x:Name="OpenQuestsButton"
                                         Background="#356F8E"
                                         Foreground="#F2FAFF"
@@ -630,20 +630,20 @@
                     <Grid Grid.Row="2">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="14"/>
+                            <ColumnDefinition Width="16"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
-                        <Border Grid.Column="0" Background="#CC192736" BorderBrush="#4F738E" BorderThickness="1" CornerRadius="14" Padding="12">
+                        <Border Grid.Column="0" Background="#CC192736" BorderBrush="#4F738E" BorderThickness="1" CornerRadius="14" Padding="14">
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
-                                <TextBlock x:Name="AchievementsHeaderText" Text="Достижения" Foreground="#EDF7FF" FontWeight="Bold" FontSize="26"/>
+                                <TextBlock x:Name="AchievementsHeaderText" Text="Достижения" Foreground="#EDF7FF" FontWeight="Bold" FontSize="24"/>
                                 <ListBox x:Name="AchievementsList"
                                           Grid.Row="1"
-                                          Margin="0,10,0,0"
+                                          Margin="0,12,0,0"
                                           Background="Transparent"
                                           Foreground="#EAD0BF"
                                           BorderThickness="0"
@@ -706,19 +706,18 @@
                             </Grid>
                         </Border>
 
-                        <Border Grid.Column="2" Background="#CC192736" BorderBrush="#4F738E" BorderThickness="1" CornerRadius="14" Padding="12">
+                        <Border Grid.Column="2" Background="#CC192736" BorderBrush="#4F738E" BorderThickness="1" CornerRadius="14" Padding="14">
                             <StackPanel>
                                 <TextBlock x:Name="RecentStreamsHeaderText"
                                            Text="Последние просмотренные"
                                            Foreground="#EDF7FF"
                                            FontWeight="Bold"
-                                           FontSize="22"/>
+                                           FontSize="24"/>
                                 <ListBox x:Name="RecentStreamsList"
                                          Margin="0,8,0,0"
                                          Background="Transparent"
                                          BorderThickness="0"
                                          Foreground="#EAD0BF"
-                                         FontSize="18"
                                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                          ScrollViewer.CanContentScroll="True"
                                          ScrollViewer.VerticalScrollBarVisibility="Auto"
@@ -804,7 +803,7 @@
                     <Button x:Name="BackToProfileButton"
                             Grid.Row="2"
                             Width="190"
-                            Height="40"
+                            MinHeight="44"
                             HorizontalAlignment="Left"
                             Content="Назад в профиль"
                             Click="BackToProfileButton_Click"/>
@@ -812,11 +811,11 @@
                     <Grid Grid.Row="6">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="14"/>
+                            <ColumnDefinition Width="16"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
-                        <Border Grid.Column="0" Background="#CC192736" BorderBrush="#4F738E" BorderThickness="1" CornerRadius="14" Padding="12">
+                        <Border Grid.Column="0" Background="#CC192736" BorderBrush="#4F738E" BorderThickness="1" CornerRadius="14" Padding="14">
                             <StackPanel>
                                 <TextBlock x:Name="QuestsDailyHeaderText" Text="Ежедневные задания" Foreground="#EDF7FF" FontWeight="Bold" FontSize="24"/>
                                 <TextBlock x:Name="QuestsDailyResetText"
@@ -826,7 +825,7 @@
                                            FontSize="13"
                                            FontWeight="SemiBold"/>
                                 <ListBox x:Name="QuestsDailyList"
-                                         Margin="0,10,0,0"
+                                         Margin="0,12,0,0"
                                          Background="Transparent"
                                          BorderThickness="0"
                                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
@@ -865,7 +864,7 @@
                             </StackPanel>
                         </Border>
 
-                        <Border Grid.Column="2" Background="#CC192736" BorderBrush="#4F738E" BorderThickness="1" CornerRadius="14" Padding="12">
+                        <Border Grid.Column="2" Background="#CC192736" BorderBrush="#4F738E" BorderThickness="1" CornerRadius="14" Padding="14">
                             <StackPanel>
                                 <TextBlock x:Name="QuestsWeeklyHeaderText" Text="Еженедельные задания" Foreground="#EDF7FF" FontWeight="Bold" FontSize="24"/>
                                 <TextBlock x:Name="QuestsWeeklyResetText"
@@ -875,7 +874,7 @@
                                            FontSize="13"
                                            FontWeight="SemiBold"/>
                                 <ListBox x:Name="QuestsWeeklyList"
-                                         Margin="0,10,0,0"
+                                         Margin="0,12,0,0"
                                          Background="Transparent"
                                          BorderThickness="0"
                                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
@@ -961,7 +960,7 @@
 
                             <TextBlock x:Name="SettingsSubtitleText"
                                        Grid.Row="0"
-                                       Text="MVP настройки v1.2.0"
+                                       Text="Персонализация и поведение приложения"
                                        Foreground="#F2FAFF"
                                        FontSize="22"
                                        FontWeight="Bold"/>
@@ -1035,19 +1034,71 @@
                                                     Text="1.00x"/>
                                      </Grid>
                                      <CheckBox x:Name="AnimationsEnabledCheckBox"
-                                               Margin="0,14,0,0"
+                                               Margin="0,12,0,0"
                                                Foreground="#D8EAF8"
                                                FontSize="16"
                                                Content="Плавные анимации интерфейса"
                                                Checked="AnimationsEnabledCheckBox_Changed"
                                                Unchecked="AnimationsEnabledCheckBox_Changed"/>
                                      <CheckBox x:Name="LoggingEnabledCheckBox"
-                                               Margin="0,10,0,0"
+                                               Margin="0,12,0,0"
                                                Foreground="#D8EAF8"
                                                FontSize="16"
                                                Content="Enable error logging"
                                                Checked="LoggingEnabledCheckBox_Changed"
                                                Unchecked="LoggingEnabledCheckBox_Changed"/>
+
+                                     <TextBlock x:Name="LogViewerHeaderText"
+                                                Margin="0,16,0,0"
+                                                Text="Логи приложения"
+                                                Foreground="#EDF7FF"
+                                                FontSize="16"
+                                                FontWeight="SemiBold"/>
+                                     <TextBlock x:Name="LogViewerDescText"
+                                                Margin="0,4,0,0"
+                                                Text="Последние события приложения в реальном времени."
+                                                Foreground="#BFD9EA"
+                                                FontSize="13"
+                                                TextWrapping="Wrap"/>
+                                     <CheckBox x:Name="LogViewerErrorsOnlyCheckBox"
+                                               Margin="0,8,0,0"
+                                               Foreground="#D8EAF8"
+                                               FontSize="14"
+                                               Content="Только ошибки"
+                                               Checked="LogViewerFilter_Changed"
+                                               Unchecked="LogViewerFilter_Changed"/>
+                                     <ListBox x:Name="LogViewerListBox"
+                                              Margin="0,8,0,0"
+                                              Height="160"
+                                              FontFamily="Consolas"
+                                              FontSize="11"
+                                              Background="#1A2D3A"
+                                              Foreground="#C8E6F8"
+                                              BorderBrush="#4A7A96"
+                                              BorderThickness="1"
+                                              ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                              ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                              VirtualizingPanel.IsVirtualizing="True"
+                                              VirtualizingPanel.ScrollUnit="Pixel"/>
+                                     <Grid Margin="0,8,0,0">
+                                         <Grid.ColumnDefinitions>
+                                             <ColumnDefinition Width="*"/>
+                                             <ColumnDefinition Width="8"/>
+                                             <ColumnDefinition Width="*"/>
+                                         </Grid.ColumnDefinitions>
+                                         <Button x:Name="LogViewerCopyButton"
+                                                 Grid.Column="0"
+                                                 MinHeight="36"
+                                                 FontSize="13"
+                                                 Content="Копировать"
+                                                 Click="LogViewerCopyButton_Click"/>
+                                         <Button x:Name="LogViewerClearButton"
+                                                 Grid.Column="2"
+                                                 MinHeight="36"
+                                                 FontSize="13"
+                                                 Content="Очистить"
+                                                 Click="LogViewerClearButton_Click"/>
+                                     </Grid>
                                      </StackPanel>
                                  </Border>
 
@@ -1117,7 +1168,7 @@
                                                        TextWrapping="Wrap"/>
 
                                             <TextBlock x:Name="BindCaptureHelpText"
-                                                       Margin="0,10,0,0"
+                                                       Margin="0,12,0,0"
                                                        Text="Нажмите «Назначить», затем любую клавишу. Esc — отмена."
                                                        Foreground="#A8D4EC"
                                                        FontSize="12"
@@ -1129,7 +1180,7 @@
                                                        FontSize="12"
                                                        TextWrapping="Wrap"/>
 
-                                            <Grid Margin="0,10,0,0">
+                                            <Grid Margin="0,12,0,0">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="100"/>
@@ -1327,8 +1378,35 @@
                                                         Click="AssignBindButton_Click"/>
                                             </Grid>
 
+                                            <!-- Sound spam mode toggle -->
+                                            <Grid Margin="0,16,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel VerticalAlignment="Center">
+                                                    <TextBlock x:Name="SoundModeHeaderText"
+                                                               Text="Режим звуковых эффектов"
+                                                               Foreground="#EDF7FF"
+                                                               FontSize="15"
+                                                               FontWeight="SemiBold"/>
+                                                    <TextBlock x:Name="SoundModeDescText"
+                                                               Margin="0,3,0,0"
+                                                               Text="Выкл — повторное нажатие останавливает звук. Вкл — спам до 8 звуков одновременно."
+                                                               Foreground="#BFD9EA"
+                                                               FontSize="12"
+                                                               TextWrapping="Wrap"/>
+                                                </StackPanel>
+                                                <CheckBox x:Name="SoundSpamModeToggle"
+                                                          Grid.Column="1"
+                                                          Margin="16,0,0,0"
+                                                          VerticalAlignment="Center"
+                                                          Checked="SoundSpamModeToggle_Changed"
+                                                          Unchecked="SoundSpamModeToggle_Changed"/>
+                                            </Grid>
+
                                             <TextBlock x:Name="EffectBindsHeaderText"
-                                                       Margin="0,14,0,0"
+                                                       Margin="0,16,0,0"
                                                        Text="Бинды эффектов"
                                                        Foreground="#EDF7FF"
                                                        FontSize="15"
@@ -1340,7 +1418,7 @@
                                                        FontSize="12"
                                                        TextWrapping="Wrap"/>
 
-                                            <UniformGrid Margin="0,10,0,0"
+                                            <UniformGrid Margin="0,12,0,0"
                                                          Rows="3"
                                                          Columns="5">
                                                 <Button x:Name="AssignFx1BindButton" Margin="0,0,6,6" Padding="8,5" FontSize="12" Tag="fx1" Click="AssignBindButton_Click" Content="1 [1]"/>
@@ -1502,7 +1580,7 @@
                                                  MaxLength="45"/>
 
                                         <Button x:Name="WtConnectButton"
-                                                Margin="0,12,0,0"
+                                                Margin="0,16,0,0"
                                                 MinHeight="48"
                                                 Content="Подключиться (Гость)"
                                                 FontSize="16"
@@ -1537,7 +1615,7 @@
                                                    FontSize="18"
                                                    FontWeight="Bold"/>
 
-                                        <Border Margin="0,10,0,0"
+                                        <Border Margin="0,12,0,0"
                                                 Padding="14"
                                                 CornerRadius="12"
                                                 BorderBrush="#5B8AA5"

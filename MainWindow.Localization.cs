@@ -65,6 +65,19 @@ namespace JokerDBDTracker
             UiScaleLabelText.Text = T("Масштаб UI", "UI scale");
             AnimationsEnabledCheckBox.Content = T("Плавные анимации интерфейса", "Smooth UI animations");
             LoggingEnabledCheckBox.Content = T("Включить логирование ошибок", "Enable error logging");
+            LogViewerHeaderText.Text = T("Логи приложения", "Application logs");
+            LogViewerDescText.Text = T(
+                "Последние события приложения в реальном времени.",
+                "Recent app events in real time.");
+            LogViewerErrorsOnlyCheckBox.Content = T("Только ошибки", "Errors only");
+            LogViewerCopyButton.Content = T("Копировать", "Copy");
+            LogViewerClearButton.Content = T("Очистить", "Clear");
+
+            SoundModeHeaderText.Text = T("Режим звуковых эффектов", "Sound effects mode");
+            SoundModeDescText.Text = T(
+                "Выкл — повторное нажатие останавливает звук. Вкл — спам до 8 звуков одновременно.",
+                "Off — pressing again stops the sound. On — spam up to 8 sounds simultaneously.");
+            SoundSpamModeToggle.Content = T("Режим спама", "Spam mode");
             FullscreenBehaviorLabelText.Text = T("Поведение fullscreen", "Fullscreen behavior");
             FullscreenBehaviorDescriptionText.Text = T(
                 "Auto: при fullscreen внутри YouTube окно плеера тоже становится fullscreen. Windowed: окно остается обычным.",
