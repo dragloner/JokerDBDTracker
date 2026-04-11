@@ -26,6 +26,12 @@ namespace JokerDBDTracker
                 return;
             }
 
+            // Twitch mode: no XP, no playback position tracking.
+            if (_video.IsTwitchStream)
+            {
+                return;
+            }
+
             try
             {
                 const string script = """
@@ -178,7 +184,7 @@ namespace JokerDBDTracker
                                   playbackDelta > 0.05 &&
                                   progressionLooksNatural;
 
-                if (canCreditXp)
+                if (canCreditXp && _isOnJokerVideo)
                 {
                     var creditedSeconds = Math.Min(elapsedWallSeconds, _positionTimer.Interval.TotalSeconds + 1.0);
                     var effectsMultiplier = 1.0 + GetActiveEffectsCount() * 0.05;

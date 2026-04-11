@@ -61,16 +61,17 @@ namespace JokerDBDTracker
             var watchTogetherMode = IsWatchTogetherTabSelected();
             var isOverlayTab = profileMode || questsMode || settingsMode || watchTogetherMode;
             StreamsPanel.Visibility = isOverlayTab ? Visibility.Collapsed : Visibility.Visible;
-            RecommendationsPanel.Visibility = isOverlayTab || favoritesMode ? Visibility.Collapsed : Visibility.Visible;
+            RecommendationsPanel.Visibility = (!isOverlayTab && !favoritesMode) ? Visibility.Visible : Visibility.Collapsed;
+            FavoritesClipsPanel.Visibility = (!isOverlayTab && favoritesMode) ? Visibility.Visible : Visibility.Collapsed;
             HomeSummaryPanel.Visibility = isOverlayTab || favoritesMode ? Visibility.Collapsed : Visibility.Visible;
             ProfilePanel.Visibility = profileMode ? Visibility.Visible : Visibility.Collapsed;
             QuestsPanel.Visibility = questsMode ? Visibility.Visible : Visibility.Collapsed;
             SettingsPanel.Visibility = settingsMode ? Visibility.Visible : Visibility.Collapsed;
             WatchTogetherPanel.Visibility = watchTogetherMode ? Visibility.Visible : Visibility.Collapsed;
-            RecommendationsColumn.Width = isOverlayTab || favoritesMode
+            RecommendationsColumn.Width = isOverlayTab
                 ? new GridLength(0)
-                : new GridLength(420);
-            MainColumnsSpacer.Width = isOverlayTab || favoritesMode
+                : new GridLength(favoritesMode ? 380 : 420);
+            MainColumnsSpacer.Width = isOverlayTab
                 ? new GridLength(0)
                 : new GridLength(12);
 
@@ -86,6 +87,11 @@ namespace JokerDBDTracker
             {
                 RefreshWatchTogetherPanel();
             }
+            else if (favoritesMode)
+            {
+                RefreshVisibleVideos();
+                _ = RefreshFavoritesClipsAsync();
+            }
             else if (!settingsMode)
             {
                 RefreshVisibleVideos();
@@ -97,6 +103,7 @@ namespace JokerDBDTracker
                      {
                          StreamsPanel,
                          RecommendationsPanel,
+                         FavoritesClipsPanel,
                          HomeSummaryPanel,
                          ProfilePanel,
                          QuestsPanel,
@@ -142,6 +149,5 @@ namespace JokerDBDTracker
         {
             SelectTopTab(4);
         }
-
     }
 }

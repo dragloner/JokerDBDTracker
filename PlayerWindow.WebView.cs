@@ -37,8 +37,20 @@ namespace JokerDBDTracker
                 PositionWindowToOwnerMonitor();
                 ApplyStartupMaximizedWindowed();
                 AnimatePlayerWindowEntrance();
-                VideoTitleText.Text = _video.Title;
+                VideoTitleText.Text = _video.IsTwitchStream ? "Twitch" : _video.Title;
                 InitializePresetsUi();
+                if (_video.IsTwitchStream)
+                {
+                    EffectsWorkspaceTimecodesTab.Visibility = System.Windows.Visibility.Collapsed;
+                }
+                else
+                {
+                    _ = LoadVideoTimecodesAsync();
+                }
+                if (PlayerSfxSpamToggle is not null)
+                {
+                    PlayerSfxSpamToggle.IsChecked = _appSettings.SoundSpamMode;
+                }
                 ApplyPlayerLocalization();
                 UpdateDynamicBindHints();
                 RegisterGlobalHotkeys();
@@ -50,13 +62,17 @@ namespace JokerDBDTracker
                 _isPlayerNavigationInProgress = true;
                 _isPlayerRuntimeReady = false;
                 SetPlayerInteractionsEnabled(false);
-                SetPlayerLoadingOverlay(visible: true, PT("Подготовка YouTube...", "Preparing YouTube..."));
+                SetPlayerLoadingOverlay(visible: true, _video.IsTwitchStream
+                    ? PT("Загрузка Twitch...", "Loading Twitch...")
+                    : PT("Подготовка YouTube...", "Preparing YouTube..."));
                 SetPlayerSurfaceVisible(false);
 
                 try
                 {
                     var userDataFolder = await Task.Run(ResolveWebViewUserDataFolder);
-                    var environment = await CoreWebView2Environment.CreateAsync(userDataFolder: userDataFolder);
+                    var environment = await CoreWebView2Environment.CreateAsync(
+                        browserExecutableFolder: null,
+                        userDataFolder: userDataFolder);
                     await Player.EnsureCoreWebView2Async(environment);
 
                     Player.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
@@ -65,8 +81,16 @@ namespace JokerDBDTracker
                     Player.CoreWebView2.Settings.IsZoomControlEnabled = false;
                     Player.CoreWebView2.Settings.UserAgent = DesktopChromeUserAgent;
                     Player.ZoomFactor = 1.0;
-                    await Player.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(
-                        BuildEarlyKioskBootstrapScript(_video.VideoId));
+                    if (_video.IsTwitchStream)
+                    {
+                        await Player.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(
+                            BuildWebInputStateBridgeScript());
+                    }
+                    else
+                    {
+                        await Player.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(
+                            BuildEarlyKioskBootstrapScript(_video.VideoId));
+                    }
                     Player.CoreWebView2.ContainsFullScreenElementChanged += CoreWebView2_ContainsFullScreenElementChanged;
                     Player.CoreWebView2.NavigationStarting += CoreWebView2_NavigationStarting;
                     Player.CoreWebView2.NewWindowRequested += CoreWebView2_NewWindowRequested;
@@ -120,6 +144,19 @@ namespace JokerDBDTracker
             }
             _lastXpSampleUtc = null;
             _lastMeasuredTime = -1;
+
+            if (_video.IsTwitchStream)
+            {
+                // Twitch: don't hide the surface during navigations (login redirects, page loads).
+                // Just check if the URL is allowed and cancel if not.
+                SetPlayerInteractionsEnabled(false);
+                if (!IsAllowedPlayerNavigation(e.Uri))
+                {
+                    e.Cancel = true;
+                }
+                return;
+            }
+
             SetPlayerInteractionsEnabled(false);
             SetPlayerLoadingOverlay(visible: true, PT("Загрузка видео...", "Loading video..."));
             SetPlayerSurfaceVisible(false);
@@ -140,6 +177,37 @@ namespace JokerDBDTracker
             }
 
             var navigationVersion = _playerNavigationVersion;
+
+            // Twitch mode: handle before YouTube error-recovery logic.
+            // Login redirects may have e.IsSuccess = false; we never want to recover to a URL here.
+            if (_video.IsTwitchStream)
+            {
+                if (Player.CoreWebView2 is null)
+                {
+                    return;
+                }
+
+                _navigationCompletedFailureCount = 0;
+                _isPlayerNavigationInProgress = false;
+                _isPlayerRuntimeReady = true;
+                SetPlayerInteractionsEnabled(true);
+                SetPlayerSurfaceVisible(true);
+                SetPlayerLoadingOverlay(visible: false);
+
+                try
+                {
+                    Player.ZoomFactor = 1.0;
+                    _lastAppliedEffectsSignature = string.Empty;
+                    await ApplyEffectsSafelyAsync(force: true);
+                    FlushPendingEffectsApplyRequests();
+                }
+                catch
+                {
+                    // Effects apply failures are non-fatal for Twitch.
+                }
+                return;
+            }
+
             if (!e.IsSuccess || Player.CoreWebView2 is null)
             {
                 _navigationCompletedFailureCount++;
@@ -147,9 +215,13 @@ namespace JokerDBDTracker
                 {
                     SetPlayerLoadingOverlay(visible: true, PT("Повторная попытка загрузки плеера...", "Retrying player load..."));
                     _ = RecoverLockedVideoAsync();
+                    // Keep _isPlayerNavigationInProgress = true; RecoverLockedVideoAsync will re-navigate.
                     return;
                 }
 
+                // Too many failures — release the navigation lock so the timer can still tick.
+                _isPlayerNavigationInProgress = false;
+                _isPlayerRuntimeReady = false;
                 SetPlayerLoadingOverlay(visible: true, PT(
                     "Не удалось загрузить плеер. Проверьте интернет и попробуйте снова.",
                     "Failed to load player. Check internet connection and try again."));
@@ -161,12 +233,14 @@ namespace JokerDBDTracker
             try
             {
                 Player.ZoomFactor = 1.0;
+
                 SetPlayerLoadingOverlay(visible: true, PT("Загрузка видео...", "Loading video..."));
                 var bootstrapResult = await ExecuteWebScriptWithTimeoutAsync(
                     BuildKioskModeScript(
                         _video.VideoId,
-                        ReadConfiguredKey(_appSettings.HideEffectsPanelBind, Key.H)),
-                    timeoutMs: 2500,
+                        ReadConfiguredKey(_appSettings.HideEffectsPanelBind, Key.H),
+                        [.. BuildPlayerHotkeySet()]),
+                    timeoutMs: 3500,
                     operation: "CoreWebView2_NavigationCompleted.Bootstrap");
                 if (_isPlayerClosing || navigationVersion != _playerNavigationVersion)
                 {
@@ -175,11 +249,15 @@ namespace JokerDBDTracker
 
                 if (bootstrapResult is null)
                 {
+                    // Script timed out or failed — release the lock so the player isn't frozen forever.
+                    // The position timer will clear the loading overlay once video starts ticking.
+                    _isPlayerNavigationInProgress = false;
+                    _isPlayerRuntimeReady = true;
+                    SetPlayerSurfaceVisible(true);
+                    SetPlayerInteractionsEnabled(true);
                     SetPlayerLoadingOverlay(visible: true, PT(
-                        "Плеер не ответил во время запуска. Попробуйте открыть видео снова.",
-                        "Player did not respond during startup. Try opening this video again."));
-                    SetPlayerSurfaceVisible(false);
-                    SetPlayerInteractionsEnabled(false);
+                        "Загрузка видео...",
+                        "Loading video..."));
                     return;
                 }
 
@@ -209,27 +287,85 @@ namespace JokerDBDTracker
                 _isPlayerRuntimeReady = true;
                 SetPlayerInteractionsEnabled(true);
                 SetPlayerLoadingOverlay(visible: false);
+                UpdateJokerVideoState();
                 FlushPendingEffectsApplyRequests();
             }
             catch
             {
-                // Ignore transient script failures during YouTube page bootstrap.
+                // Script error during bootstrap — release lock so the player isn't frozen.
+                _isPlayerNavigationInProgress = false;
+                _isPlayerRuntimeReady = true;
+                SetPlayerSurfaceVisible(true);
+                SetPlayerInteractionsEnabled(true);
                 SetPlayerLoadingOverlay(visible: true, PT(
                     "Ошибка инициализации плеера. Попробуйте открыть видео снова.",
                     "Player initialization error. Try opening this video again."));
-                SetPlayerSurfaceVisible(false);
-                SetPlayerInteractionsEnabled(false);
             }
+        }
+
+        private void UpdateJokerVideoState()
+        {
+            if (_video.IsTwitchStream)
+            {
+                _isOnJokerVideo = true;
+                SetNonJokerBannerVisible(false);
+                return;
+            }
+
+            var currentUrl = Player.CoreWebView2?.Source;
+            bool isJoker = false;
+            if (!string.IsNullOrEmpty(currentUrl) &&
+                Uri.TryCreate(currentUrl, UriKind.Absolute, out var uri) &&
+                uri.AbsolutePath.Equals("/watch", StringComparison.OrdinalIgnoreCase))
+            {
+                var q = HttpUtility.ParseQueryString(uri.Query);
+                isJoker = string.Equals(q.Get("v"), _video.VideoId, StringComparison.OrdinalIgnoreCase);
+            }
+
+            _isOnJokerVideo = isJoker;
+            SetNonJokerBannerVisible(!isJoker);
+        }
+
+        private void SetNonJokerBannerVisible(bool visible)
+        {
+            if (NonJokerBanner is null) return;
+            NonJokerBanner.Visibility = visible
+                ? System.Windows.Visibility.Visible
+                : System.Windows.Visibility.Collapsed;
         }
 
         private void CoreWebView2_WebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
         {
+            var message = e.TryGetWebMessageAsString();
+            if (string.Equals(message, "jdbd:web-input-on", StringComparison.Ordinal))
+            {
+                _isWebViewTextInputActive = true;
+                Dispatcher.BeginInvoke(UpdateGlobalHotkeysForTypingFocusState, DispatcherPriority.Input);
+                return;
+            }
+
+            if (string.Equals(message, "jdbd:web-input-off", StringComparison.Ordinal))
+            {
+                _isWebViewTextInputActive = false;
+                Dispatcher.BeginInvoke(UpdateGlobalHotkeysForTypingFocusState, DispatcherPriority.Input);
+                return;
+            }
+
+            if (string.Equals(message, "jdbd:add-timecode", StringComparison.Ordinal))
+            {
+                Dispatcher.BeginInvoke(() =>
+                {
+                    MarkUserInteraction();
+                    RequestTimecodeCapture();
+                }, DispatcherPriority.Input);
+                return;
+            }
+
             if (!CanProcessPlayerCommands())
             {
                 return;
             }
 
-            var message = e.TryGetWebMessageAsString();
             if (!string.Equals(message, "jdbd:toggle-effects-panel", StringComparison.Ordinal))
             {
                 return;
@@ -427,6 +563,11 @@ namespace JokerDBDTracker
 
         private string BuildLockedWatchUrl(int startSeconds)
         {
+            if (_video.IsTwitchStream)
+            {
+                return "https://www.twitch.tv/";
+            }
+
             var query = HttpUtility.ParseQueryString(string.Empty);
             query["v"] = _video.VideoId;
             query["autoplay"] = "1";
@@ -445,6 +586,8 @@ namespace JokerDBDTracker
 
             var legacyFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "YouTube_Profile");
             TryMigrateLegacyProfile(legacyFolder, stableFolder);
+            TryMigrateLegacyProfile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WebView_Profile"), stableFolder);
+            TryMigrateLegacyProfile(Path.Combine(AppStoragePaths.GetCurrentLocalAppDataDirectory(), "YouTube_Profile"), stableFolder);
             return stableFolder;
         }
 
@@ -502,21 +645,96 @@ namespace JokerDBDTracker
             return videoId;
         }
 
-        private static string BuildKioskModeScript(string videoId, Key panelToggleKey)
+        private static string BuildWebInputStateBridgeScript()
+        {
+            return """
+                (() => {
+                    if (window.__jdbdWebInputBridgeInstalled) {
+                        return;
+                    }
+
+                    window.__jdbdWebInputBridgeInstalled = true;
+                    let lastState = null;
+
+                    const isEditableElement = (element) => {
+                        if (!element || !(element instanceof Element)) {
+                            return false;
+                        }
+
+                        if (element.matches('input, textarea, select, [contenteditable=""], [contenteditable="true"]')) {
+                            return true;
+                        }
+
+                        if (element.closest('input, textarea, select, [contenteditable=""], [contenteditable="true"]')) {
+                            return true;
+                        }
+
+                        const role = (element.getAttribute('role') || '').toLowerCase();
+                        return role === 'textbox' || role === 'searchbox' || role === 'combobox';
+                    };
+
+                    const reportState = () => {
+                        const nextState = isEditableElement(document.activeElement);
+                        if (lastState === nextState) {
+                            return;
+                        }
+
+                        lastState = nextState;
+                        try {
+                            window.chrome?.webview?.postMessage(nextState ? 'jdbd:web-input-on' : 'jdbd:web-input-off');
+                        } catch {
+                            // no-op
+                        }
+                    };
+
+                    const reportSoon = () => setTimeout(reportState, 0);
+                    document.addEventListener('focusin', reportSoon, true);
+                    document.addEventListener('focusout', reportSoon, true);
+                    document.addEventListener('pointerdown', reportSoon, true);
+                    document.addEventListener('mousedown', reportSoon, true);
+                    document.addEventListener('keydown', reportSoon, true);
+                    window.addEventListener('load', reportSoon);
+                    reportSoon();
+                })();
+                """;
+        }
+
+        private static string BuildKioskModeScript(string videoId, Key panelToggleKey, IReadOnlyCollection<Key> reservedAppKeys)
         {
             var safeVideoId = SanitizeVideoId(videoId);
             if (string.IsNullOrEmpty(safeVideoId))
             {
                 return string.Empty;
             }
+
             var (panelToggleKeyVariants, panelToggleCodeVariants) = BuildKeyboardEventVariants(panelToggleKey);
+            var reservedKeyVariants = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var reservedCodeVariants = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var key in reservedAppKeys)
+            {
+                var (keys, codes) = BuildKeyboardEventVariants(key);
+                foreach (var value in keys)
+                {
+                    reservedKeyVariants.Add(value);
+                }
+
+                foreach (var value in codes)
+                {
+                    reservedCodeVariants.Add(value);
+                }
+            }
+
             var panelToggleKeyJson = JsonSerializer.Serialize(panelToggleKeyVariants);
             var panelToggleCodeJson = JsonSerializer.Serialize(panelToggleCodeVariants);
+            var reservedKeyJson = JsonSerializer.Serialize(reservedKeyVariants);
+            var reservedCodeJson = JsonSerializer.Serialize(reservedCodeVariants);
             return $$"""
                 (() => {
                     const expectedVideoId = '{{safeVideoId}}';
                     const panelToggleKeys = new Set({{panelToggleKeyJson}});
                     const panelToggleCodes = new Set({{panelToggleCodeJson}});
+                    const reservedAppKeys = new Set({{reservedKeyJson}});
+                    const reservedAppCodes = new Set({{reservedCodeJson}});
                     const isPanelToggleKey = (event) => {
                         if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
                             return false;
@@ -525,6 +743,22 @@ namespace JokerDBDTracker
                         const key = (event.key || '').toUpperCase();
                         const code = event.code || '';
                         return panelToggleKeys.has(key) || panelToggleCodes.has(code);
+                    };
+                    const isEditableTarget = (target) => {
+                        if (!target || !(target instanceof Element)) {
+                            return false;
+                        }
+
+                        return !!target.closest('input, textarea, select, [contenteditable=""], [contenteditable="true"], [role="textbox"], [role="searchbox"], [role="combobox"]');
+                    };
+                    const isReservedAppShortcut = (event) => {
+                        if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+                            return false;
+                        }
+
+                        const key = (event.key || '').toUpperCase();
+                        const code = event.code || '';
+                        return reservedAppKeys.has(key) || reservedAppCodes.has(code);
                     };
 
                     const installPanelToggleBridge = () => {
@@ -549,34 +783,65 @@ namespace JokerDBDTracker
                         }, { capture: true });
                     };
 
-                    const installForeignWatchGuard = () => {
-                        if (window.__jdbdForeignWatchGuardInstalled) {
+                    const installTimecodeBridge = () => {
+                        if (window.__jdbdTimecodeBridgeInstalled) {
                             return;
                         }
 
-                        window.__jdbdForeignWatchGuardInstalled = true;
-                        const blockForeignWatchClick = (event) => {
-                            const link = event.target && event.target.closest ? event.target.closest('a[href*="/watch"]') : null;
-                            if (!link) {
+                        window.__jdbdTimecodeBridgeInstalled = true;
+
+                        document.addEventListener('keydown', (event) => {
+                            if (event.defaultPrevented || event.repeat) {
                                 return;
                             }
 
-                            try {
-                                const url = new URL(link.href, location.origin);
-                                const video = url.searchParams.get('v');
-                                if (!video || video !== expectedVideoId) {
-                                    event.preventDefault();
-                                    event.stopPropagation();
-                                }
-                            } catch {
-                                event.preventDefault();
-                                event.stopPropagation();
+                            if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+                                return;
                             }
+
+                            if (isEditableTarget(event.target)) {
+                                return;
+                            }
+
+                            if ((event.key || '').toUpperCase() !== 'M' && event.code !== 'KeyM') {
+                                return;
+                            }
+
+                            event.preventDefault();
+                            event.stopImmediatePropagation();
+                            event.stopPropagation();
+                            try {
+                                window.chrome?.webview?.postMessage('jdbd:add-timecode');
+                            } catch {
+                                // no-op
+                            }
+                        }, { capture: true });
+                    };
+
+                    const installReservedShortcutBlocker = () => {
+                        if (window.__jdbdReservedShortcutBlockerInstalled) {
+                            return;
+                        }
+
+                        window.__jdbdReservedShortcutBlockerInstalled = true;
+                        const blockReservedShortcut = (event) => {
+                            if (!isReservedAppShortcut(event) || isEditableTarget(event.target)) {
+                                return;
+                            }
+
+                            const key = (event.key || '').toUpperCase();
+                            const code = event.code || '';
+                            if (isPanelToggleKey(event) || key === 'M' || code === 'KeyM') {
+                                return;
+                            }
+
+                            event.preventDefault();
+                            event.stopImmediatePropagation();
+                            event.stopPropagation();
                         };
 
-                        document.addEventListener('click', blockForeignWatchClick, { capture: true });
-                        document.addEventListener('auxclick', blockForeignWatchClick, { capture: true });
-                        document.addEventListener('mousedown', blockForeignWatchClick, { capture: true });
+                        document.addEventListener('keydown', blockReservedShortcut, { capture: true });
+                        document.addEventListener('keyup', blockReservedShortcut, { capture: true });
                     };
 
                     const getPlayerControlText = (element) => {
@@ -595,6 +860,59 @@ namespace JokerDBDTracker
                         return parts.join(' ').toLowerCase();
                     };
 
+                    const ensurePlayerNotMutedByStartup = () => {
+                        try {
+                            const player = document.getElementById('movie_player');
+                            const video = document.querySelector('video');
+                            if (!(player instanceof HTMLElement) || !(video instanceof HTMLVideoElement)) {
+                                return false;
+                            }
+
+                            let changed = false;
+                            const currentVolume = Number.isFinite(video.volume) ? video.volume : 0;
+                            if (video.muted || currentVolume <= 0.001) {
+                                video.muted = false;
+                                if (currentVolume <= 0.001) {
+                                    video.volume = 1;
+                                }
+                                changed = true;
+                            }
+
+                            const controls = Array.from(player.querySelectorAll('.ytp-button, button, [role="button"]'));
+                            for (const control of controls) {
+                                if (!(control instanceof HTMLElement)) {
+                                    continue;
+                                }
+
+                                const text = getPlayerControlText(control);
+                                const looksLikeUnmute =
+                                    text.includes('unmute') ||
+                                    text.includes('включить звук') ||
+                                    text.includes('turn on sound') ||
+                                    text.includes('mute toggle');
+                                if (!looksLikeUnmute) {
+                                    continue;
+                                }
+
+                                if (text.includes('mute') && !text.includes('unmute') && !text.includes('включить звук')) {
+                                    continue;
+                                }
+
+                                try {
+                                    control.click();
+                                } catch {
+                                    // no-op
+                                }
+                                changed = true;
+                                break;
+                            }
+
+                            return changed;
+                        } catch {
+                            return false;
+                        }
+                    };
+
                     const hideInlinePanelElement = (element) => {
                         if (!element || !element.style) {
                             return false;
@@ -609,6 +927,22 @@ namespace JokerDBDTracker
                         element.style.setProperty('flex', '0 0 0px', 'important');
                         element.style.setProperty('opacity', '0', 'important');
                         return true;
+                    };
+
+                    const isPlayerInFullscreen = () => {
+                        try {
+                            const fullscreenElement = document.fullscreenElement;
+                            const player = document.getElementById('movie_player');
+                            if (!(fullscreenElement instanceof Element) || !(player instanceof HTMLElement)) {
+                                return false;
+                            }
+
+                            return fullscreenElement === player ||
+                                   player.contains(fullscreenElement) ||
+                                   fullscreenElement.contains(player);
+                        } catch {
+                            return false;
+                        }
                     };
 
                     const nudgeYouTubePlayerLayout = () => {
@@ -704,7 +1038,34 @@ namespace JokerDBDTracker
                         }
                     };
 
+                    const isPlayerMenuPopupOpen = () => {
+                        try {
+                            const candidates = document.querySelectorAll(
+                                '.ytp-popup, .ytp-settings-menu, .ytp-panel-menu, [role="menu"], [role="dialog"]');
+                            for (const element of candidates) {
+                                if (!(element instanceof HTMLElement)) {
+                                    continue;
+                                }
+
+                                const style = getComputedStyle(element);
+                                if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity || '1') <= 0.01) {
+                                    continue;
+                                }
+
+                                const rect = element.getBoundingClientRect();
+                                if (rect.width >= 40 && rect.height >= 40) {
+                                    return true;
+                                }
+                            }
+
+                            return false;
+                        } catch {
+                            return false;
+                        }
+                    };
+
                     const pulseCommentPanelToggleForLayoutRepair = () => {
+                        return false;
                         try {
                             const now = Date.now();
                             const last = Number(window.__jdbdLastCommentPulseTs || 0);
@@ -775,6 +1136,11 @@ namespace JokerDBDTracker
                                 return false;
                             }
 
+                            if (isPlayerMenuPopupOpen()) {
+                                return false;
+                            }
+
+                            const keepOpen = window.__jdbdKeepSidePanelOpen === true && !isPlayerInFullscreen();
                             let changed = false;
                             const knownPanelSelectors = [
                                 '#movie_player [class*="watch-comments" i]',
@@ -790,9 +1156,11 @@ namespace JokerDBDTracker
                                 '#movie_player [data-panel-id]'
                             ];
 
-                            for (const selector of knownPanelSelectors) {
-                                for (const panel of document.querySelectorAll(selector)) {
-                                    changed = hideInlinePanelElement(panel) || changed;
+                            if (!keepOpen) {
+                                for (const selector of knownPanelSelectors) {
+                                    for (const panel of document.querySelectorAll(selector)) {
+                                        changed = hideInlinePanelElement(panel) || changed;
+                                    }
                                 }
                             }
 
@@ -803,55 +1171,59 @@ namespace JokerDBDTracker
                                 player.querySelector('.ytp-player-content')
                             ].filter(Boolean);
 
-                            for (const root of playerRootCandidates) {
-                                if (!root.classList) {
-                                    continue;
-                                }
+                            if (!keepOpen) {
+                                for (const root of playerRootCandidates) {
+                                    if (!root.classList) {
+                                        continue;
+                                    }
 
-                                for (const className of Array.from(root.classList)) {
-                                    const name = String(className || '').toLowerCase();
-                                    if ((name.includes('comment') || name.includes('chat') || name.includes('engagement')) &&
-                                        (name.includes('panel') || name.includes('peek') || name.includes('sidebar') || name.includes('dock')))
-                                    {
-                                        try {
-                                            root.classList.remove(className);
-                                            changed = true;
-                                        } catch {
-                                            // no-op
+                                    for (const className of Array.from(root.classList)) {
+                                        const name = String(className || '').toLowerCase();
+                                        if ((name.includes('comment') || name.includes('chat') || name.includes('engagement')) &&
+                                            (name.includes('panel') || name.includes('peek') || name.includes('sidebar') || name.includes('dock')))
+                                        {
+                                            try {
+                                                root.classList.remove(className);
+                                                changed = true;
+                                            } catch {
+                                                // no-op
+                                            }
                                         }
                                     }
                                 }
                             }
 
-                            const playerButtons = Array.from(
-                                player.querySelectorAll('.ytp-button, button, [role="button"]'));
-                            for (const button of playerButtons) {
-                                if (!(button instanceof HTMLElement)) {
-                                    continue;
-                                }
+                            if (!keepOpen) {
+                                const playerButtons = Array.from(
+                                    player.querySelectorAll('.ytp-button, button, [role="button"]'));
+                                for (const button of playerButtons) {
+                                    if (!(button instanceof HTMLElement)) {
+                                        continue;
+                                    }
 
-                                const text = getPlayerControlText(button);
-                                const looksLikeCommentsOrChat =
-                                    text.includes('comment') ||
-                                    text.includes('comments') ||
-                                    text.includes('комментар') ||
-                                    text.includes('chat') ||
-                                    text.includes('чат') ||
-                                    text.includes('discussion') ||
-                                    text.includes('discuss') ||
-                                    text.includes('replay chat');
-                                if (!looksLikeCommentsOrChat) {
-                                    continue;
-                                }
+                                    const text = getPlayerControlText(button);
+                                    const looksLikeCommentsOrChat =
+                                        text.includes('comment') ||
+                                        text.includes('comments') ||
+                                        text.includes('комментар') ||
+                                        text.includes('chat') ||
+                                        text.includes('чат') ||
+                                        text.includes('discussion') ||
+                                        text.includes('discuss') ||
+                                        text.includes('replay chat');
+                                    if (!looksLikeCommentsOrChat) {
+                                        continue;
+                                    }
 
-                                const isPressed = (button.getAttribute('aria-pressed') || '').toLowerCase() === 'true';
-                                const isExpanded = (button.getAttribute('aria-expanded') || '').toLowerCase() === 'true';
-                                if (isPressed || isExpanded) {
-                                    try {
-                                        button.click();
-                                        changed = true;
-                                    } catch {
-                                        // no-op
+                                    const isPressed = (button.getAttribute('aria-pressed') || '').toLowerCase() === 'true';
+                                    const isExpanded = (button.getAttribute('aria-expanded') || '').toLowerCase() === 'true';
+                                    if (isPressed || isExpanded) {
+                                        try {
+                                            button.click();
+                                            changed = true;
+                                        } catch {
+                                            // no-op
+                                        }
                                     }
                                 }
                             }
@@ -908,7 +1280,7 @@ namespace JokerDBDTracker
                                 hostRect.height >= 320 &&
                                 playerTopOffset > Math.max(18, hostRect.height * 0.08);
 
-                            if (suspiciousUndersizedPlayer || suspiciousVerticalOffset) {
+                            if (!keepOpen && (suspiciousUndersizedPlayer || suspiciousVerticalOffset)) {
                                 changed = nudgeYouTubePlayerLayout() || changed;
                                 changed = pulseCommentPanelToggleForLayoutRepair() || changed;
                             }
@@ -916,6 +1288,10 @@ namespace JokerDBDTracker
                             const widthRatio = videoRect.width / playerRect.width;
                             const suspiciousSplitLayout = widthRatio < 0.82 && playerRect.width >= 420;
                             if (!suspiciousSplitLayout) {
+                                return changed;
+                            }
+
+                            if (keepOpen) {
                                 return changed;
                             }
 
@@ -943,6 +1319,17 @@ namespace JokerDBDTracker
                                 }
 
                                 const idAndClass = `${element.id || ''} ${element.className || ''}`.toLowerCase();
+                                if (idAndClass.includes('ytp-popup') ||
+                                    idAndClass.includes('ytp-menu') ||
+                                    idAndClass.includes('ytp-panel-menu') ||
+                                    idAndClass.includes('ytp-settings') ||
+                                    idAndClass.includes('ytp-quality') ||
+                                    idAndClass.includes('ytp-subtitles') ||
+                                    element.closest('.ytp-popup, .ytp-menuitem, .ytp-panel-menu, .ytp-settings-menu'))
+                                {
+                                    return true;
+                                }
+
                                 return idAndClass.includes('html5-video') ||
                                        idAndClass.includes('ytp-chrome') ||
                                        idAndClass.includes('ytp-gradient') ||
@@ -989,6 +1376,30 @@ namespace JokerDBDTracker
                                 changed = hideInlinePanelElement(candidate.element) || changed;
                             }
 
+                            const layoutResetCandidates = [
+                                player,
+                                player.querySelector('.html5-video-player'),
+                                player.querySelector('.html5-video-container'),
+                                document.getElementById('player-theater-container'),
+                                document.getElementById('full-bleed-container'),
+                                document.getElementById('player-container-inner'),
+                                document.getElementById('player-container-outer'),
+                                document.getElementById('player-container')
+                            ].filter(Boolean);
+
+                            for (const element of layoutResetCandidates) {
+                                if (!(element instanceof HTMLElement)) {
+                                    continue;
+                                }
+
+                                element.style.setProperty('margin-right', '0', 'important');
+                                element.style.setProperty('padding-right', '0', 'important');
+                                element.style.setProperty('right', '0', 'important');
+                                element.style.setProperty('max-width', 'none', 'important');
+                                element.style.setProperty('width', '100%', 'important');
+                                changed = true;
+                            }
+
                             return changed;
                         } catch {
                             return false;
@@ -1002,30 +1413,47 @@ namespace JokerDBDTracker
 
                         window.__jdbdSidePanelGuardInstalled = true;
 
-                        const isCommentOrChatControl = (target) => {
-                            if (!target || !target.closest) {
-                                return false;
+                        const getSidePanelControlKind = (button) => {
+                            if (!button) {
+                                return '';
                             }
 
-                            const button = target.closest('.ytp-button, button, a[role="button"]');
+                            const text = getPlayerControlText(button);
+                            if (!text) {
+                                return '';
+                            }
+
+                            if (text.includes('comment') ||
+                                text.includes('comments') ||
+                                text.includes('комментар') ||
+                                text.includes('discussion') ||
+                                text.includes('discuss'))
+                            {
+                                return 'comments';
+                            }
+
+                            if (text.includes('live chat') ||
+                                text.includes('chat replay') ||
+                                text.includes('replay chat') ||
+                                text.includes('chat') ||
+                                text.includes('чат') ||
+                                text.includes('message') ||
+                                text.includes('сообщен'))
+                            {
+                                return 'chat';
+                            }
+
+                            return '';
+                        };
+
+                        const isControlExpanded = (button) => {
                             if (!button) {
                                 return false;
                             }
 
-                            if (!button.closest('.ytp-right-controls, .ytp-chrome-controls')) {
-                                return false;
-                            }
-
-                            const text = `${button.getAttribute('aria-label') || ''} ${button.getAttribute('title') || ''}`.toLowerCase();
-                            if (!text) {
-                                return false;
-                            }
-
-                            return text.includes('comment') ||
-                                   text.includes('comments') ||
-                                   text.includes('комментар') ||
-                                   text.includes('chat') ||
-                                   text.includes('чат');
+                            return (button.getAttribute('aria-pressed') || '').toLowerCase() === 'true' ||
+                                   (button.getAttribute('aria-expanded') || '').toLowerCase() === 'true' ||
+                                   button.classList?.contains('ytp-button-active') === true;
                         };
 
                         const blockPanelToggle = (event) => {
@@ -1033,46 +1461,260 @@ namespace JokerDBDTracker
                                 return;
                             }
 
-                            if (!isCommentOrChatControl(event.target)) {
+                            const control = event.target && event.target.closest ? event.target.closest('.ytp-button, button, [role="button"], a[role="button"]') : null;
+                            const panelKind = getSidePanelControlKind(control);
+                            if (panelKind) {
+                                const currentKind = String(window.__jdbdOpenSidePanelKind || '');
+                                const isAlreadyOpen = isControlExpanded(control) || (window.__jdbdKeepSidePanelOpen === true && currentKind === panelKind);
+                                const shouldOpen = !isAlreadyOpen;
+
+                                window.__jdbdKeepSidePanelOpen = shouldOpen;
+                                window.__jdbdOpenSidePanelKind = shouldOpen ? panelKind : '';
+                                setTimeout(() => {
+                                    try {
+                                        window.__jdbdRepairImmersiveLayout?.();
+                                    } catch {
+                                        // no-op
+                                    }
+                                }, shouldOpen ? 180 : 120);
                                 return;
                             }
 
-                            event.preventDefault();
-                            event.stopImmediatePropagation();
-                            event.stopPropagation();
+                            const text = getPlayerControlText(control);
+                            if (text.includes('close') || text.includes('закры') || text === 'x') {
+                                window.__jdbdKeepSidePanelOpen = false;
+                                window.__jdbdOpenSidePanelKind = '';
+                            }
                         };
 
                         document.addEventListener('click', blockPanelToggle, { capture: true });
                         document.addEventListener('mousedown', blockPanelToggle, { capture: true });
                         document.addEventListener('pointerdown', blockPanelToggle, { capture: true });
 
-                        let repairQueued = false;
+                        let repairTimer = null;
                         const scheduleRepair = () => {
-                            if (repairQueued) {
-                                return;
-                            }
-
-                            repairQueued = true;
-                            requestAnimationFrame(() => {
-                                repairQueued = false;
-                                try {
-                                    applyImmersiveVideoLayout();
-                                } catch {
-                                    // no-op
-                                }
-                            });
+                            if (repairTimer !== null) { return; }
+                            repairTimer = setTimeout(() => {
+                                repairTimer = null;
+                                try { applyImmersiveVideoLayout(); } catch { /* no-op */ }
+                            }, 200);
                         };
 
                         window.__jdbdRepairImmersiveLayout = scheduleRepair;
 
-                        document.addEventListener('yt-page-data-updated', scheduleRepair, true);
-                        document.addEventListener('yt-navigate-finish', scheduleRepair, true);
-                        document.addEventListener('fullscreenchange', scheduleRepair, true);
+                        const resetPanelsToClosed = () => {
+                            window.__jdbdKeepSidePanelOpen = false;
+                            window.__jdbdOpenSidePanelKind = '';
+                        };
+
+                        document.addEventListener('yt-page-data-updated', () => {
+                            resetPanelsToClosed();
+                            scheduleRepair();
+                        }, true);
+                        document.addEventListener('yt-navigate-finish', () => {
+                            resetPanelsToClosed();
+                            scheduleRepair();
+                        }, true);
+                        document.addEventListener('fullscreenchange', () => {
+                            if (isPlayerInFullscreen()) {
+                                resetPanelsToClosed();
+                            }
+                            scheduleRepair();
+                        }, true);
                         window.addEventListener('resize', scheduleRepair, { passive: true });
 
                         for (const delay of [0, 80, 180, 350, 650, 1100, 1800, 2800, 4200]) {
                             setTimeout(scheduleRepair, delay);
                         }
+                    };
+
+                    const normalizeInlineSidePanels = () => {
+                        try {
+                            const player = document.getElementById('movie_player');
+                            if (!player) {
+                                return false;
+                            }
+
+                            if (isPlayerMenuPopupOpen()) {
+                                return false;
+                            }
+
+                            const playerRect = player.getBoundingClientRect();
+                            if (playerRect.width <= 0 || playerRect.height <= 0) {
+                                return false;
+                            }
+
+                            let changed = false;
+                            const rightThreshold = playerRect.left + (playerRect.width * 0.58);
+                            const candidates = [];
+                            for (const element of player.querySelectorAll('*')) {
+                                if (!(element instanceof HTMLElement)) {
+                                    continue;
+                                }
+
+                                const idAndClass = `${element.id || ''} ${element.className || ''}`.toLowerCase();
+                                if (!idAndClass.includes('comment') &&
+                                    !idAndClass.includes('chat') &&
+                                    !idAndClass.includes('engagement') &&
+                                    !element.hasAttribute('data-panel-target-id') &&
+                                    !element.hasAttribute('data-panel-id'))
+                                {
+                                    continue;
+                                }
+
+                                const style = getComputedStyle(element);
+                                if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity || '1') <= 0.01) {
+                                    continue;
+                                }
+
+                                const rect = element.getBoundingClientRect();
+                                if (rect.width < 180 || rect.height < 140 || rect.left < rightThreshold) {
+                                    continue;
+                                }
+
+                                if (rect.left < playerRect.left || rect.right > playerRect.right + 1) {
+                                    continue;
+                                }
+
+                                candidates.push({ element, rect, area: rect.width * rect.height });
+                            }
+
+                            candidates.sort((a, b) => b.area - a.area);
+                            const panels = [];
+                            for (const candidate of candidates) {
+                                if (panels.some((existing) => existing.element.contains(candidate.element) || candidate.element.contains(existing.element))) {
+                                    continue;
+                                }
+
+                                panels.push(candidate);
+                            }
+
+                            const findHeaderControls = (panel) => {
+                                const panelRect = panel.getBoundingClientRect();
+                                const controls = [];
+                                for (const node of panel.querySelectorAll('button, [role="button"], a[href]')) {
+                                    if (!(node instanceof HTMLElement)) {
+                                        continue;
+                                    }
+
+                                    const rect = node.getBoundingClientRect();
+                                    if (rect.top <= panelRect.top + 72) {
+                                        controls.push(node);
+                                    }
+                                }
+
+                                return controls;
+                            };
+
+                            for (const panelInfo of panels) {
+                                const panel = panelInfo.element;
+                                const panelRect = panelInfo.rect;
+                                const clampedWidth = Math.min(420, Math.max(300, Math.round(panelRect.width)));
+                                panel.style.setProperty('width', `${clampedWidth}px`, 'important');
+                                panel.style.setProperty('min-width', `${clampedWidth}px`, 'important');
+                                panel.style.setProperty('max-width', `${clampedWidth}px`, 'important');
+                                panel.style.setProperty('flex', `0 0 ${clampedWidth}px`, 'important');
+                                panel.style.setProperty('overflow', 'hidden', 'important');
+
+                                const allowedControls = new Set(findHeaderControls(panel));
+                                for (const node of panel.querySelectorAll('a[href], button, [role="button"]')) {
+                                    if (!(node instanceof HTMLElement)) {
+                                        continue;
+                                    }
+
+                                    if (allowedControls.has(node)) {
+                                        continue;
+                                    }
+
+                                    const text = getPlayerControlText(node);
+                                    const looksLikeItemAction =
+                                        text.includes('reply') ||
+                                        text.includes('ответ') ||
+                                        text.includes('like') ||
+                                        text.includes('dislike') ||
+                                        text.includes('react') ||
+                                        text.includes('menu') ||
+                                        text.includes('ещё') ||
+                                        text.includes('more');
+
+                                    if (node.matches('a[href]')) {
+                                        node.style.setProperty('pointer-events', 'none', 'important');
+                                        node.style.setProperty('cursor', 'default', 'important');
+                                        changed = true;
+                                        continue;
+                                    }
+
+                                    if (looksLikeItemAction) {
+                                        node.style.setProperty('display', 'none', 'important');
+                                        changed = true;
+                                        continue;
+                                    }
+
+                                    node.style.setProperty('pointer-events', 'none', 'important');
+                                    changed = true;
+                                }
+
+                                const text = (panel.innerText || '').toLowerCase();
+                                const commentNodes = panel.querySelectorAll('ytd-comment-thread-renderer, ytd-comment-view-model, [id*="comment"], [class*="comment"]').length;
+                                const chatNodes = panel.querySelectorAll('[class*="chat"], [data-a-target*="chat"]').length;
+                                const allowPanelBecauseUserJustOpenedIt = window.__jdbdKeepSidePanelOpen === true && !isPlayerInFullscreen();
+                                const looksPlaceholderCommentPanel =
+                                    (text.includes('featured comments') || text.includes('top is selected')) &&
+                                    commentNodes < 3 &&
+                                    chatNodes < 3;
+
+                                const shouldCloseByDefault = !allowPanelBecauseUserJustOpenedIt;
+                                const shouldClosePlaceholderPanel = !allowPanelBecauseUserJustOpenedIt && looksPlaceholderCommentPanel;
+                                if (shouldCloseByDefault || shouldClosePlaceholderPanel) {
+                                    const closeControl = [...allowedControls].find((node) => {
+                                        const text = getPlayerControlText(node);
+                                        return text.includes('close') || text.includes('закры') || text === 'x';
+                                    });
+
+                                    if (closeControl instanceof HTMLElement) {
+                                        try {
+                                            closeControl.click();
+                                            changed = true;
+                                            continue;
+                                        } catch {
+                                            // no-op
+                                        }
+                                    }
+
+                                    changed = hideInlinePanelElement(panel) || changed;
+                                }
+                            }
+
+                            return changed;
+                        } catch {
+                            return false;
+                        }
+                    };
+
+                    // Returns true if the layout is fully stable:
+                    //   - ytd-watch-flexy has theater, no two-columns attrs
+                    //   - #secondary is explicitly JS-hidden (can't rely on CSS alone because
+                    //     YouTube's own JS may re-set display:block with !important inline style)
+                    // When stable, applyImmersiveVideoLayout skips all DOM writes, breaking the loop.
+                    const isLayoutStable = () => {
+                        try {
+                            const flexy = document.querySelector('ytd-watch-flexy');
+                            if (!flexy) { return false; }
+                            if (!flexy.hasAttribute('theater')) { return false; }
+                            for (const attr of Array.from(flexy.attributes)) {
+                                if ((attr.name || '').toLowerCase().includes('two-columns')) { return false; }
+                            }
+                            // Verify #secondary is force-hidden
+                            const sec = document.getElementById('secondary');
+                            if (sec && sec.style.display !== 'none') { return false; }
+                            // Verify all engagement panels are force-hidden (multiple instances exist:
+                            // right-side panel, bottom comments panel, description panel, etc.)
+                            const panels = document.querySelectorAll('ytd-engagement-panel-section-list-renderer');
+                            for (const p of panels) {
+                                if (p.style.display !== 'none') { return false; }
+                            }
+                            return true;
+                        } catch { return false; }
                     };
 
                     const applyImmersiveVideoLayout = () => {
@@ -1088,51 +1730,38 @@ namespace JokerDBDTracker
                             const style = document.createElement('style');
                             style.id = 'jdbd-immersive-style';
                             style.textContent = `
-                                html, body, ytd-app, #content, #page-manager, ytd-watch-flexy, #columns, #primary, #primary-inner {
+                                html, body {
                                     margin: 0 !important;
                                     padding: 0 !important;
                                     background: #000 !important;
                                     overflow: hidden !important;
-                                    height: 100% !important;
-                                }
-
-                                #columns {
-                                    display: grid !important;
-                                    grid-template-columns: minmax(0, 1fr) !important;
-                                    grid-template-areas: "primary" !important;
-                                    column-gap: 0 !important;
-                                    row-gap: 0 !important;
-                                    max-width: none !important;
-                                    width: 100% !important;
-                                    height: 100% !important;
-                                }
-
-                                #primary {
-                                    grid-area: primary !important;
-                                    grid-column: 1 / -1 !important;
-                                    margin: 0 !important;
-                                    width: 100% !important;
-                                    max-width: none !important;
-                                    height: 100% !important;
-                                }
-
-                                #primary-inner {
-                                    width: 100% !important;
+                                    width: 100vw !important;
                                     height: 100vh !important;
                                 }
 
-                                #player, #ytd-player, #player-container, #player-container-outer, #player-container-inner,
-                                #player-theater-container, #full-bleed-container, #movie_player,
-                                .html5-video-player, .html5-video-container {
-                                    width: 100% !important;
+                                /* Nuclear fix: pin #movie_player to the full viewport so no YouTube
+                                   layout quirk (masthead padding, theater offset, etc.) can shrink it.
+                                   All player chrome (controls, title bar) lives inside movie_player
+                                   so they stay correctly positioned relative to the video. */
+                                #movie_player, .html5-video-player {
+                                    position: fixed !important;
+                                    top: 0 !important;
+                                    left: 0 !important;
+                                    right: 0 !important;
+                                    bottom: 0 !important;
+                                    width: 100vw !important;
+                                    height: 100vh !important;
                                     max-width: none !important;
-                                    height: 100% !important;
                                     max-height: none !important;
+                                    z-index: 9000 !important;
+                                    overflow: visible !important;
                                 }
 
-                                #player, #ytd-player, #player-container, #player-container-outer, #player-container-inner,
-                                #player-theater-container, #full-bleed-container {
-                                    min-height: 100vh !important;
+                                .html5-video-container {
+                                    width: 100% !important;
+                                    height: 100% !important;
+                                    max-width: none !important;
+                                    max-height: none !important;
                                 }
 
                                 .html5-main-video, video {
@@ -1144,33 +1773,34 @@ namespace JokerDBDTracker
                                     top: 0 !important;
                                 }
 
-                                #movie_player [class*="watch-comments" i],
-                                #movie_player [class*="comments-panel" i],
-                                #movie_player [class*="comment-panel" i],
-                                #movie_player [class*="chat-panel" i],
-                                #movie_player [class*="engagement-panel" i],
-                                #movie_player [id*="watch-comments" i],
-                                #movie_player [id*="comments-panel" i],
-                                #movie_player [id*="chat-panel" i],
-                                #movie_player [id*="engagement-panel" i],
-                                #movie_player [data-panel-target-id],
-                                #movie_player [data-panel-id] {
-                                    display: none !important;
-                                    visibility: hidden !important;
-                                    pointer-events: none !important;
-                                    width: 0 !important;
-                                    min-width: 0 !important;
-                                    max-width: 0 !important;
-                                    flex: 0 0 0 !important;
-                                    opacity: 0 !important;
+                                /* Background elements — don't need to look right, just not flicker */
+                                ytd-app, #content, #page-manager, ytd-watch-flexy, #columns, #primary, #primary-inner {
+                                    margin: 0 !important;
+                                    padding: 0 !important;
+                                    background: #000 !important;
                                 }
 
+                                /* ── Pointer-events lock ──────────────────────────────────────────────
+                                   Kill pointer events on everything, restore only for the player tree.
+                                   ytd-player contains #movie_player AND the gesture/click overlays that
+                                   handle play/pause — those overlays are siblings of #movie_player inside
+                                   ytd-player, so we must restore the whole ytd-player subtree, not just
+                                   #movie_player. Engagement panels / chat live outside ytd-player as
+                                   siblings of #columns, so they stay pointer-events:none. */
+                                body * {
+                                    pointer-events: none !important;
+                                }
+                                ytd-player, ytd-player *,
+                                #movie_player, #movie_player *,
+                                #player, #player * {
+                                    pointer-events: auto !important;
+                                }
+
+                                /* Hide all page chrome outside the video player */
                                 #secondary, #secondary-inner, #related,
-                                #below, #comments, ytd-comments,
                                 ytd-watch-metadata, ytd-watch-info-text,
                                 #description, #description-inline-expander, #description-inner,
-                                ytd-text-inline-expander, ytd-engagement-panel-section-list-renderer, #panels,
-                                #chat, #chat-container, ytd-live-chat-frame,
+                                ytd-text-inline-expander,
                                 ytd-merch-shelf-renderer, ytd-reel-shelf-renderer,
                                 ytd-watch-next-secondary-results-renderer, ytd-watch-next-feed-renderer,
                                 #end, #meta, #guide, ytd-mini-guide-renderer, tp-yt-app-drawer,
@@ -1181,43 +1811,64 @@ namespace JokerDBDTracker
                                     pointer-events: none !important;
                                 }
 
+                                /* Hide live chat, comments panel and all engagement overlays */
+                                #chat, #chat-container, ytd-live-chat-frame,
+                                .ytp-chat-widget, .ytp-fullerscreen-edu-button,
+                                ytd-engagement-panel-section-list-renderer,
+                                #engagement, ytd-engagement-panel-title-header-renderer,
+                                .ytp-comments-header-renderer, .ytp-panel-anchor,
+                                .ytp-suggested-action-badge-expanded,
+                                .ytp-inline-preview-ui, .ytp-inline-preview-overlay {
+                                    display: none !important;
+                                    visibility: hidden !important;
+                                    pointer-events: none !important;
+                                }
+
+                                /* Keep player controls visible — only hide distracting overlays */
                                 .ytp-chrome-top,
+                                .ytp-gradient-top,
                                 .ytp-title,
                                 .ytp-title-link,
                                 .ytp-title-channel,
                                 .ytp-title-text,
                                 .ytp-title-expanded-overlay,
                                 .ytp-title-expanded-heading,
-                                .ytp-title-expanded-content {
+                                .ytp-title-expanded-content,
+                                .ytp-unmute,
+                                .ytp-bezel-text-wrapper,
+                                .ytp-endscreen-content,
+                                .ytp-ce-element,
+                                .ytp-cards-teaser,
+                                .ytp-cards-button,
+                                .ytp-pause-overlay,
+                                .ytp-share-button-visible {
+                                    display: none !important;
+                                    visibility: hidden !important;
                                     pointer-events: none !important;
+                                    opacity: 0 !important;
                                 }
 
-                                .ytp-right-controls .ytp-button[aria-label*="comment" i],
-                                .ytp-right-controls .ytp-button[title*="comment" i],
-                                .ytp-right-controls .ytp-button[aria-label*="комментар" i],
-                                .ytp-right-controls .ytp-button[title*="комментар" i],
-                                .ytp-right-controls .ytp-button[aria-label*="chat" i],
-                                .ytp-right-controls .ytp-button[title*="chat" i],
-                                .ytp-right-controls .ytp-button[aria-label*="чат" i],
-                                .ytp-right-controls .ytp-button[title*="чат" i] {
-                                    display: none !important;
-                                }
                             `;
                             (document.head || document.documentElement).appendChild(style);
                         };
 
                         ensureLayoutStyle();
 
+                        // Early exit if layout is already correct — prevents the write→observer→write loop.
+                        // CSS is injected above (idempotent). Unmute is checked once below.
+                        if (isLayoutStable()) {
+                            if (!window.__jdbdUnmuteDone) {
+                                window.__jdbdUnmuteDone = ensurePlayerNotMutedByStartup();
+                            }
+                            return;
+                        }
+
                         const flexy = document.querySelector('ytd-watch-flexy');
                         if (flexy) {
                             flexy.setAttribute('theater', '');
                             for (const attr of Array.from(flexy.attributes)) {
                                 const name = (attr.name || '').toLowerCase();
-                                if (name.includes('two-columns') ||
-                                    name.includes('engagement') ||
-                                    name.includes('chat') ||
-                                    name.includes('comment') ||
-                                    name.includes('panel'))
+                                if (name.includes('two-columns'))
                                 {
                                     try {
                                         flexy.removeAttribute(attr.name);
@@ -1242,47 +1893,115 @@ namespace JokerDBDTracker
                             primary.style.setProperty('width', '100%', 'important');
                         }
 
-                        collapseInlinePlayerSidePanels();
-                    };
+                        // Force-hide sidebar/chat/engagement elements via inline JS style.
+                        // CSS alone can be overridden by YouTube's reactive JS (inline !important).
+                        // Single-instance elements: getElementById is faster and sufficient.
+                        const hideIds = ['secondary', 'secondary-inner', 'related', 'chat', 'chat-container', 'engagement'];
+                        for (const id of hideIds) {
+                            const el = document.getElementById(id);
+                            if (el && el.style.display !== 'none') {
+                                el.style.setProperty('display', 'none', 'important');
+                            }
+                        }
+                        // Single-instance selectors (querySelector is fine — only one in the DOM).
+                        const hideSingleSelectors = [
+                            'ytd-watch-metadata', 'ytd-watch-info-text',
+                            'ytd-masthead', '#masthead-container',
+                            'ytd-live-chat-frame', '.ytp-chat-widget'
+                        ];
+                        for (const sel of hideSingleSelectors) {
+                            try {
+                                const el = document.querySelector(sel);
+                                if (el && el.style.display !== 'none') {
+                                    el.style.setProperty('display', 'none', 'important');
+                                }
+                            } catch { /* no-op */ }
+                        }
+                        // Multi-instance: YouTube renders several engagement panels (comments, description,
+                        // right-side panel, bottom panel). Must use querySelectorAll to catch all of them.
+                        try {
+                            document.querySelectorAll('ytd-engagement-panel-section-list-renderer').forEach(el => {
+                                if (el.style.display !== 'none') {
+                                    el.style.setProperty('display', 'none', 'important');
+                                }
+                            });
+                        } catch { /* no-op */ }
 
-                    const enforceExpectedVideoId = () => {
-                        const current = new URL(location.href);
-                        if (!current.hostname.endsWith('youtube.com')) {
+                        window.__jdbdUnmuteDone = ensurePlayerNotMutedByStartup();
+
+                        if (isPlayerMenuPopupOpen()) {
                             return;
                         }
 
-                        if (current.pathname === '/watch') {
-                            const currentVideo = current.searchParams.get('v');
-                            if (currentVideo && currentVideo !== expectedVideoId) {
-                                current.searchParams.set('v', expectedVideoId);
-                                location.replace(current.toString());
-                                return;
-                            }
-                        }
+                        collapseInlinePlayerSidePanels();
+                        normalizeInlineSidePanels();
                     };
 
                     installPanelToggleBridge();
-                    installForeignWatchGuard();
+                    installTimecodeBridge();
+                    installReservedShortcutBlocker();
                     installYouTubeSidePanelGuard();
-                    enforceExpectedVideoId();
                     applyImmersiveVideoLayout();
-                    let observerRepairQueued = false;
-                    const observer = new MutationObserver(() => {
-                        if (observerRepairQueued) {
-                            return;
-                        }
-
-                        observerRepairQueued = true;
-                        Promise.resolve().then(() => {
-                            observerRepairQueued = false;
+                    // Debounced observer with a proper setTimeout delay.
+                    // childList+subtree catches YouTube's deep initial render; attributes are NOT watched globally
+                    // (global attribute watching fires thousands of times/sec on YouTube's reactive UI).
+                    // Specific layout elements get their own narrow attribute observers.
+                    let layoutRepairTimer = null;
+                    const scheduleLayoutRepair = () => {
+                        if (layoutRepairTimer !== null) { return; }
+                        layoutRepairTimer = setTimeout(() => {
+                            layoutRepairTimer = null;
                             applyImmersiveVideoLayout();
-                        });
+                        }, 1500);
+                    };
+                    const observer = new MutationObserver(scheduleLayoutRepair);
+                    // childList+subtree (no attributes) to catch when YouTube renders its components.
+                    observer.observe(document.body || document.documentElement, {
+                        childList: true, subtree: true, attributes: false
                     });
-                    observer.observe(document.documentElement, {
-                        childList: true,
-                        subtree: true,
-                        attributes: true,
-                        attributeFilter: ['class', 'style', 'hidden', 'aria-hidden', 'aria-expanded']
+                    // Narrow attribute watchers on specific layout nodes only.
+                    const watchAttrs = { attributes: true, attributeFilter: ['class', 'theater', 'hidden', 'two-columns'] };
+                    const flexyEl = document.querySelector('ytd-watch-flexy');
+                    if (flexyEl) { observer.observe(flexyEl, watchAttrs); }
+                    const colsEl = document.getElementById('columns');
+                    if (colsEl) { observer.observe(colsEl, watchAttrs); }
+                    const primaryEl = document.getElementById('primary');
+                    if (primaryEl) { observer.observe(primaryEl, watchAttrs); }
+
+                    // Dedicated fast-path for engagement panels (comments, right-side panel, etc.).
+                    // YouTube keeps these elements in the DOM permanently and shows them by setting a
+                    // CSS class or inline style — so a childList observer never fires for this.
+                    // We attach a narrow per-element attribute observer (style + class) on each panel
+                    // so any YouTube-side show attempt is reverted synchronously (no debounce needed).
+                    const attachEngagementPanelGuard = (el) => {
+                        el.style.setProperty('display', 'none', 'important');
+                        const guard = new MutationObserver(() => {
+                            // YouTube changed style/class on this panel — re-hide immediately.
+                            el.style.setProperty('display', 'none', 'important');
+                        });
+                        guard.observe(el, { attributes: true, attributeFilter: ['style', 'class', 'hidden', 'visibility'] });
+                    };
+                    const hideAllEngagementPanels = () => {
+                        try {
+                            document.querySelectorAll('ytd-engagement-panel-section-list-renderer').forEach(attachEngagementPanelGuard);
+                            const eng = document.getElementById('engagement');
+                            if (eng) { eng.style.setProperty('display', 'none', 'important'); }
+                        } catch { /* no-op */ }
+                    };
+                    hideAllEngagementPanels();
+                    // Also watch for newly added engagement panel elements (when YouTube adds them
+                    // after initial render). childList+subtree is enough here — attribute changes on
+                    // existing elements are handled by the per-element guards above.
+                    let engagementScanTimer = null;
+                    const engagementObserver = new MutationObserver(() => {
+                        if (engagementScanTimer !== null) { return; }
+                        engagementScanTimer = setTimeout(() => {
+                            engagementScanTimer = null;
+                            hideAllEngagementPanels();
+                        }, 0);
+                    });
+                    engagementObserver.observe(document.documentElement, {
+                        childList: true, subtree: true, attributes: false
                     });
                 })();
                 """;
@@ -1338,33 +2057,9 @@ namespace JokerDBDTracker
                                 height: 100vh !important;
                             }
 
-                            #movie_player [class*="watch-comments" i],
-                            #movie_player [class*="comments-panel" i],
-                            #movie_player [class*="comment-panel" i],
-                            #movie_player [class*="chat-panel" i],
-                            #movie_player [class*="engagement-panel" i],
-                            #movie_player [id*="watch-comments" i],
-                            #movie_player [id*="comments-panel" i],
-                            #movie_player [id*="chat-panel" i],
-                            #movie_player [id*="engagement-panel" i],
-                            #movie_player [data-panel-target-id],
-                            #movie_player [data-panel-id] {
-                                display: none !important;
-                                visibility: hidden !important;
-                                pointer-events: none !important;
-                                width: 0 !important;
-                                min-width: 0 !important;
-                                max-width: 0 !important;
-                                flex: 0 0 0 !important;
-                                opacity: 0 !important;
-                            }
-
                             #secondary, #secondary-inner, #related,
-                            #below, #comments, ytd-comments,
                             ytd-watch-metadata, ytd-watch-info-text,
                             #description, #description-inline-expander, #description-inner,
-                            ytd-engagement-panel-section-list-renderer, #panels,
-                            #chat, #chat-container, ytd-live-chat-frame,
                             ytd-masthead, #masthead-container, #header,
                             #columns > :not(#primary) {
                                 display: none !important;
@@ -1373,64 +2068,30 @@ namespace JokerDBDTracker
                             }
 
                             .ytp-chrome-top,
+                            .ytp-gradient-top,
                             .ytp-title,
                             .ytp-title-link,
                             .ytp-title-channel,
                             .ytp-title-text,
                             .ytp-title-expanded-overlay,
                             .ytp-title-expanded-heading,
-                            .ytp-title-expanded-content {
+                            .ytp-title-expanded-content,
+                            .ytp-unmute,
+                            .ytp-bezel-text-wrapper,
+                            .ytp-endscreen-content,
+                            .ytp-ce-element,
+                            .ytp-pause-overlay {
+                                display: none !important;
+                                visibility: hidden !important;
                                 pointer-events: none !important;
+                                opacity: 0 !important;
                             }
 
-                            .ytp-right-controls .ytp-button[aria-label*="comment" i],
-                            .ytp-right-controls .ytp-button[title*="comment" i],
-                            .ytp-right-controls .ytp-button[aria-label*="комментар" i],
-                            .ytp-right-controls .ytp-button[title*="комментар" i],
-                            .ytp-right-controls .ytp-button[aria-label*="chat" i],
-                            .ytp-right-controls .ytp-button[title*="chat" i],
-                            .ytp-right-controls .ytp-button[aria-label*="чат" i],
-                            .ytp-right-controls .ytp-button[title*="чат" i] {
-                                display: none !important;
-                            }
                         `;
                         (document.head || document.documentElement).appendChild(style);
                     };
 
-                    const blockForeignWatchClick = (event) => {
-                        const target = event.target;
-                        if (!target || !target.closest) {
-                            return;
-                        }
-
-                        const link = target.closest('a[href]');
-                        if (!link) {
-                            return;
-                        }
-
-                        let url;
-                        try {
-                            url = new URL(link.href, location.origin);
-                        } catch {
-                            return;
-                        }
-
-                        if (!url.hostname.endsWith('youtube.com') || url.pathname !== '/watch') {
-                            return;
-                        }
-
-                        const clickedVideoId = url.searchParams.get('v');
-                        if (clickedVideoId && clickedVideoId !== expectedVideoId) {
-                            event.preventDefault();
-                            event.stopImmediatePropagation();
-                            event.stopPropagation();
-                        }
-                    };
-
                     ensureEarlyImmersiveStyle();
-                    document.addEventListener('click', blockForeignWatchClick, true);
-                    document.addEventListener('auxclick', blockForeignWatchClick, true);
-                    document.addEventListener('mousedown', blockForeignWatchClick, true);
                 })();
                 """;
         }
@@ -1600,6 +2261,33 @@ namespace JokerDBDTracker
             }
 
             var host = uri.Host.ToLowerInvariant();
+
+            // Allow all Twitch infrastructure when playing a Twitch stream.
+            if (_video.IsTwitchStream)
+            {
+                static bool HostMatches(string value, string expected) =>
+                    value == expected || value.EndsWith($".{expected}", StringComparison.Ordinal);
+
+                var isTwitchHost = HostMatches(host, "twitch.tv") ||
+                                   HostMatches(host, "ttvnw.net") ||
+                                   HostMatches(host, "twitchsvc.net") ||
+                                   HostMatches(host, "jtvnw.net") ||
+                                   HostMatches(host, "twitchapps.com") ||
+                                   HostMatches(host, "passport.twitch.tv") ||
+                                   HostMatches(host, "id.twitch.tv") ||
+                                   HostMatches(host, "ext-twitch.tv") ||
+                                   HostMatches(host, "hcaptcha.com") ||
+                                   HostMatches(host, "recaptcha.net") ||
+                                   HostMatches(host, "amazon.com") ||
+                                   HostMatches(host, "amazonaws.com") ||
+                                   HostMatches(host, "cloudfront.net") ||
+                                   HostMatches(host, "gstatic.com") ||
+                                   HostMatches(host, "google.com") ||
+                                   HostMatches(host, "apple.com") ||
+                                   HostMatches(host, "icloud.com");
+                return isTwitchHost;
+            }
+
             var isGoogleHost = host == "google.com" ||
                                host.EndsWith(".google.com", StringComparison.Ordinal) ||
                                host.EndsWith(".gstatic.com", StringComparison.Ordinal) ||
@@ -1624,10 +2312,50 @@ namespace JokerDBDTracker
             {
                 var query = HttpUtility.ParseQueryString(uri.Query);
                 var videoId = query.Get("v");
-                return string.Equals(videoId, _video.VideoId, StringComparison.OrdinalIgnoreCase);
+                return !string.IsNullOrEmpty(videoId); // Allow any YouTube video; XP gating is done in playback layer
             }
 
-            return true;
+            // Allow embed player and YouTube internal API/resource paths.
+            if (uri.AbsolutePath.StartsWith("/embed/", StringComparison.OrdinalIgnoreCase) ||
+                uri.AbsolutePath.StartsWith("/api/", StringComparison.OrdinalIgnoreCase) ||
+                uri.AbsolutePath.StartsWith("/youtubei/", StringComparison.OrdinalIgnoreCase) ||
+                uri.AbsolutePath.StartsWith("/s/", StringComparison.OrdinalIgnoreCase) ||
+                uri.AbsolutePath.StartsWith("/generate_204", StringComparison.OrdinalIgnoreCase) ||
+                uri.AbsolutePath.StartsWith("/ptracking", StringComparison.OrdinalIgnoreCase) ||
+                uri.AbsolutePath.StartsWith("/pagead/", StringComparison.OrdinalIgnoreCase) ||
+                uri.AbsolutePath.StartsWith("/annotations_invideo", StringComparison.OrdinalIgnoreCase) ||
+                uri.AbsolutePath.StartsWith("/get_video_info", StringComparison.OrdinalIgnoreCase) ||
+                uri.AbsolutePath.StartsWith("/videoplayback", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            // Block home page, shorts, channel pages, search, etc. — only video watch pages allowed.
+            _ = ShowBlockedNavigationToastAsync();
+            return false;
+        }
+
+        private async Task ShowBlockedNavigationToastAsync()
+        {
+            if (BlockedNavToast is null || _isPlayerClosing)
+            {
+                return;
+            }
+
+            await Dispatcher.InvokeAsync(() =>
+            {
+                BlockedNavToast.Visibility = System.Windows.Visibility.Visible;
+            });
+
+            await Task.Delay(2000);
+
+            await Dispatcher.InvokeAsync(() =>
+            {
+                if (BlockedNavToast is not null)
+                {
+                    BlockedNavToast.Visibility = System.Windows.Visibility.Collapsed;
+                }
+            });
         }
 
 

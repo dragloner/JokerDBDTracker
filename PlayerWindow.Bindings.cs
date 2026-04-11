@@ -1,4 +1,5 @@
-﻿﻿using System.IO;
+﻿﻿using System.Globalization;
+using System.IO;
 using System.Windows.Media;
 using System.Windows;
 using System.Windows.Controls;
@@ -30,7 +31,7 @@ namespace JokerDBDTracker
         {
             MarkUserInteraction();
             var key = e.Key == Key.System ? e.SystemKey : e.Key;
-            if (ShouldBypassPlayerKeyHandlingBecauseTyping())
+            if (ShouldBypassPlayerKeyHandling())
             {
                 return;
             }
@@ -69,7 +70,7 @@ namespace JokerDBDTracker
                 return;
             }
 
-            if (ShouldBypassPlayerKeyHandlingBecauseTyping())
+            if (ShouldBypassPlayerKeyHandling())
             {
                 UnregisterGlobalHotkeys();
                 return;
@@ -137,7 +138,7 @@ namespace JokerDBDTracker
                 return false;
             }
 
-            if (ShouldBypassPlayerKeyHandlingBecauseTyping())
+            if (ShouldBypassPlayerKeyHandling())
             {
                 return false;
             }
@@ -149,6 +150,12 @@ namespace JokerDBDTracker
 
             if (TryHandleEffectsPanelToggleKey(key))
             {
+                return true;
+            }
+
+            if (key == Key.M)
+            {
+                RequestTimecodeCapture();
                 return true;
             }
 
@@ -265,6 +272,26 @@ namespace JokerDBDTracker
             return false;
         }
 
+        private bool ShouldBypassPlayerKeyHandling()
+        {
+            if (_timecodePopupVisible)
+            {
+                return true;
+            }
+
+            if (ShouldBypassPlayerKeyHandlingBecauseTyping())
+            {
+                return true;
+            }
+
+            if (_video.IsTwitchStream && _isWebViewTextInputActive)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
         private static Key ReadConfiguredKey(string configuredValue, Key fallback)
         {
             if (!string.IsNullOrWhiteSpace(configuredValue) &&
@@ -280,9 +307,25 @@ namespace JokerDBDTracker
             try
             {
                 var spamMode = _appSettings.SoundSpamMode;
+
+                if (_appSettings.ApplyEqToSoundEffects && Player?.CoreWebView2 is not null)
+                {
+                    var audioResourceUri = ResolveSoundEffectResourceUri(kind);
+                    if (audioResourceUri is null)
+                    {
+                        ReportSoundPlaybackFailure("Sound asset not found.");
+                        return;
+                    }
+
+                    var sfxParams = BuildCurrentSoundEffectAudioParams();
+                    _ = PlaySoundEffectViaWebViewAsync(kind, audioResourceUri, spamMode, sfxParams);
+                    NotifyWtSoundEffect(kind.ToString());
+                    return;
+                }
+
+                // Fallback: MediaPlayer path (no EQ).
                 if (!spamMode)
                 {
-                    // Toggle mode: pressing again stops the sound.
                     if (StopSoundEffect(kind))
                     {
                         return;
@@ -290,26 +333,361 @@ namespace JokerDBDTracker
                 }
                 else
                 {
-                    // Spam mode: allow up to 8 simultaneous sounds.
                     if (_activeSoundPlayers.Count >= 8)
                     {
                         return;
                     }
                 }
 
-                var audioResourceUri = ResolveSoundEffectResourceUri(kind);
-                if (audioResourceUri is null)
+                var uri = ResolveSoundEffectResourceUri(kind);
+                if (uri is null)
                 {
                     ReportSoundPlaybackFailure("Sound asset not found.");
                     return;
                 }
 
-                PlayAudioFile(kind, audioResourceUri, spamMode);
+                PlayAudioFile(kind, uri, spamMode);
                 NotifyWtSoundEffect(kind.ToString());
             }
             catch (Exception ex)
             {
                 ReportSoundPlaybackFailure(ex.Message);
+            }
+        }
+
+        private sealed class SoundEffectAudioParams
+        {
+            public double EqLowDb { get; init; }
+            public double EqMidDb { get; init; }
+            public double EqHighDb { get; init; }
+            public double VolumeBoost { get; init; }
+            public double PitchSemitones { get; init; }
+            public double Reverb { get; init; }
+            public double Echo { get; init; }
+            public double Distortion { get; init; }
+            public double Wobble { get; init; }
+        }
+
+        private SoundEffectAudioParams BuildCurrentSoundEffectAudioParams()
+        {
+            return new SoundEffectAudioParams
+            {
+                EqLowDb = AudioEqLowDbSlider.Value,
+                EqMidDb = AudioEqMidDbSlider.Value,
+                EqHighDb = AudioEqHighDbSlider.Value,
+                VolumeBoost = AudioVolumeBoostSlider.Value,
+                PitchSemitones = AudioPitchSemitonesSlider.Value,
+                Reverb = AudioReverbStrengthSlider.Value,
+                Echo = AudioEchoStrengthSlider.Value,
+                Distortion = AudioDistortionStrengthSlider.Value,
+                Wobble = AudioWobbleStrengthSlider.Value
+            };
+        }
+
+        private async Task SyncSoundEffectsAudioParamsAsync(SoundEffectAudioParams p)
+        {
+            try
+            {
+                if (Player?.CoreWebView2 is null || _isPlayerClosing)
+                {
+                    return;
+                }
+
+                string F(double v) => v.ToString("F4", CultureInfo.InvariantCulture);
+                var script = $$"""
+                    (() => {
+                        try {
+                            window.__jdbdSfx = window.__jdbdSfx || { playing: {}, count: 0, currentParams: null };
+                            const sfx = window.__jdbdSfx;
+                            sfx.currentParams = {
+                                EqLowDb: {{F(p.EqLowDb)}},
+                                EqMidDb: {{F(p.EqMidDb)}},
+                                EqHighDb: {{F(p.EqHighDb)}},
+                                VolumeBoost: {{F(p.VolumeBoost)}},
+                                PitchSemitones: {{F(p.PitchSemitones)}},
+                                Reverb: {{F(p.Reverb)}},
+                                Echo: {{F(p.Echo)}},
+                                Distortion: {{F(p.Distortion)}},
+                                Wobble: {{F(p.Wobble)}}
+                            };
+
+                            for (const entry of Object.values(sfx.playing || {})) {
+                                try {
+                                    entry?.applyParams?.(sfx.currentParams);
+                                } catch {
+                                    // no-op
+                                }
+                            }
+                        } catch {
+                            // no-op
+                        }
+                    })();
+                    """;
+
+                await Player.CoreWebView2.ExecuteScriptAsync(script);
+            }
+            catch
+            {
+                // Best-effort realtime sync.
+            }
+        }
+
+        private async Task PlaySoundEffectViaWebViewAsync(
+            SoundEffectKind kind,
+            Uri resourceUri,
+            bool spamMode,
+            SoundEffectAudioParams p)
+        {
+            try
+            {
+                if (Player?.CoreWebView2 is null || _isPlayerClosing)
+                {
+                    return;
+                }
+
+                var filePath = resourceUri.LocalPath;
+                if (!_soundEffectBase64Cache.TryGetValue(filePath, out var b64))
+                {
+                    var bytes = await File.ReadAllBytesAsync(filePath);
+                    b64 = Convert.ToBase64String(bytes);
+                    _soundEffectBase64Cache[filePath] = b64;
+                }
+
+                var kindStr = kind.ToString();
+                var toggleJs = spamMode ? "false" : "true";
+
+                // All numeric parameters as InvariantCulture strings for JS injection.
+                string F(double v) => v.ToString("F4", CultureInfo.InvariantCulture);
+
+                var script = $$"""
+                    (async () => {
+                        try {
+                            window.__jdbdSfx = window.__jdbdSfx || { playing: {}, count: 0, currentParams: null };
+                            const sfx = window.__jdbdSfx;
+                            const kind = '{{kindStr}}';
+                            const toggleMode = {{toggleJs}};
+                            const stopEntriesForKind = () => {
+                                let stoppedAny = false;
+                                for (const [entryKey, entry] of Object.entries(sfx.playing || {})) {
+                                    if (entry?.kind !== kind) {
+                                        continue;
+                                    }
+
+                                    try { entry.source?.stop?.(); } catch {}
+                                    try { entry.ctx?.close?.(); } catch {}
+                                    delete sfx.playing[entryKey];
+                                    sfx.count = Math.max(0, sfx.count - 1);
+                                    stoppedAny = true;
+                                }
+
+                                return stoppedAny;
+                            };
+
+                            if (toggleMode && stopEntriesForKind()) {
+                                return;
+                            }
+
+                            if (!toggleMode && sfx.count >= 8) { return; }
+
+                            const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+                            if (!AudioContextCtor) { return; }
+                            const ctx = new AudioContextCtor();
+                            if (ctx.state === 'suspended') { await ctx.resume(); }
+
+                            const binary = atob('{{b64}}');
+                            const pcm = new Uint8Array(binary.length);
+                            for (let i = 0; i < binary.length; i++) { pcm[i] = binary.charCodeAt(i); }
+                            const buf = await ctx.decodeAudioData(pcm.buffer);
+
+                            const src = ctx.createBufferSource();
+                            src.buffer = buf;
+
+                            const buildDistortionCurve = (strength) => {
+                                const clamped = Math.max(0, Math.min(2, Number(strength) || 0));
+                                if (clamped <= 0.001) {
+                                    return null;
+                                }
+
+                                const samples = 2048;
+                                const curve = new Float32Array(samples);
+                                const amount = 12 + clamped * 700;
+                                const deg = Math.PI / 180;
+                                for (let i = 0; i < samples; i++) {
+                                    const x = (i * 2) / (samples - 1) - 1;
+                                    curve[i] = ((3 + amount) * x * 20 * deg) / (Math.PI + amount * Math.abs(x));
+                                }
+
+                                return curve;
+                            };
+
+                            const buildReverbImpulse = (strength) => {
+                                const clamped = Math.max(0, Math.min(2, Number(strength) || 0));
+                                if (clamped <= 0.001) {
+                                    return null;
+                                }
+
+                                const sr = ctx.sampleRate || 48000;
+                                const seconds = 0.45 + clamped * 4.0;
+                                const decay = 1.8 + clamped * 5.0;
+                                const len = Math.max(1, Math.floor(sr * seconds));
+                                const impulse = ctx.createBuffer(2, len, sr);
+                                for (let ch = 0; ch < impulse.numberOfChannels; ch++) {
+                                    const data = impulse.getChannelData(ch);
+                                    for (let i = 0; i < len; i++) {
+                                        const t = i / (len - 1 || 1);
+                                        const stereoShape = ch === 0 ? 0.92 + (1 - t) * 0.08 : 0.85 + t * 0.15;
+                                        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - t, decay) * stereoShape;
+                                    }
+                                }
+
+                                return impulse;
+                            };
+
+                            // Build full audio graph matching the video player chain.
+                            const inputGain  = ctx.createGain();
+                            const eqLow      = ctx.createBiquadFilter();
+                            const eqMid      = ctx.createBiquadFilter();
+                            const eqHigh     = ctx.createBiquadFilter();
+                            const distNode   = ctx.createWaveShaper();
+                            const dryGain    = ctx.createGain();
+                            const delayNode  = ctx.createDelay(1.5);
+                            const delayFb    = ctx.createGain();
+                            const echoWet    = ctx.createGain();
+                            const convolver  = ctx.createConvolver();
+                            const reverbWet  = ctx.createGain();
+                            const wobbleDelay = ctx.createDelay(0.05);
+                            const wobbleLfoOsc = ctx.createOscillator();
+                            const wobbleLfoGain = ctx.createGain();
+                            const wobbleWet  = ctx.createGain();
+                            const outGain    = ctx.createGain();
+
+                            eqLow.type = 'lowshelf';
+                            eqLow.frequency.value = 180;
+                            eqMid.type = 'peaking';
+                            eqMid.frequency.value = 950;
+                            eqMid.Q.value = 0.9;
+                            eqHigh.type = 'highshelf';
+                            eqHigh.frequency.value = 3600;
+
+                            wobbleDelay.delayTime.value = 0.008;
+                            wobbleWet.gain.value = 0;
+                            wobbleLfoOsc.type = 'sine';
+                            wobbleLfoOsc.frequency.value = 1.8;
+                            wobbleLfoGain.gain.value = 0;
+                            wobbleLfoOsc.connect(wobbleLfoGain);
+                            wobbleLfoGain.connect(wobbleDelay.delayTime);
+                            wobbleLfoOsc.start();
+
+                            dryGain.gain.value = 1;
+                            outGain.gain.value = 1;
+
+                            // Wire the graph: src → inputGain → EQ chain → distortion
+                            src.connect(inputGain);
+                            inputGain.connect(eqLow);
+                            eqLow.connect(eqMid);
+                            eqMid.connect(eqHigh);
+                            eqHigh.connect(distNode);
+                            // dry path
+                            distNode.connect(dryGain);
+                            dryGain.connect(outGain);
+                            // echo path
+                            distNode.connect(delayNode);
+                            delayNode.connect(echoWet);
+                            echoWet.connect(outGain);
+                            delayNode.connect(delayFb);
+                            delayFb.connect(delayNode);
+                            // reverb path
+                            distNode.connect(convolver);
+                            convolver.connect(reverbWet);
+                            reverbWet.connect(outGain);
+                            // wobble path
+                            distNode.connect(wobbleDelay);
+                            wobbleDelay.connect(wobbleWet);
+                            wobbleWet.connect(outGain);
+                            // output
+                            outGain.connect(ctx.destination);
+
+                            const applyParams = (params) => {
+                                const current = params || sfx.currentParams || {
+                                    EqLowDb: {{F(p.EqLowDb)}},
+                                    EqMidDb: {{F(p.EqMidDb)}},
+                                    EqHighDb: {{F(p.EqHighDb)}},
+                                    VolumeBoost: {{F(p.VolumeBoost)}},
+                                    PitchSemitones: {{F(p.PitchSemitones)}},
+                                    Reverb: {{F(p.Reverb)}},
+                                    Echo: {{F(p.Echo)}},
+                                    Distortion: {{F(p.Distortion)}},
+                                    Wobble: {{F(p.Wobble)}}
+                                };
+
+                                const pitchSemitones = Math.max(-24, Math.min(24, Number(current.PitchSemitones) || 0));
+                                src.playbackRate.value = Math.abs(pitchSemitones) > 0.05
+                                    ? Math.pow(2, pitchSemitones / 12)
+                                    : 1;
+
+                                const volBoost = Math.max(0, Math.min(3, Number(current.VolumeBoost) || 0));
+                                inputGain.gain.value = 1 + volBoost * 2.5;
+                                eqLow.gain.value = Math.max(-30, Math.min(30, Number(current.EqLowDb) || 0));
+                                eqMid.gain.value = Math.max(-30, Math.min(30, Number(current.EqMidDb) || 0));
+                                eqHigh.gain.value = Math.max(-30, Math.min(30, Number(current.EqHighDb) || 0));
+
+                                const distStrength = Math.max(0, Math.min(2, Number(current.Distortion) || 0));
+                                distNode.curve = buildDistortionCurve(distStrength);
+                                distNode.oversample = distStrength > 0.001 ? '2x' : 'none';
+
+                                const echoStrength = Math.max(0, Math.min(2, Number(current.Echo) || 0));
+                                delayNode.delayTime.value = 0.12 + echoStrength * 0.44;
+                                delayFb.gain.value = echoStrength > 0.001 ? Math.min(0.97, 0.06 + echoStrength * 0.43) : 0;
+                                echoWet.gain.value = echoStrength > 0.001 ? (0.04 + echoStrength * 0.38) : 0;
+
+                                const reverbStrength = Math.max(0, Math.min(2, Number(current.Reverb) || 0));
+                                convolver.buffer = buildReverbImpulse(reverbStrength);
+                                reverbWet.gain.value = reverbStrength > 0.001 ? (0.05 + reverbStrength * 0.44) : 0;
+
+                                const wobbleStrength = Math.max(0, Math.min(2, Number(current.Wobble) || 0));
+                                const wobbleBaseDelay = wobbleStrength > 0.001 ? (0.006 + wobbleStrength * 0.003) : 0.008;
+                                wobbleDelay.delayTime.value = wobbleBaseDelay;
+                                wobbleWet.gain.value = wobbleStrength > 0.001 ? (0.08 + wobbleStrength * 0.18) : 0;
+                                wobbleLfoOsc.frequency.value = wobbleStrength > 0.001 ? (1.2 + wobbleStrength * 2.4) : 1.8;
+                                wobbleLfoGain.gain.value = wobbleStrength > 0.001 ? (0.0008 + wobbleStrength * 0.0016) : 0;
+                            };
+
+                            sfx.currentParams = sfx.currentParams || {
+                                EqLowDb: {{F(p.EqLowDb)}},
+                                EqMidDb: {{F(p.EqMidDb)}},
+                                EqHighDb: {{F(p.EqHighDb)}},
+                                VolumeBoost: {{F(p.VolumeBoost)}},
+                                PitchSemitones: {{F(p.PitchSemitones)}},
+                                Reverb: {{F(p.Reverb)}},
+                                Echo: {{F(p.Echo)}},
+                                Distortion: {{F(p.Distortion)}},
+                                Wobble: {{F(p.Wobble)}}
+                            };
+                            applyParams(sfx.currentParams);
+
+                            const entryKey = toggleMode
+                                ? kind
+                                : `${kind}:${Date.now()}:${Math.random().toString(16).slice(2)}`;
+                            sfx.playing[entryKey] = { kind, ctx, source: src, applyParams };
+                            sfx.count++;
+
+                            src.start();
+                            src.onended = () => {
+                                try { ctx.close(); } catch {}
+                                if (sfx.playing[entryKey] && sfx.playing[entryKey].ctx === ctx) {
+                                    delete sfx.playing[entryKey];
+                                }
+                                sfx.count = Math.max(0, sfx.count - 1);
+                            };
+                        } catch {}
+                    })();
+                    """;
+
+                await Player.CoreWebView2.ExecuteScriptAsync(script);
+            }
+            catch
+            {
+                // No-op: sound playback via WebView is best-effort.
             }
         }
 
@@ -459,6 +837,19 @@ namespace JokerDBDTracker
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
             });
+        }
+
+        private async void PlayerSfxSpamToggle_Changed(object sender, System.Windows.RoutedEventArgs e)
+        {
+            _appSettings.SoundSpamMode = PlayerSfxSpamToggle?.IsChecked == true;
+            try
+            {
+                await _settingsService.SaveAsync(_appSettings);
+            }
+            catch
+            {
+                // Best-effort save.
+            }
         }
 
         private void StopAllSoundEffects()

@@ -20,8 +20,23 @@ namespace JokerDBDTracker
             FavoritesNavButton.Content = T("Избранное", "Favorites");
             ProfileNavButton.Content = T("Профиль", "Profile");
             SettingsNavButton.Content = T("Настройки", "Settings");
-            HomeOverviewHeaderText.Text = T("Обзор главной", "Home overview");
+            HomeOverviewHeaderText.Text = string.Empty;
             RecommendationsHeaderText.Text = T("Рекомендации", "Recommendations");
+
+            // Stats bar labels
+            StatsStreakLabel.Text = T("Серия", "Streak");
+            StatsTotalHoursLabel.Text = T("Часов просмотра", "Watch hours");
+            StatsStreamCountLabel.Text = T("Стримов в каталоге", "Streams in catalog");
+
+            // Continue Watching / Queue
+            ContinueWatchingHeaderText.Text = T("Продолжить просмотр", "Continue Watching");
+            WatchQueueHeaderText.Text = T("Очередь", "Queue");
+            PlayQueueButton.Content = T("▶ Смотреть всё", "▶ Play all");
+
+            // Category filter chips
+            FilterAllButton.Content = T("Все", "All");
+            FilterFavoritesButton.Content = T("★ Избранное", "★ Favorites");
+            RandomStreamButton.Content = T("🔀 Случайный", "🔀 Random");
 
             if (TopTabControl.Items.Count >= 6)
             {
@@ -31,6 +46,11 @@ namespace JokerDBDTracker
                 ((TabItem)TopTabControl.Items[3]).Header = T("Задания", "Quests");
                 ((TabItem)TopTabControl.Items[4]).Header = T("Настройки", "Settings");
                 ((TabItem)TopTabControl.Items[5]).Header = "Watch Together";
+            }
+
+            if (TwitchWatchButtonText is not null)
+            {
+                TwitchWatchButtonText.Text = T("Открыть Twitch", "Open Twitch");
             }
 
             if (SearchPlaceholderText is not null)
@@ -61,11 +81,15 @@ namespace JokerDBDTracker
             SettingsSubtitleText.Text = T("Персонализация и поведение приложения", "Personalization and app behavior");
             AutoStartLabelText.Text = T("Автозапуск", "Autostart");
             AutoStartCheckBox.Content = T("Запускать вместе с Windows", "Launch with Windows");
+            if (AutoCheckUpdatesCheckBox is not null)
+            {
+                AutoCheckUpdatesCheckBox.Content = T("Проверять обновления при запуске", "Check for updates on startup");
+            }
             LanguageLabelText.Text = T("Язык", "Language");
             UiScaleLabelText.Text = T("Масштаб UI", "UI scale");
             AnimationsEnabledCheckBox.Content = T("Плавные анимации интерфейса", "Smooth UI animations");
             LoggingEnabledCheckBox.Content = T("Включить логирование ошибок", "Enable error logging");
-            LogViewerHeaderText.Text = T("Логи приложения", "Application logs");
+            LogViewerHeaderText.Text = T("Лог событий", "Event log");
             LogViewerDescText.Text = T(
                 "Последние события приложения в реальном времени.",
                 "Recent app events in real time.");
@@ -77,16 +101,25 @@ namespace JokerDBDTracker
             SoundModeDescText.Text = T(
                 "Выкл — повторное нажатие останавливает звук. Вкл — спам до 8 звуков одновременно.",
                 "Off — pressing again stops the sound. On — spam up to 8 sounds simultaneously.");
-            SoundSpamModeToggle.Content = T("Режим спама", "Spam mode");
+            SoundSpamModeToggle.Content = string.Empty;
+            EqForSoundFxHeaderText.Text = T("Эквалайзер для звуковых эффектов", "Equalizer for sound effects");
+            EqForSoundFxDescText.Text = T(
+                "Применять настройки эквалайзера плеера к звуковым эффектам.",
+                "Apply player equalizer settings to sound effects.");
+            ApplyEqToSoundEffectsCheckBox.Content = string.Empty;
             FullscreenBehaviorLabelText.Text = T("Поведение fullscreen", "Fullscreen behavior");
             FullscreenBehaviorDescriptionText.Text = T(
                 "Auto: при fullscreen внутри YouTube окно плеера тоже становится fullscreen. Windowed: окно остается обычным.",
                 "Auto: when YouTube enters fullscreen, player window follows. Windowed: keep normal window mode.");
-            CacheLabelText.Text = T("Кеш", "Cache");
+            CacheLabelText.Text = T("Данные и кеш", "Data & cache");
             CacheDescriptionText.Text = T(
-                "Очищает WebView2 профиль (YouTube данные) и локальные временные обновления.",
-                "Clears WebView2 profile (YouTube data) and local temporary update files.");
+                "Очищает WebView2 профиль (YouTube данные) и временные обновления.",
+                "Clears WebView2 profile (YouTube data) and temporary update files.");
             ResetCacheButton.Content = T("Сбросить кеш", "Reset cache");
+            if (OpenLogFolderButton is not null)
+            {
+                OpenLogFolderButton.Content = T("Открыть логи", "Open logs");
+            }
             BindsSectionTitleText.Text = T("Бинды плеера", "Player binds");
             BindsSectionDescriptionText.Text = T(
                 "Клавиши для панели эффектов, всех 15 эффектов и саунд-эффектов.",
@@ -99,9 +132,26 @@ namespace JokerDBDTracker
             LaughBindLabelText.Text = T("Звук Смех", "Laugh sound");
             PsiBindLabelText.Text = T("Звук Пси-излучение", "Psi radiation sound");
             RespectBindLabelText.Text = T("Звук +Respect", "+Respect sound");
-            EffectBindsDescriptionText.Text = T(
-                "Каждый эффект (1-15) можно назначить на любую клавишу.",
-                "Each effect (1-15) can be assigned to any key.");
+            if (SadBindLabelText is not null)
+            {
+                SadBindLabelText.Text = T("Звук Грусти", "Sadness sound");
+            }
+            EffectBindsDescriptionText.Text = T("Бинды эффектов (1–15)", "Effect binds (1–15)");
+            if (EffectBind1LabelText  is not null) EffectBind1LabelText.Text  = T("1. Без цвета",               "1. Grayscale");
+            if (EffectBind2LabelText  is not null) EffectBind2LabelText.Text  = T("2. Сепия",                   "2. Sepia");
+            if (EffectBind3LabelText  is not null) EffectBind3LabelText.Text  = T("3. Инверсия",                "3. Invert");
+            if (EffectBind4LabelText  is not null) EffectBind4LabelText.Text  = T("4. Высокий контраст",        "4. High contrast");
+            if (EffectBind5LabelText  is not null) EffectBind5LabelText.Text  = T("5. Затемнение",              "5. Darkness");
+            if (EffectBind6LabelText  is not null) EffectBind6LabelText.Text  = T("6. Насыщенность",            "6. Saturation");
+            if (EffectBind7LabelText  is not null) EffectBind7LabelText.Text  = T("7. Сдвиг оттенка",          "7. Hue shift");
+            if (EffectBind8LabelText  is not null) EffectBind8LabelText.Text  = T("8. Размытие",                "8. Blur");
+            if (EffectBind9LabelText  is not null) EffectBind9LabelText.Text  = T("9. Фишай",                   "9. Fisheye");
+            if (EffectBind10LabelText is not null) EffectBind10LabelText.Text = T("10. VHS сканлайн",           "10. VHS scanline");
+            if (EffectBind11LabelText is not null) EffectBind11LabelText.Text = T("11. Тряска кадра",           "11. Screen shake");
+            if (EffectBind12LabelText is not null) EffectBind12LabelText.Text = T("12. Горизонтальное зеркало", "12. H. mirror");
+            if (EffectBind13LabelText is not null) EffectBind13LabelText.Text = T("13. JPEG-помехи",            "13. JPEG damage");
+            if (EffectBind14LabelText is not null) EffectBind14LabelText.Text = T("14. Холодный тон",           "14. Cold tone");
+            if (EffectBind15LabelText is not null) EffectBind15LabelText.Text = T("15. Вертикальное зеркало",   "15. V. mirror");
             ResetBindsButton.Content = T("Сбросить бинды по умолчанию", "Reset binds to defaults");
 
             if (LanguageComboBox.Items.Count >= 2)
@@ -133,6 +183,18 @@ namespace JokerDBDTracker
             BackToProfileButton.Content = T("Назад в профиль", "Back to profile");
 
             LoadingTitleText.Text = T("Загрузка приложения", "Loading app");
+
+            if (FavoritesClipsHeaderText is not null)
+            {
+                FavoritesClipsHeaderText.Text = T("Таймкоды", "Timecodes");
+            }
+
+            if (FavoritesClipsEmptyText is not null)
+            {
+                FavoritesClipsEmptyText.Text = T(
+                    "Нет сохранённых клипов. Открой видео и нажми M.",
+                    "No saved clips. Open a video and press M.");
+            }
 
             WatchTogetherNavButton.Content = "Watch Together";
             WatchTogetherHeaderText.Text = "Watch Together";

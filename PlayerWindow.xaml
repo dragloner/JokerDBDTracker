@@ -332,7 +332,9 @@
                                 SnapsToDevicePixels="True">
                             <Border Padding="{TemplateBinding Padding}">
                                 <ScrollViewer x:Name="PART_ContentHost"
-                                              Background="Transparent"/>
+                                              Background="Transparent"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              SnapsToDevicePixels="True"/>
                             </Border>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -349,6 +351,19 @@
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
+        </Style>
+
+        <Style x:Key="TimecodePopupTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+            <Setter Property="MinHeight" Value="56"/>
+            <Setter Property="MinWidth" Value="0"/>
+            <Setter Property="Padding" Value="16,12"/>
+            <Setter Property="FontSize" Value="17"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="TextWrapping" Value="NoWrap"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="TextAlignment" Value="Left"/>
         </Style>
 
         <Style x:Key="PlayerPanelTabControlStyle" TargetType="TabControl">
@@ -1063,6 +1078,128 @@
                             </Border>
                         </Border>
                     </Border>
+
+                    <!-- Non-JokerDBD content banner: no XP or quest progress -->
+                    <Border x:Name="NonJokerBanner"
+                            Panel.ZIndex="25"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Top"
+                            Background="#D0101820"
+                            BorderBrush="#33557788"
+                            BorderThickness="0,0,0,1"
+                            Padding="12,7"
+                            Visibility="Collapsed"
+                            IsHitTestVisible="False">
+                        <TextBlock x:Name="NonJokerBannerText"
+                                   Text="⚠ Стороннее видео — XP и задания не начисляются"
+                                   Foreground="#FFCC55"
+                                   FontSize="13"
+                                   FontWeight="SemiBold"
+                                   HorizontalAlignment="Center"
+                                   TextWrapping="NoWrap"
+                                   TextOptions.TextFormattingMode="Display"/>
+                    </Border>
+
+                    <!-- Blocked navigation toast -->
+                    <Border x:Name="BlockedNavToast"
+                            Panel.ZIndex="30"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Bottom"
+                            Margin="0,0,0,48"
+                            Padding="20,12"
+                            Background="#E0152030"
+                            BorderBrush="#7AAED4"
+                            BorderThickness="1"
+                            CornerRadius="12"
+                            Visibility="Collapsed"
+                            IsHitTestVisible="False">
+                        <TextBlock x:Name="BlockedNavToastText"
+                                   Text="🔒 Только видео YouTube"
+                                   Foreground="#EDF7FF"
+                                   FontSize="18"
+                                   FontWeight="Bold"
+                                   TextAlignment="Center"/>
+                    </Border>
+
+                    <!-- Timecode save popup (shown on hotkey M) -->
+                    <Popup x:Name="TimecodePopup"
+                           PlacementTarget="{Binding ElementName=PlayerHostBorder}"
+                           Placement="Center"
+                           AllowsTransparency="True"
+                           StaysOpen="True"
+                           PopupAnimation="Fade"
+                           IsOpen="False">
+                        <Border MinWidth="560"
+                                MaxWidth="640"
+                                Padding="20,18"
+                                Background="#EF0F1D2B"
+                                BorderBrush="#6BAFD5"
+                                BorderThickness="1"
+                                CornerRadius="14">
+                        <Border.Effect>
+                            <DropShadowEffect BlurRadius="18" ShadowDepth="0" Color="#05090D" Opacity="0.55"/>
+                        </Border.Effect>
+                        <StackPanel>
+                            <TextBlock x:Name="TimecodePopupHeaderText"
+                                       Text="💾 Сохранить клип"
+                                       Foreground="#EDF7FF"
+                                       FontSize="20"
+                                       FontWeight="Bold"
+                                       Margin="0,0,0,4"/>
+                            <TextBlock x:Name="TimecodePopupHintText"
+                                       Text="Сохрани важный момент и дай ему понятное название."
+                                       Foreground="#8FC4E4"
+                                       FontSize="12"
+                                       TextWrapping="Wrap"
+                                       Margin="0,0,0,10"/>
+                            <TextBlock x:Name="TimecodePopupTimeText"
+                                       Text="00:00:00"
+                                       Foreground="#9CD0EE"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,12"/>
+                            <TextBlock x:Name="TimecodePopupLabelCaptionText"
+                                       Text="Название таймкода"
+                                       Foreground="#CFEAFF"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,6"/>
+                            <TextBox x:Name="TimecodePopupLabelBox"
+                                     Style="{StaticResource TimecodePopupTextBoxStyle}"
+                                     MaxLength="80"
+                                     Background="#D4172635"
+                                     BorderBrush="#5A85A1"
+                                     BorderThickness="1"
+                                     Foreground="#EDF7FF"
+                                     CaretBrush="#EDF7FF"
+                                     SelectionBrush="#5A9FD2"
+                                     SelectionOpacity="0.35"
+                                     VerticalContentAlignment="Center"
+                                     KeyDown="TimecodePopupLabelBox_KeyDown"
+                                     Tag="Название клипа (необязательно)"/>
+                            <Grid Margin="0,14,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Button x:Name="TimecodePopupSaveButton"
+                                        Grid.Column="0"
+                                        Style="{StaticResource EffectButtonStyle}"
+                                        Padding="14,8"
+                                        FontSize="14"
+                                        Content="💾 Сохранить"
+                                        Click="TimecodePopupSaveButton_Click"/>
+                                <Button x:Name="TimecodePopupCancelButton"
+                                        Grid.Column="2"
+                                        Style="{StaticResource PanelModeButtonStyle}"
+                                        Padding="14,8"
+                                        Content="Отмена"
+                                        Click="TimecodePopupCancelButton_Click"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                    </Popup>
                 </Grid>
             </Border>
 
@@ -1074,6 +1211,11 @@
                     BorderBrush="#4D728C"
                     BorderThickness="1"
                     CornerRadius="16">
+                <!-- BitmapCache: freezes panel as a GPU texture so WPF doesn't re-rasterize
+                     all the custom sliders/checkboxes on every frame — invalidates only on actual changes -->
+                <Border.CacheMode>
+                    <BitmapCache EnableClearType="False" SnapsToDevicePixels="False"/>
+                </Border.CacheMode>
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -1160,6 +1302,7 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -1208,6 +1351,44 @@
                                 HorizontalAlignment="Center"
                                 Content="5. Sadness Sound"
                                 Click="SadSoundButton_Click"/>
+
+                        <!-- SFX spam mode toggle (mirrors Settings panel) -->
+                        <Border Grid.Row="3"
+                                Grid.ColumnSpan="2"
+                                Margin="0,8,0,0"
+                                Padding="10,7"
+                                Background="#991B3048"
+                                BorderBrush="#33607A8A"
+                                BorderThickness="1"
+                                CornerRadius="10">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock x:Name="PlayerSfxSpamHeaderText"
+                                               Text="Режим спама звуков"
+                                               Foreground="#C8E2F5"
+                                               FontSize="12"
+                                               FontWeight="SemiBold"/>
+                                    <TextBlock x:Name="PlayerSfxSpamDescText"
+                                               Margin="0,2,0,0"
+                                               Text="Вкл: спам до 8 звуков. Выкл: стоп при повторном нажатии."
+                                               Foreground="#486A80"
+                                               FontSize="10"
+                                               TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <CheckBox x:Name="PlayerSfxSpamToggle"
+                                          Grid.Column="1"
+                                          Margin="10,0,0,0"
+                                          VerticalAlignment="Center"
+                                          Foreground="#C8E2F5"
+                                          FontSize="12"
+                                          Checked="PlayerSfxSpamToggle_Changed"
+                                          Unchecked="PlayerSfxSpamToggle_Changed"/>
+                            </Grid>
+                        </Border>
                     </Grid>
 
                     <TabControl x:Name="EffectsWorkspaceTabs"
@@ -1447,7 +1628,7 @@
                                             <ColumnDefinition Width="64"/>
                                         </Grid.ColumnDefinitions>
                                         <TextBlock x:Name="AudioFxVolumeLabelText" Text="Volume boost" VerticalAlignment="Center" Foreground="#DDF1FF" FontSize="14"/>
-                                        <Slider x:Name="AudioVolumeBoostSlider" Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="0" Maximum="1" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
+                                        <Slider x:Name="AudioVolumeBoostSlider" Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="0" Maximum="3" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
                                         <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CFEAFF" FontSize="14" Text="{Binding ElementName=AudioVolumeBoostSlider, Path=Value, StringFormat={}{0:0.00}}"/>
                                     </Grid>
 
@@ -1458,7 +1639,7 @@
                                             <ColumnDefinition Width="64"/>
                                         </Grid.ColumnDefinitions>
                                         <TextBlock x:Name="AudioFxEqLowLabelText" Text="EQ Low (dB)" VerticalAlignment="Center" Foreground="#DDF1FF" FontSize="14"/>
-                                        <Slider x:Name="AudioEqLowDbSlider" Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="-18" Maximum="18" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
+                                        <Slider x:Name="AudioEqLowDbSlider" Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="-30" Maximum="30" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
                                         <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CFEAFF" FontSize="14" Text="{Binding ElementName=AudioEqLowDbSlider, Path=Value, StringFormat={}{0:+0.0;-0.0;0.0}}"/>
                                     </Grid>
 
@@ -1469,7 +1650,7 @@
                                             <ColumnDefinition Width="64"/>
                                         </Grid.ColumnDefinitions>
                                         <TextBlock x:Name="AudioFxEqMidLabelText" Text="EQ Mid (dB)" VerticalAlignment="Center" Foreground="#DDF1FF" FontSize="14"/>
-                                        <Slider x:Name="AudioEqMidDbSlider" Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="-18" Maximum="18" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
+                                        <Slider x:Name="AudioEqMidDbSlider" Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="-30" Maximum="30" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
                                         <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CFEAFF" FontSize="14" Text="{Binding ElementName=AudioEqMidDbSlider, Path=Value, StringFormat={}{0:+0.0;-0.0;0.0}}"/>
                                     </Grid>
 
@@ -1480,7 +1661,7 @@
                                             <ColumnDefinition Width="64"/>
                                         </Grid.ColumnDefinitions>
                                         <TextBlock x:Name="AudioFxEqHighLabelText" Text="EQ High (dB)" VerticalAlignment="Center" Foreground="#DDF1FF" FontSize="14"/>
-                                        <Slider x:Name="AudioEqHighDbSlider" Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="-18" Maximum="18" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
+                                        <Slider x:Name="AudioEqHighDbSlider" Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="-30" Maximum="30" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
                                         <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CFEAFF" FontSize="14" Text="{Binding ElementName=AudioEqHighDbSlider, Path=Value, StringFormat={}{0:+0.0;-0.0;0.0}}"/>
                                     </Grid>
 
@@ -1491,7 +1672,7 @@
                                             <ColumnDefinition Width="64"/>
                                         </Grid.ColumnDefinitions>
                                         <TextBlock x:Name="AudioFxPitchLabelText" Text="Pitch (semitones)" VerticalAlignment="Center" Foreground="#DDF1FF" FontSize="14"/>
-                                        <Slider x:Name="AudioPitchSemitonesSlider" Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="-8" Maximum="8" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
+                                        <Slider x:Name="AudioPitchSemitonesSlider" Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="-24" Maximum="24" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
                                         <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CFEAFF" FontSize="14" Text="{Binding ElementName=AudioPitchSemitonesSlider, Path=Value, StringFormat={}{0:+0.0;-0.0;0.0}}"/>
                                     </Grid>
 
@@ -1502,7 +1683,7 @@
                                             <ColumnDefinition Width="64"/>
                                         </Grid.ColumnDefinitions>
                                         <TextBlock x:Name="AudioFxReverbLabelText" Text="Reverb" VerticalAlignment="Center" Foreground="#DDF1FF" FontSize="14"/>
-                                        <Slider x:Name="AudioReverbStrengthSlider" Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="0" Maximum="1" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
+                                        <Slider x:Name="AudioReverbStrengthSlider" Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="0" Maximum="2" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
                                         <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CFEAFF" FontSize="14" Text="{Binding ElementName=AudioReverbStrengthSlider, Path=Value, StringFormat={}{0:0.00}}"/>
                                     </Grid>
 
@@ -1513,8 +1694,19 @@
                                             <ColumnDefinition Width="64"/>
                                         </Grid.ColumnDefinitions>
                                         <TextBlock x:Name="AudioFxEchoLabelText" Text="Echo" VerticalAlignment="Center" Foreground="#DDF1FF" FontSize="14"/>
-                                        <Slider x:Name="AudioEchoStrengthSlider" Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="0" Maximum="1" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
+                                        <Slider x:Name="AudioEchoStrengthSlider" Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="0" Maximum="2" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
                                         <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CFEAFF" FontSize="14" Text="{Binding ElementName=AudioEchoStrengthSlider, Path=Value, StringFormat={}{0:0.00}}"/>
+                                    </Grid>
+
+                                    <Grid Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="140"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="64"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock x:Name="AudioFxDistortionLabelText" Text="Distortion" VerticalAlignment="Center" Foreground="#DDF1FF" FontSize="14"/>
+                                        <Slider x:Name="AudioDistortionStrengthSlider" Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="0" Maximum="2" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
+                                        <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CFEAFF" FontSize="14" Text="{Binding ElementName=AudioDistortionStrengthSlider, Path=Value, StringFormat={}{0:0.00}}"/>
                                     </Grid>
 
                                     <Grid>
@@ -1523,9 +1715,9 @@
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="64"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock x:Name="AudioFxDistortionLabelText" Text="Distortion" VerticalAlignment="Center" Foreground="#DDF1FF" FontSize="14"/>
-                                        <Slider x:Name="AudioDistortionStrengthSlider" Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="0" Maximum="1" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
-                                        <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CFEAFF" FontSize="14" Text="{Binding ElementName=AudioDistortionStrengthSlider, Path=Value, StringFormat={}{0:0.00}}"/>
+                                        <TextBlock x:Name="AudioFxWobbleLabelText" Text="Wobble" VerticalAlignment="Center" Foreground="#DDF1FF" FontSize="14"/>
+                                        <Slider x:Name="AudioWobbleStrengthSlider" Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="0" Maximum="2" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
+                                        <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CFEAFF" FontSize="14" Text="{Binding ElementName=AudioWobbleStrengthSlider, Path=Value, StringFormat={}{0:0.00}}"/>
                                     </Grid>
                                 </StackPanel>
                             </Border>
@@ -1574,18 +1766,18 @@
                                                        FontSize="13"/>
 
                                             <UniformGrid Rows="6" Columns="2">
-                                                <Button x:Name="PresetRetroButton" Margin="0,0,6,6" Padding="10,7" FontSize="13" Tag="retro_vhs" Click="ApplyBuiltInPresetButton_Click" Content="Retro VHS"/>
-                                                <Button x:Name="PresetDreamButton" Margin="6,0,0,6" Padding="10,7" FontSize="13" Tag="dream" Click="ApplyBuiltInPresetButton_Click" Content="Dream Glow"/>
-                                                <Button x:Name="PresetChaosButton" Margin="0,6,6,6" Padding="10,7" FontSize="13" Tag="chaos" Click="ApplyBuiltInPresetButton_Click" Content="Chaos"/>
-                                                <Button x:Name="PresetCinemaButton" Margin="6,6,0,6" Padding="10,7" FontSize="13" Tag="cinema" Click="ApplyBuiltInPresetButton_Click" Content="Cinema Cold"/>
-                                                <Button x:Name="PresetMirrorButton" Margin="0,6,6,6" Padding="10,7" FontSize="13" Tag="mirror_trick" Click="ApplyBuiltInPresetButton_Click" Content="Mirror Trick"/>
+                                                <Button x:Name="PresetJNightmareButton" Margin="0,0,6,6" Padding="10,7" FontSize="13" Tag="j_nightmare" Click="ApplyBuiltInPresetButton_Click" Content="JNightmare"/>
+                                                <Button x:Name="PresetJFireButton" Margin="6,0,0,6" Padding="10,7" FontSize="13" Tag="j_fire" Click="ApplyBuiltInPresetButton_Click" Content="JFire"/>
+                                                <Button x:Name="PresetJRelaxingButton" Margin="0,6,6,6" Padding="10,7" FontSize="13" Tag="j_relaxing" Click="ApplyBuiltInPresetButton_Click" Content="JRelaxing"/>
+                                                <Button x:Name="PresetRetroButton" Margin="6,6,0,6" Padding="10,7" FontSize="13" Tag="retro_vhs" Click="ApplyBuiltInPresetButton_Click" Content="Retro VHS"/>
+                                                <Button x:Name="PresetDreamButton" Margin="0,6,6,6" Padding="10,7" FontSize="13" Tag="dream" Click="ApplyBuiltInPresetButton_Click" Content="Dream Glow"/>
+                                                <Button x:Name="PresetChaosButton" Margin="6,6,0,6" Padding="10,7" FontSize="13" Tag="chaos" Click="ApplyBuiltInPresetButton_Click" Content="Chaos"/>
+                                                <Button x:Name="PresetCinemaButton" Margin="0,6,6,6" Padding="10,7" FontSize="13" Tag="cinema" Click="ApplyBuiltInPresetButton_Click" Content="Cinema Cold"/>
                                                 <Button x:Name="PresetBlurButton" Margin="6,6,0,6" Padding="10,7" FontSize="13" Tag="deep_blur" Click="ApplyBuiltInPresetButton_Click" Content="Deep Blur"/>
-                                                <Button x:Name="PresetRadioButton" Margin="0,6,6,0" Padding="10,7" FontSize="13" Tag="radio_voice" Click="ApplyBuiltInPresetButton_Click" Content="Radio Voice"/>
-                                                <Button x:Name="PresetColdGlitchButton" Margin="6,6,0,0" Padding="10,7" FontSize="13" Tag="cold_glitch" Click="ApplyBuiltInPresetButton_Click" Content="Cold Glitch"/>
-                                                <Button x:Name="PresetDemonTunnelButton" Margin="0,6,6,0" Padding="10,7" FontSize="13" Tag="demon_tunnel" Click="ApplyBuiltInPresetButton_Click" Content="Demon Tunnel"/>
-                                                <Button x:Name="PresetMirrorPrisonButton" Margin="6,6,0,0" Padding="10,7" FontSize="13" Tag="mirror_prison" Click="ApplyBuiltInPresetButton_Click" Content="Mirror Prison"/>
-                                                <Button x:Name="PresetPoisonTapeButton" Margin="0,6,6,0" Padding="10,7" FontSize="13" Tag="poison_tape" Click="ApplyBuiltInPresetButton_Click" Content="Poison Tape"/>
-                                                <Button x:Name="PresetNightmarePAButton" Margin="6,6,0,0" Padding="10,7" FontSize="13" Tag="nightmare_pa" Click="ApplyBuiltInPresetButton_Click" Content="Nightmare P.A."/>
+                                                <Button x:Name="PresetColdGlitchButton" Margin="0,6,6,0" Padding="10,7" FontSize="13" Tag="cold_glitch" Click="ApplyBuiltInPresetButton_Click" Content="Cold Glitch"/>
+                                                <Button x:Name="PresetDemonTunnelButton" Margin="6,6,0,0" Padding="10,7" FontSize="13" Tag="demon_tunnel" Click="ApplyBuiltInPresetButton_Click" Content="Demon Tunnel"/>
+                                                <Button x:Name="PresetMirrorPrisonButton" Margin="0,6,6,0" Padding="10,7" FontSize="13" Tag="mirror_prison" Click="ApplyBuiltInPresetButton_Click" Content="Mirror Prison"/>
+                                                <Button x:Name="PresetPoisonTapeButton" Margin="6,6,0,0" Padding="10,7" FontSize="13" Tag="poison_tape" Click="ApplyBuiltInPresetButton_Click" Content="Poison Tape"/>
                                             </UniformGrid>
                                         </StackPanel>
                                     </Border>
@@ -1675,6 +1867,247 @@
                                     </Border>
                                 </StackPanel>
                             </ScrollViewer>
+                        </TabItem>
+
+                        <TabItem x:Name="EffectsWorkspaceTimecodesTab"
+                                 Header="🎬">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="8"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+
+                                <!-- Header row -->
+                                <Grid Grid.Row="0">
+                                     <Grid.RowDefinitions>
+                                         <RowDefinition Height="Auto"/>
+                                         <RowDefinition Height="Auto"/>
+                                         <RowDefinition Height="Auto"/>
+                                     </Grid.RowDefinitions>
+                                    <Grid Grid.Row="0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="8"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock x:Name="TimecodesPanelHeaderText"
+                                                   Grid.Column="0"
+                                                   Text="Сохранённые клипы"
+                                                   Foreground="#EDF7FF"
+                                                   FontSize="16"
+                                                   FontWeight="Bold"
+                                                   VerticalAlignment="Center"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <Button x:Name="TimecodeAddFromPanelButton"
+                                                Grid.Column="2"
+                                                Style="{StaticResource PanelModeButtonStyle}"
+                                                Padding="10,5"
+                                                FontSize="12"
+                                                Content="+ Клип"
+                                                Click="TimecodeAddFromPanelButton_Click"/>
+                                    </Grid>
+                                    <!-- How-to hint -->
+                                    <TextBlock x:Name="TimecodesPanelHintText"
+                                               Grid.Row="1"
+                                               Margin="0,4,0,0"
+                                               Text="Нажми M или кнопку + Клип, чтобы сохранить позицию в видео."
+                                               Foreground="#486A80"
+                                               FontSize="11"
+                                               TextWrapping="Wrap"/>
+                                    <StackPanel Grid.Row="2"
+                                                Margin="0,10,0,0">
+                                        <TextBlock x:Name="TimecodesPanelSummaryText"
+                                                   Text="Сначала показываются таймкоды этого видео, затем остальные."
+                                                   Foreground="#8FC4E4"
+                                                   FontSize="11"
+                                                   TextWrapping="Wrap"
+                                                   Margin="0,0,0,8"/>
+                                        <Grid>
+                                            <TextBox x:Name="TimecodesSearchBox"
+                                                     Height="34"
+                                                     Padding="12,6"
+                                                     FontSize="13"
+                                                     Background="#C9162533"
+                                                     BorderBrush="#5A85A1"
+                                                     Foreground="#EAF6FF"
+                                                     TextChanged="TimecodesSearchBox_TextChanged"
+                                                     GotFocus="TimecodesSearchBox_GotFocus"
+                                                     LostFocus="TimecodesSearchBox_LostFocus"/>
+                                            <TextBlock x:Name="TimecodesSearchPlaceholderText"
+                                                       Text="Поиск по названию, времени или видео..."
+                                                       Margin="14,0,34,0"
+                                                       Foreground="#6E93AB"
+                                                       VerticalAlignment="Center"
+                                                       IsHitTestVisible="False"/>
+                                        </Grid>
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- Clips list -->
+                                <ScrollViewer Grid.Row="2"
+                                              VerticalScrollBarVisibility="Auto"
+                                              HorizontalScrollBarVisibility="Disabled">
+                                    <StackPanel>
+                                        <TextBlock x:Name="TimecodesPanelEmptyText"
+                                                   Text="Нет сохранённых клипов. Нажми + Клип во время просмотра."
+                                                   Foreground="#8FAFC8"
+                                                   FontSize="13"
+                                                   TextWrapping="Wrap"
+                                                   Visibility="Visible"
+                                                   Margin="0,4,0,0"/>
+
+                                        <ItemsControl x:Name="TimecodesPanelList">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <!-- Clip card -->
+                                                    <Border Margin="0,0,0,7"
+                                                            CornerRadius="10"
+                                                            ClipToBounds="True"
+                                                            MouseLeftButtonDown="TimecodeItem_MouseLeftButtonDown"
+                                                            PreviewMouseRightButtonUp="TimecodeItem_RightClick">
+                                                        <Border.Style>
+                                                            <Style TargetType="Border">
+                                                                <Setter Property="Background" Value="#B0142233"/>
+                                                                <Setter Property="BorderBrush" Value="#33607A8A"/>
+                                                                <Setter Property="BorderThickness" Value="1"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsCurrentVideo}" Value="True">
+                                                                        <Setter Property="BorderBrush" Value="#554E9DD4"/>
+                                                                        <Setter Property="Background" Value="#C0122740"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Border.Style>
+
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="92"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                            </Grid.ColumnDefinitions>
+
+                                                            <!-- Thumbnail with time badge -->
+                                                            <Grid Grid.Column="0"
+                                                                  Width="92" Height="54"
+                                                                  Background="#0A1820">
+                                                                <Image Source="{Binding ThumbnailUrl}"
+                                                                       Stretch="UniformToFill"
+                                                                       HorizontalAlignment="Center"
+                                                                       VerticalAlignment="Center"/>
+                                                                <!-- Time badge over thumbnail -->
+                                                                <Border VerticalAlignment="Bottom"
+                                                                        HorizontalAlignment="Right"
+                                                                        Margin="0,0,3,3"
+                                                                        Padding="4,1"
+                                                                        Background="#CC000000"
+                                                                        CornerRadius="3">
+                                                                    <TextBlock Text="{Binding TimeFormatted}"
+                                                                               Foreground="#F0FAFF"
+                                                                               FontSize="10"
+                                                                               FontWeight="Bold"/>
+                                                                </Border>
+                                                                <!-- "current" dot indicator -->
+                                                                <Ellipse Width="7" Height="7"
+                                                                         HorizontalAlignment="Left"
+                                                                         VerticalAlignment="Top"
+                                                                         Margin="4,4,0,0">
+                                                                    <Ellipse.Style>
+                                                                        <Style TargetType="Ellipse">
+                                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                                            <Setter Property="Fill" Value="#4EC5F0"/>
+                                                                            <Style.Triggers>
+                                                                                <DataTrigger Binding="{Binding IsCurrentVideo}" Value="True">
+                                                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                                                </DataTrigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                    </Ellipse.Style>
+                                                                </Ellipse>
+                                                            </Grid>
+
+                                                            <!-- Clip info -->
+                                                            <Grid Grid.Column="1" Margin="8,5,6,5">
+                                                                <Grid.RowDefinitions>
+                                                                    <RowDefinition Height="Auto"/>
+                                                                    <RowDefinition Height="Auto"/>
+                                                                    <RowDefinition Height="*"/>
+                                                                    <RowDefinition Height="Auto"/>
+                                                                </Grid.RowDefinitions>
+
+                                                                <!-- Video title (only for clips from other videos) -->
+                                                                <TextBlock Grid.Row="0"
+                                                                           Text="{Binding VideoTitle}"
+                                                                           FontSize="10"
+                                                                           Foreground="#5B92B2"
+                                                                           TextTrimming="CharacterEllipsis"
+                                                                           Margin="0,0,0,1">
+                                                                    <TextBlock.Style>
+                                                                        <Style TargetType="TextBlock">
+                                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                                            <Style.Triggers>
+                                                                                <DataTrigger Binding="{Binding IsCurrentVideo}" Value="True">
+                                                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                                                </DataTrigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                    </TextBlock.Style>
+                                                                </TextBlock>
+
+                                                                <!-- Clip label -->
+                                                                <TextBlock Grid.Row="1"
+                                                                           Text="{Binding Label}"
+                                                                           Foreground="#EDF7FF"
+                                                                           FontSize="13"
+                                                                           FontWeight="SemiBold"
+                                                                           TextTrimming="CharacterEllipsis"/>
+
+                                                                <!-- Saved date -->
+                                                                <TextBlock Grid.Row="2"
+                                                                           Text="{Binding SavedAtText}"
+                                                                           Foreground="#476A82"
+                                                                           FontSize="10"
+                                                                           Margin="0,2,0,0"
+                                                                           VerticalAlignment="Bottom"/>
+
+                                                                <!-- Action buttons -->
+                                                                <StackPanel Grid.Row="3"
+                                                                            Orientation="Horizontal"
+                                                                            HorizontalAlignment="Right"
+                                                                            Margin="0,4,0,0">
+                                                                    <!-- Seek button — only for current video -->
+                                                                    <Button Padding="6,3"
+                                                                            FontSize="11"
+                                                                            Margin="0,0,4,0"
+                                                                            Tag="{Binding Seconds}"
+                                                                            Click="TimecodeItem_SeekClick">
+                                                                        <Button.Style>
+                                                                            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                                                                <Setter Property="Content" Value="▶ Перейти"/>
+                                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                                                <Style.Triggers>
+                                                                                    <DataTrigger Binding="{Binding IsCurrentVideo}" Value="True">
+                                                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                                                    </DataTrigger>
+                                                                                </Style.Triggers>
+                                                                            </Style>
+                                                                        </Button.Style>
+                                                                    </Button>
+                                                                    <!-- Delete -->
+                                                                    <Button Content="✕"
+                                                                            Padding="6,3"
+                                                                            FontSize="11"
+                                                                            Tag="{Binding Id}"
+                                                                            Click="TimecodeDeleteButton_Click"/>
+                                                                </StackPanel>
+                                                            </Grid>
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </ScrollViewer>
+                            </Grid>
                         </TabItem>
                     </TabControl>
                 </Grid>

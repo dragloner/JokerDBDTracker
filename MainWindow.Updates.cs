@@ -70,6 +70,27 @@ namespace JokerDBDTracker
             RestartProgramButton.Visibility = Visibility.Collapsed;
         }
 
+        private Task SkipUpdateCheckAsync()
+        {
+            if (UpdateStatusText is not null)
+            {
+                UpdateStatusText.Text = T("● Проверка обновлений отключена", "● Update check disabled");
+                UpdateStatusText.Foreground = BrushFromHex("#6A8DA0");
+            }
+
+            if (UpdateProgramButton is not null)
+            {
+                UpdateProgramButton.Visibility = Visibility.Collapsed;
+            }
+
+            if (RestartProgramButton is not null)
+            {
+                RestartProgramButton.Visibility = Visibility.Collapsed;
+            }
+
+            return Task.CompletedTask;
+        }
+
         private async void UpdateProgramButton_Click(object sender, RoutedEventArgs e)
         {
             if (_isDownloadingUpdate)

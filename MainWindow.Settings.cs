@@ -1,4 +1,5 @@
-﻿﻿using System.IO;
+﻿﻿using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -71,6 +72,10 @@ namespace JokerDBDTracker
             try
             {
                 AutoStartCheckBox.IsChecked = _appSettings.AutoStartEnabled;
+                if (AutoCheckUpdatesCheckBox is not null)
+                {
+                    AutoCheckUpdatesCheckBox.IsChecked = _appSettings.AutoCheckUpdates;
+                }
                 SetComboSelectionByTag(LanguageComboBox, _appSettings.Language);
                 UiScaleSlider.Value = _appSettings.UiScale;
                 AnimationsEnabledCheckBox.IsChecked = _appSettings.AnimationsEnabled;
@@ -80,6 +85,12 @@ namespace JokerDBDTracker
                 {
                     SoundSpamModeToggle.IsChecked = _appSettings.SoundSpamMode;
                 }
+
+                if (ApplyEqToSoundEffectsCheckBox is not null)
+                {
+                    ApplyEqToSoundEffectsCheckBox.IsChecked = _appSettings.ApplyEqToSoundEffects;
+                }
+
                 UpdateUiScaleText(_appSettings.UiScale);
                 UpdateBindDisplayTexts();
                 SetBindCaptureStatus(string.Empty);
@@ -184,6 +195,19 @@ namespace JokerDBDTracker
 
             _appSettings.AutoStartEnabled = AutoStartCheckBox.IsChecked == true;
             EnsureAutoStartState(_appSettings.AutoStartEnabled);
+            DiagnosticsService.LogInfo("Settings", $"AutoStart → {_appSettings.AutoStartEnabled}");
+            await SaveSettingsAsync();
+        }
+
+        private async void AutoCheckUpdatesCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_isApplyingSettingsUi)
+            {
+                return;
+            }
+
+            _appSettings.AutoCheckUpdates = AutoCheckUpdatesCheckBox.IsChecked == true;
+            DiagnosticsService.LogInfo("Settings", $"AutoCheckUpdates → {_appSettings.AutoCheckUpdates}");
             await SaveSettingsAsync();
         }
 
@@ -195,6 +219,7 @@ namespace JokerDBDTracker
             }
 
             _appSettings.Language = ReadComboTag(LanguageComboBox, "ru");
+            DiagnosticsService.LogInfo("Settings", $"Language → {_appSettings.Language}");
             ApplyLocalization();
             await SaveSettingsAsync();
         }
@@ -227,6 +252,7 @@ namespace JokerDBDTracker
 
             _appSettings.AnimationsEnabled = AnimationsEnabledCheckBox.IsChecked == true;
             UiAnimation.SetIsEnabled(this, _appSettings.AnimationsEnabled);
+            DiagnosticsService.LogInfo("Settings", $"Animations → {_appSettings.AnimationsEnabled}");
             await SaveSettingsAsync();
         }
 
@@ -239,6 +265,7 @@ namespace JokerDBDTracker
 
             _appSettings.LoggingEnabled = LoggingEnabledCheckBox.IsChecked == true;
             DiagnosticsService.SetEnabled(_appSettings.LoggingEnabled);
+            DiagnosticsService.LogInfo("Settings", $"Logging → {_appSettings.LoggingEnabled}");
             await SaveSettingsAsync();
         }
 
@@ -250,6 +277,19 @@ namespace JokerDBDTracker
             }
 
             _appSettings.SoundSpamMode = SoundSpamModeToggle.IsChecked == true;
+            DiagnosticsService.LogInfo("Settings", $"SoundSpamMode → {_appSettings.SoundSpamMode}");
+            await SaveSettingsAsync();
+        }
+
+        private async void ApplyEqToSoundEffectsCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_isApplyingSettingsUi)
+            {
+                return;
+            }
+
+            _appSettings.ApplyEqToSoundEffects = ApplyEqToSoundEffectsCheckBox.IsChecked == true;
+            DiagnosticsService.LogInfo("Settings", $"ApplyEqToSoundEffects → {_appSettings.ApplyEqToSoundEffects}");
             await SaveSettingsAsync();
         }
 
@@ -261,6 +301,7 @@ namespace JokerDBDTracker
             }
 
             _appSettings.FullscreenBehavior = ReadComboTag(FullscreenBehaviorComboBox, "auto");
+            DiagnosticsService.LogInfo("Settings", $"FullscreenBehavior → {_appSettings.FullscreenBehavior}");
             await SaveSettingsAsync();
         }
 
@@ -302,6 +343,7 @@ namespace JokerDBDTracker
 
             var bind = key.ToString().ToUpperInvariant();
             ApplyBindToTarget(_bindCaptureTarget, bind);
+            DiagnosticsService.LogInfo("Settings", $"Bind [{_bindCaptureTarget}] → {bind}");
             _isCapturingBind = false;
             _bindCaptureTarget = string.Empty;
             UpdateBindDisplayTexts();
@@ -436,14 +478,38 @@ namespace JokerDBDTracker
                 var target = $"fx{effectIndex}";
                 var isCurrent = _isCapturingBind &&
                                 string.Equals(target, _bindCaptureTarget, StringComparison.OrdinalIgnoreCase);
-                if (isCurrent)
-                {
-                    button.Content = T("Нажмите...", "Press key...");
-                    continue;
-                }
 
-                button.Content = $"{effectIndex} [{FormatBindForUi(GetEffectBindByIndex(effectIndex))}]";
+                button.Content = isCurrent ? T("Нажмите...", "Press key...") : T("Назначить", "Assign");
+
+                var valueText = GetEffectBindValueText(effectIndex);
+                if (valueText is not null)
+                {
+                    valueText.Text = FormatBindForUi(GetEffectBindByIndex(effectIndex));
+                }
             }
+        }
+
+        private System.Windows.Controls.TextBlock? GetEffectBindValueText(int effectIndex)
+        {
+            return effectIndex switch
+            {
+                1  => Fx1BindValueText,
+                2  => Fx2BindValueText,
+                3  => Fx3BindValueText,
+                4  => Fx4BindValueText,
+                5  => Fx5BindValueText,
+                6  => Fx6BindValueText,
+                7  => Fx7BindValueText,
+                8  => Fx8BindValueText,
+                9  => Fx9BindValueText,
+                10 => Fx10BindValueText,
+                11 => Fx11BindValueText,
+                12 => Fx12BindValueText,
+                13 => Fx13BindValueText,
+                14 => Fx14BindValueText,
+                15 => Fx15BindValueText,
+                _  => null
+            };
         }
 
         private Button? GetEffectBindButton(int effectIndex)
@@ -623,10 +689,30 @@ namespace JokerDBDTracker
             _isCapturingBind = false;
             _bindCaptureTarget = string.Empty;
             ResetAllBindsToDefaults();
+            DiagnosticsService.LogInfo("Settings", "All binds reset to defaults");
             UpdateBindDisplayTexts();
             SetBindCaptureStatus(T("Бинды сброшены к значениям по умолчанию.", "Binds were reset to defaults."));
             UpdateBindCaptureButtons();
             await SaveSettingsAsync();
+        }
+
+        private void OpenLogFolderButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var logDir = DiagnosticsService.GetLogDirectory();
+                Directory.CreateDirectory(logDir);
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = logDir,
+                    UseShellExecute = true
+                });
+                DiagnosticsService.LogInfo("Settings", "Opened log folder");
+            }
+            catch (Exception ex)
+            {
+                DiagnosticsService.LogException("OpenLogFolderButton_Click", ex);
+            }
         }
 
         private void ResetCacheButton_Click(object sender, RoutedEventArgs e)
@@ -648,6 +734,7 @@ namespace JokerDBDTracker
                 }
 
                 Directory.CreateDirectory(profilePath);
+                DiagnosticsService.LogInfo("Settings", "Cache cleared");
                 MessageBox.Show(
                     T(
                         "Кеш очищен. Новые данные WebView2 будут созданы автоматически.",
@@ -658,6 +745,7 @@ namespace JokerDBDTracker
             }
             catch (Exception ex)
             {
+                DiagnosticsService.LogException("ResetCacheButton_Click", ex);
                 MessageBox.Show(
                     $"{T("Не удалось очистить кеш:", "Failed to clear cache:")}{Environment.NewLine}{ex.Message}",
                     T("Настройки", "Settings"),

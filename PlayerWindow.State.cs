@@ -43,6 +43,7 @@ namespace JokerDBDTracker
         private Thickness _playerHostMarginBeforeFullscreen = new Thickness(0, 8, 0, 8);
         private CornerRadius _playerHostCornerRadiusBeforeFullscreen = new CornerRadius(10);
         private bool _effectsPanelExpandedBeforePlayerFullscreen = true;
+        private Thickness _windowChromeResizeBorderBeforeFullscreen = new Thickness(12);
         private bool _isApplyingFullMonitorBounds;
 
         // Playback and XP tracking.
@@ -63,6 +64,9 @@ namespace JokerDBDTracker
         private Point _pendingDragStartPoint;
         private bool _shouldStartDragAfterExitingPlayerFullscreen;
 
+        // Whether the currently loaded page is the original JokerDBD video (gates XP/quest progress).
+        private bool _isOnJokerVideo = true;
+
         // Runtime lifecycle flags.
         private bool _isRecoveringBlockedNavigation;
         private bool _isPlayerClosing;
@@ -77,10 +81,21 @@ namespace JokerDBDTracker
 
         // Hotkeys.
         private readonly Dictionary<int, Key> _registeredHotkeys = [];
+        private readonly Dictionary<string, string> _soundEffectBase64Cache = new(StringComparer.OrdinalIgnoreCase);
         private HwndSource? _hotkeySource;
         private int _nextHotkeyId = 4000;
         private Key _lastProcessedAppKeybind = Key.None;
         private DateTime _lastProcessedAppKeybindUtc = DateTime.MinValue;
+        private bool _isWebViewTextInputActive;
+
+        // Timecodes.
+        private readonly Services.TimecodeService _playerTimecodeService = new();
+        private List<Models.Timecode> _videoTimecodes = [];   // current video only
+        private List<Models.Timecode> _allTimecodes = [];     // all videos, for clips panel
+        private bool _isOpeningTimecodePopup;
+        private DateTime _lastTimecodeTriggerUtc = DateTime.MinValue;
+        private string _timecodeSearchQuery = string.Empty;
+        private string? _editingTimecodeId;
 
         // Services/configuration.
         private readonly WatchHistoryService _watchHistoryPersistService = new();
@@ -120,6 +135,7 @@ namespace JokerDBDTracker
             public double AudioReverb { get; set; }
             public double AudioEcho { get; set; }
             public double AudioDistortion { get; set; }
+            public double AudioWobble { get; set; }
             public double AudioEqLowDb { get; set; }
             public double AudioEqMidDb { get; set; }
             public double AudioEqHighDb { get; set; }

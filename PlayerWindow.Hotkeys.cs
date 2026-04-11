@@ -59,6 +59,7 @@ namespace JokerDBDTracker
         {
             var keys = new HashSet<Key>
             {
+                Key.M,
                 ReadConfiguredKey(_appSettings.HideEffectsPanelBind, Key.H),
                 ReadConfiguredKey(_appSettings.AuraFarmSoundBind, Key.Y),
                 ReadConfiguredKey(_appSettings.LaughSoundBind, Key.U),
@@ -186,7 +187,7 @@ namespace JokerDBDTracker
             }
 
             MarkUserInteraction();
-            if (ShouldBypassPlayerKeyHandlingBecauseTyping())
+            if (ShouldBypassPlayerKeyHandling())
             {
                 handled = true;
                 return IntPtr.Zero;

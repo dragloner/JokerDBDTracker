@@ -12,6 +12,8 @@ namespace JokerDBDTracker
         // Stream catalog and profile data state.
         private readonly ObservableCollection<YouTubeVideo> _videos = [];
         private readonly List<YouTubeVideo> _allVideos = [];
+        private readonly ObservableCollection<YouTubeVideo> _watchQueue = [];
+        private string _activeCategory = "all";
         private readonly Dictionary<string, DateTime> _watchHistory = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, int> _playbackSecondsHistory = new(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<DateOnly> _watchedDays = [];
@@ -36,6 +38,10 @@ namespace JokerDBDTracker
         private int _effectPresetSessionsRetro;
         private int _effectPresetSessionsChaos;
         private int _effectPresetSessionsDream;
+
+        // Timecodes.
+        private readonly Services.TimecodeService _timecodeService = new();
+        private List<Models.Timecode> _timecodes = [];
 
         // Services and async coordination.
         private readonly YouTubeStreamsService _streamsService = new();

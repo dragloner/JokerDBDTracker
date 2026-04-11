@@ -11,112 +11,111 @@ namespace JokerDBDTracker
         [
             new()
             {
-                Key = "retro_vhs",
-                DisplayNameRu = "Retro VHS",
-                DisplayNameEn = "Retro VHS",
+                Key = "j_nightmare",
+                DisplayNameRu = "JNightmare",
+                DisplayNameEn = "JNightmare",
+                DescriptionRu = "Макс. громкость + дисторшн + EQ + ч/б + контраст",
+                DescriptionEn = "Max volume + distortion + EQ + B&W + contrast",
+                Factory = CreateJNightmarePreset
+            },
+            new()
+            {
+                Key = "j_fire",
+                DisplayNameRu = "JFire",
+                DisplayNameEn = "JFire",
+                DescriptionRu = "Басс-буст earrape — тяжёлый низ, умеренный дисторшн",
+                DescriptionEn = "Bass boost earrape — heavy low end, moderate distortion",
+                Factory = CreateJFirePreset
+            },
+            new()
+            {
+                Key = "j_relaxing",
+                DisplayNameRu = "JRelaxing",
+                DisplayNameEn = "JRelaxing",
+                DescriptionRu = "Эхо + реверб + тёплый оттенок, расслабляющий",
+                DescriptionEn = "Echo + reverb + warm hue shift, relaxing",
+                Factory = CreateJRelaxingPreset
+            },
+            new()
+            {
+                Key = "j_retro_tape",
+                DisplayNameRu = "JRetroTape",
+                DisplayNameEn = "JRetroTape",
                 DescriptionRu = "VHS, JPEG и лёгкая тряска",
                 DescriptionEn = "VHS, JPEG and light shake",
                 Factory = CreateRetroVhsPreset
             },
             new()
             {
-                Key = "dream",
-                DisplayNameRu = "Dream Glow",
-                DisplayNameEn = "Dream Glow",
+                Key = "j_dream",
+                DisplayNameRu = "JDream",
+                DisplayNameEn = "JDream",
                 DescriptionRu = "Фишай, холодный тон и мягкое размытие",
                 DescriptionEn = "Fisheye, cold tone and soft blur",
                 Factory = CreateDreamPreset
             },
             new()
             {
-                Key = "chaos",
-                DisplayNameRu = "Chaos",
-                DisplayNameEn = "Chaos",
+                Key = "j_void",
+                DisplayNameRu = "JVoid",
+                DisplayNameEn = "JVoid",
                 DescriptionRu = "Сильный визуальный хаос",
                 DescriptionEn = "Strong visual chaos",
                 Factory = CreateChaosPreset
             },
             new()
             {
-                Key = "cinema",
-                DisplayNameRu = "Cinema Cold",
-                DisplayNameEn = "Cinema Cold",
+                Key = "j_ice",
+                DisplayNameRu = "JIce",
+                DisplayNameEn = "JIce",
                 DescriptionRu = "Контраст, холод и немного звука",
                 DescriptionEn = "Contrast, cold tone and slight audio FX",
                 Factory = CreateCinemaColdPreset
             },
             new()
             {
-                Key = "mirror_trick",
-                DisplayNameRu = "Mirror Trick",
-                DisplayNameEn = "Mirror Trick",
-                DescriptionRu = "Зеркала + оттенок",
-                DescriptionEn = "Mirrors + hue shift",
-                Factory = CreateMirrorTrickPreset
-            },
-            new()
-            {
-                Key = "deep_blur",
-                DisplayNameRu = "Deep Blur",
-                DisplayNameEn = "Deep Blur",
+                Key = "j_haze",
+                DisplayNameRu = "JHaze",
+                DisplayNameEn = "JHaze",
                 DescriptionRu = "Размытие + затемнение",
                 DescriptionEn = "Blur + darkness",
                 Factory = CreateDeepBlurPreset
             },
             new()
             {
-                Key = "radio_voice",
-                DisplayNameRu = "Radio Voice",
-                DisplayNameEn = "Radio Voice",
-                DescriptionRu = "Мягкий EQ/echo для аудио",
-                DescriptionEn = "Light EQ/echo audio preset",
-                Factory = CreateRadioVoicePreset
-            },
-            new()
-            {
-                Key = "cold_glitch",
-                DisplayNameRu = "Cold Glitch",
-                DisplayNameEn = "Cold Glitch",
+                Key = "j_frostbite",
+                DisplayNameRu = "JFrostbite",
+                DisplayNameEn = "JFrostbite",
                 DescriptionRu = "JPEG + холодный тон + VHS",
                 DescriptionEn = "JPEG + cold tone + VHS",
                 Factory = CreateColdGlitchPreset
-            }
-            ,
+            },
             new()
             {
-                Key = "demon_tunnel",
-                DisplayNameRu = "Demon Tunnel",
-                DisplayNameEn = "Demon Tunnel",
+                Key = "j_tunnel",
+                DisplayNameRu = "JTunnel",
+                DisplayNameEn = "JTunnel",
                 DescriptionRu = "Negative fisheye + chaos + shake",
                 DescriptionEn = "Negative fisheye + chaos + shake",
                 Factory = CreateDemonTunnelPreset
             },
             new()
             {
-                Key = "mirror_prison",
-                DisplayNameRu = "Mirror Prison",
-                DisplayNameEn = "Mirror Prison",
+                Key = "j_mirror",
+                DisplayNameRu = "JMirror",
+                DisplayNameEn = "JMirror",
                 DescriptionRu = "Double mirrors + blur + JPEG",
                 DescriptionEn = "Double mirrors + blur + JPEG",
                 Factory = CreateMirrorPrisonPreset
             },
             new()
             {
-                Key = "poison_tape",
-                DisplayNameRu = "Poison Tape",
-                DisplayNameEn = "Poison Tape",
+                Key = "j_poison",
+                DisplayNameRu = "JPoison",
+                DisplayNameEn = "JPoison",
                 DescriptionRu = "Toxic hue VHS/JPEG + dirty audio",
                 DescriptionEn = "Toxic hue VHS/JPEG + dirty audio",
                 Factory = CreatePoisonTapePreset
-            },
-            new()
-            {
-                Key = "nightmare_pa",
-                DisplayNameRu = "Nightmare P.A.",
-                DisplayNameEn = "Nightmare P.A.",
-                DescriptionRu = "Dark cold image + nightmare audio FX",
-                DescriptionEn = "Dark cold image + nightmare audio FX",
-                Factory = CreateNightmarePaPreset
             }
         ];
 
@@ -438,7 +437,7 @@ namespace JokerDBDTracker
             EnsureCustomPresetSlotsInitialized();
             var slot = _customPresetSlots[Math.Clamp(_selectedCustomPresetSlotIndex, 0, _customPresetSlots.Count - 1)];
             slot.Name = SanitizePresetName(CustomPresetNameTextBox?.Text, slot.SlotIndex);
-            slot.PayloadJson = JsonSerializer.Serialize(GetEffectSettings());
+            slot.PayloadJson = JsonSerializer.Serialize(NormalizeEffectSettings(GetEffectSettings()));
             SyncCustomPresetSlotsBackToSettings();
             await _settingsService.SaveAsync(_appSettings);
             RefreshCustomPresetSlotComboBox();
@@ -560,6 +559,8 @@ namespace JokerDBDTracker
                 return;
             }
 
+            settings = NormalizeEffectSettings(settings);
+
             var flags = settings.Flags ?? [];
             bool Flag(int index) => index >= 0 && index < flags.Length && flags[index];
 
@@ -595,14 +596,15 @@ namespace JokerDBDTracker
                 JpegDamageStrengthSlider.Value = Math.Clamp(settings.JpegDamage, 0, 1);
                 ColdToneStrengthSlider.Value = Math.Clamp(settings.ColdTone, -1, 1);
 
-                AudioVolumeBoostSlider.Value = Math.Clamp(settings.AudioVolumeBoost, 0, 1);
-                AudioPitchSemitonesSlider.Value = Math.Clamp(settings.AudioPitchSemitones, -8, 8);
-                AudioReverbStrengthSlider.Value = Math.Clamp(settings.AudioReverb, 0, 1);
-                AudioEchoStrengthSlider.Value = Math.Clamp(settings.AudioEcho, 0, 1);
-                AudioDistortionStrengthSlider.Value = Math.Clamp(settings.AudioDistortion, 0, 1);
-                AudioEqLowDbSlider.Value = Math.Clamp(settings.AudioEqLowDb, -18, 18);
-                AudioEqMidDbSlider.Value = Math.Clamp(settings.AudioEqMidDb, -18, 18);
-                AudioEqHighDbSlider.Value = Math.Clamp(settings.AudioEqHighDb, -18, 18);
+                AudioVolumeBoostSlider.Value = Math.Clamp(settings.AudioVolumeBoost, 0, 3);
+                AudioPitchSemitonesSlider.Value = Math.Clamp(settings.AudioPitchSemitones, -24, 24);
+                AudioReverbStrengthSlider.Value = Math.Clamp(settings.AudioReverb, 0, 2);
+                AudioEchoStrengthSlider.Value = Math.Clamp(settings.AudioEcho, 0, 2);
+                AudioDistortionStrengthSlider.Value = Math.Clamp(settings.AudioDistortion, 0, 2);
+                AudioWobbleStrengthSlider.Value = Math.Clamp(settings.AudioWobble, 0, 2);
+                AudioEqLowDbSlider.Value = Math.Clamp(settings.AudioEqLowDb, -30, 30);
+                AudioEqMidDbSlider.Value = Math.Clamp(settings.AudioEqMidDb, -30, 30);
+                AudioEqHighDbSlider.Value = Math.Clamp(settings.AudioEqHighDb, -30, 30);
             }
             finally
             {
@@ -661,13 +663,51 @@ namespace JokerDBDTracker
 
             try
             {
-                settings = JsonSerializer.Deserialize<EffectSettings>(json);
+                settings = NormalizeEffectSettings(JsonSerializer.Deserialize<EffectSettings>(json));
                 return settings is not null;
             }
             catch
             {
                 return false;
             }
+        }
+
+        private static EffectSettings NormalizeEffectSettings(EffectSettings? settings)
+        {
+            var normalized = CreateDefaultPreset();
+            if (settings is null)
+            {
+                return normalized;
+            }
+
+            var flags = settings.Flags ?? [];
+            for (var i = 0; i < Math.Min(normalized.Flags.Length, flags.Length); i++)
+            {
+                normalized.Flags[i] = flags[i];
+            }
+
+            normalized.Contrast = Math.Clamp(settings.Contrast, -1, 1);
+            normalized.Darkness = Math.Clamp(settings.Darkness, -1, 1);
+            normalized.Saturation = Math.Clamp(settings.Saturation, -1, 1);
+            normalized.HueShift = Math.Clamp(settings.HueShift, -1, 1);
+            normalized.Blur = Math.Clamp(settings.Blur, 0, 1);
+            normalized.Fisheye = Math.Clamp(settings.Fisheye, -1, 1);
+            normalized.FisheyeCenterX = Math.Clamp(settings.FisheyeCenterX, 0, 1);
+            normalized.FisheyeCenterY = Math.Clamp(settings.FisheyeCenterY, 0, 1);
+            normalized.Vhs = Math.Clamp(settings.Vhs, 0, 1);
+            normalized.Shake = Math.Clamp(settings.Shake, 0, 1);
+            normalized.JpegDamage = Math.Clamp(settings.JpegDamage, 0, 1);
+            normalized.ColdTone = Math.Clamp(settings.ColdTone, -1, 1);
+            normalized.AudioVolumeBoost = Math.Clamp(settings.AudioVolumeBoost, 0, 3);
+            normalized.AudioPitchSemitones = Math.Clamp(settings.AudioPitchSemitones, -24, 24);
+            normalized.AudioReverb = Math.Clamp(settings.AudioReverb, 0, 2);
+            normalized.AudioEcho = Math.Clamp(settings.AudioEcho, 0, 2);
+            normalized.AudioDistortion = Math.Clamp(settings.AudioDistortion, 0, 2);
+            normalized.AudioWobble = Math.Clamp(settings.AudioWobble, 0, 2);
+            normalized.AudioEqLowDb = Math.Clamp(settings.AudioEqLowDb, -30, 30);
+            normalized.AudioEqMidDb = Math.Clamp(settings.AudioEqMidDb, -30, 30);
+            normalized.AudioEqHighDb = Math.Clamp(settings.AudioEqHighDb, -30, 30);
+            return normalized;
         }
 
         private static EffectSettings CreateDefaultPreset()
@@ -692,10 +732,52 @@ namespace JokerDBDTracker
                 AudioReverb = 0,
                 AudioEcho = 0,
                 AudioDistortion = 0,
+                AudioWobble = 0,
                 AudioEqLowDb = 0,
                 AudioEqMidDb = 0,
                 AudioEqHighDb = 0
             };
+        }
+
+        private static EffectSettings CreateJNightmarePreset()
+        {
+            var p = CreateDefaultPreset();
+            p.Flags[0] = true;  // Grayscale (B&W)
+            p.Flags[3] = true;  // High contrast
+            p.AudioVolumeBoost = 3.0;       // Max volume
+            p.AudioDistortion = 2.0;        // Max distortion
+            p.AudioEqLowDb = 30.0;          // Max low boost
+            p.AudioEqMidDb = 24.0;          // Strong mid boost
+            p.AudioEqHighDb = 30.0;         // Strong high boost
+            p.Contrast = 1.0;               // Very high contrast
+            return p;
+        }
+
+        private static EffectSettings CreateJFirePreset()
+        {
+            var p = CreateDefaultPreset();
+            // Bass boost earrape — heavy low end, moderate distortion, no visuals
+            p.AudioVolumeBoost = 2.2;
+            p.AudioDistortion = 1.0;
+            p.AudioEqLowDb = 28.0;
+            p.AudioEqMidDb = 8.0;
+            p.AudioEqHighDb = -4.0;
+            return p;
+        }
+
+        private static EffectSettings CreateJRelaxingPreset()
+        {
+            var p = CreateDefaultPreset();
+            p.Flags[5] = true;  // Saturation (warm colors)
+            p.Flags[6] = true;  // Hue shift
+            p.AudioReverb = 1.4;
+            p.AudioEcho = 1.0;
+            p.AudioEqLowDb = 6.0;           // Warm bass boost
+            p.AudioEqMidDb = -3.0;          // Cut harsh mids
+            p.AudioEqHighDb = -5.0;         // Roll off highs
+            p.HueShift = 0.18;              // Warm orange shift
+            p.Saturation = 0.35;            // Slightly richer colors
+            return p;
         }
 
         private static EffectSettings CreateRetroVhsPreset()
@@ -782,23 +864,6 @@ namespace JokerDBDTracker
             return p;
         }
 
-        private static EffectSettings CreateMirrorTrickPreset()
-        {
-            var p = CreateDefaultPreset();
-            p.Flags[11] = true; // H mirror
-            p.Flags[14] = true; // V mirror
-            p.Flags[6] = true;  // Hue shift
-            p.Flags[3] = true;  // Contrast
-            p.Flags[8] = true;  // Fisheye
-            p.HueShift = -0.42;
-            p.Contrast = 0.22;
-            p.Fisheye = 0.16;
-            p.FisheyeCenterX = 0.62;
-            p.FisheyeCenterY = 0.38;
-            p.AudioEcho = 0.10;
-            return p;
-        }
-
         private static EffectSettings CreateDeepBlurPreset()
         {
             var p = CreateDefaultPreset();
@@ -811,22 +876,6 @@ namespace JokerDBDTracker
             p.Saturation = -0.38;
             p.AudioReverb = 0.12;
             p.AudioEqHighDb = -3.5;
-            return p;
-        }
-
-        private static EffectSettings CreateRadioVoicePreset()
-        {
-            var p = CreateDefaultPreset();
-            p.Flags[0] = true;  // Grayscale
-            p.Flags[3] = true;  // Contrast
-            p.Contrast = 0.20;
-            p.AudioEcho = 0.30;
-            p.AudioDistortion = 0.12;
-            p.AudioReverb = 0.08;
-            p.AudioEqLowDb = -8.0;
-            p.AudioEqMidDb = 4.5;
-            p.AudioEqHighDb = -6.0;
-            p.AudioPitchSemitones = -0.9;
             return p;
         }
 
@@ -917,30 +966,5 @@ namespace JokerDBDTracker
             return p;
         }
 
-        private static EffectSettings CreateNightmarePaPreset()
-        {
-            var p = CreateDefaultPreset();
-            p.Flags[4] = true;  // Darkness
-            p.Flags[13] = true; // Cold tone
-            p.Flags[7] = true;  // Blur
-            p.Flags[8] = true;  // Fisheye
-            p.Flags[10] = true; // Shake
-            p.Darkness = 0.40;
-            p.ColdTone = 0.64;
-            p.Blur = 0.20;
-            p.Fisheye = -0.26;
-            p.Shake = 0.10;
-            p.FisheyeCenterX = 0.48;
-            p.FisheyeCenterY = 0.58;
-            p.AudioVolumeBoost = 0.25;
-            p.AudioPitchSemitones = -3.4;
-            p.AudioReverb = 0.42;
-            p.AudioEcho = 0.34;
-            p.AudioDistortion = 0.30;
-            p.AudioEqLowDb = -7.0;
-            p.AudioEqMidDb = 1.4;
-            p.AudioEqHighDb = -8.5;
-            return p;
-        }
     }
 }

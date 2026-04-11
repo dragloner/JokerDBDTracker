@@ -245,17 +245,33 @@ namespace JokerDBDTracker
 
         private void RefreshHomeSummary()
         {
-            var watchedCount = _allVideos.Count(v => v.LastViewedAtUtc.HasValue);
-            var totalCount = _allVideos.Count;
-            var favoritesCount = _favoriteVideoIds.Count;
-            var unwatchedCount = Math.Max(0, totalCount - watchedCount);
+            // ── Stats bar widgets ──
+            var streak = CalculateWatchStreakDays();
+            StatsStreakText.Text = T($"{streak} дн.", $"{streak} days");
 
-            HomeStatsText.Text = T(
-                $"Стримы: {totalCount} • Просмотрено: {watchedCount} • Избранное: {favoritesCount} • Непросмотрено: {unwatchedCount}",
-                $"Streams: {totalCount} • Watched: {watchedCount} • Favorites: {favoritesCount} • Unwatched: {unwatchedCount}");
-            HomeHintText.Text = T(
-                "Совет: открой рекомендации слева, чтобы быстрее находить похожие стримы.",
-                "Tip: open recommendations on the left to find similar streams faster.");
+            var totalWatchedSeconds = Math.Max(0, _watchedSecondsByDay.Values.Sum(v => Math.Max(0, v)));
+            var totalHours = totalWatchedSeconds / 3600.0;
+            StatsTotalHoursText.Text = $"{totalHours:0.0} ч";
+
+            var totalCount = _allVideos.Count;
+            StatsStreamCountText.Text = totalCount.ToString();
+
+            var level = CalculateLevelFromXp(_prestigeXp);
+            var prev = TotalXpForLevel(level);
+            var next = level >= MaxLevel ? prev : TotalXpForLevel(level + 1);
+            var currentInLevel = Math.Clamp(_prestigeXp - prev, 0, Math.Max(1, next - prev));
+            var requiredInLevel = Math.Max(1, next - prev);
+            StatsLevelText.Text = T($"Уровень {level}", $"Level {level}");
+            StatsXpText.Text = $"{currentInLevel:N0} / {requiredInLevel:N0} XP";
+            StatsXpBar.Maximum = requiredInLevel;
+            StatsXpBar.Value = currentInLevel;
+
+            // ── Label compat ──
+            HomeStatsText.Text = string.Empty;
+            HomeHintText.Text = string.Empty;
+
+            // ── Continue Watching ──
+            RefreshContinueWatching();
         }
 
         private static ProfileAchievement BuildAchievement(string title, string description, bool unlocked)

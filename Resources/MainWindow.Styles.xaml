@@ -49,12 +49,7 @@
                                 <Border.RenderTransform>
                                     <ScaleTransform ScaleX="1" ScaleY="1"/>
                                 </Border.RenderTransform>
-                                <Border.Effect>
-                                    <DropShadowEffect BlurRadius="12"
-                                                      ShadowDepth="0"
-                                                      Color="#67C8FF"
-                                                      Opacity="0"/>
-                                </Border.Effect>
+                                <!-- No default Effect — avoids a GPU render target per button when nothing is hovered -->
                             </Border>
                             <Border Padding="{TemplateBinding Padding}"
                                     ClipToBounds="True"
@@ -724,7 +719,7 @@
             <Setter Property="Width" Value="18"/>
             <Setter Property="MinWidth" Value="18"/>
             <Setter Property="Focusable" Value="False"/>
-            <Setter Property="Opacity" Value="0.5"/>
+            <Setter Property="Opacity" Value="0.72"/>
             <Setter Property="IsHitTestVisible" Value="True"/>
             <Setter Property="ui:ScrollBarRevealBehavior.EnableAutoReveal" Value="True"/>
             <Setter Property="ui:ScrollBarRevealBehavior.RevealEdgeWidth" Value="42"/>
@@ -745,19 +740,19 @@
                             <Border x:Name="ScrollRail"
                                     Margin="3,2,3,2"
                                     CornerRadius="6"
-                                    Background="#3B101A23"
+                                    Background="#55152535"
                                     BorderThickness="1"
-                                    BorderBrush="#267EB0C8"/>
+                                    BorderBrush="#4490C8E0"/>
                             <Border x:Name="ScrollRailGlass"
                                     Margin="4,3,4,3"
                                     CornerRadius="5"
-                                    Background="#12FFFFFF"
+                                    Background="#18FFFFFF"
                                     Opacity="0.75"
                                     IsHitTestVisible="False"/>
                             <Border x:Name="ScrollRailGlow"
                                     Margin="2,1,2,1"
                                     CornerRadius="7"
-                                    Background="#10BCEEFF"
+                                    Background="#18BCEEFF"
                                     Opacity="0"
                                     IsHitTestVisible="False"/>
                             <Track x:Name="PART_Track"
@@ -785,14 +780,14 @@
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="ScrollShell" Property="BorderBrush" Value="#36E6FAFF"/>
-                                <Setter TargetName="ScrollRail" Property="BorderBrush" Value="#4AAEE0F3"/>
+                                <Setter TargetName="ScrollRail" Property="BorderBrush" Value="#66C0E8FF"/>
                                 <Setter TargetName="ScrollRailGlass" Property="Opacity" Value="1"/>
-                                <Setter TargetName="ScrollRailGlow" Property="Opacity" Value="0.55"/>
+                                <Setter TargetName="ScrollRailGlow" Property="Opacity" Value="0.7"/>
                             </Trigger>
                             <Trigger Property="IsMouseCaptureWithin" Value="True">
-                                <Setter TargetName="ScrollShell" Property="BorderBrush" Value="#5AF0FFFF"/>
-                                <Setter TargetName="ScrollRail" Property="BorderBrush" Value="#6CD2EEFF"/>
-                                <Setter TargetName="ScrollRailGlow" Property="Opacity" Value="0.8"/>
+                                <Setter TargetName="ScrollShell" Property="BorderBrush" Value="#6AF0FFFF"/>
+                                <Setter TargetName="ScrollRail" Property="BorderBrush" Value="#88E0F8FF"/>
+                                <Setter TargetName="ScrollRailGlow" Property="Opacity" Value="1.0"/>
                             </Trigger>
                             <Trigger Property="Orientation" Value="Horizontal">
                                 <Setter Property="Visibility" Value="Collapsed"/>
@@ -831,15 +826,17 @@
                         <Border x:Name="ThumbBorder"
                                 CornerRadius="4"
                                 Margin="3,0"
-                                Background="#907EB0C8"
-                                BorderBrush="#4AB2D9EE"
+                                Background="#BB5AA8D8"
+                                BorderBrush="#7890D8F5"
                                 BorderThickness="1"/>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ThumbBorder" Property="Background" Value="#B09ECFE8"/>
+                                <Setter TargetName="ThumbBorder" Property="Background" Value="#D870C8F0"/>
+                                <Setter TargetName="ThumbBorder" Property="BorderBrush" Value="#AAB8E8FF"/>
                             </Trigger>
                             <Trigger Property="IsDragging" Value="True">
-                                <Setter TargetName="ThumbBorder" Property="Background" Value="#C5B0D8F0"/>
+                                <Setter TargetName="ThumbBorder" Property="Background" Value="#EE88D8FF"/>
+                                <Setter TargetName="ThumbBorder" Property="BorderBrush" Value="#CCCCEEFF"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>

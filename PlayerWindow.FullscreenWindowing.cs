@@ -120,6 +120,23 @@ namespace JokerDBDTracker
                 PlayerHostBorder.CornerRadius = isFullscreen ? new CornerRadius(0) : _playerHostCornerRadiusBeforeFullscreen;
             }
 
+            // WindowChrome keeps a ResizeBorderThickness hit-test strip around the window edges even
+            // when ResizeMode = NoResize. In fullscreen that 12 px strip sits on top of the WebView2
+            // and swallows clicks intended for YouTube's bottom/right player controls. Zero it out.
+            var chrome = System.Windows.Shell.WindowChrome.GetWindowChrome(this);
+            if (chrome is not null)
+            {
+                if (isFullscreen)
+                {
+                    _windowChromeResizeBorderBeforeFullscreen = chrome.ResizeBorderThickness;
+                    chrome.ResizeBorderThickness = new Thickness(0);
+                }
+                else
+                {
+                    chrome.ResizeBorderThickness = _windowChromeResizeBorderBeforeFullscreen;
+                }
+            }
+
             if (isFullscreen)
             {
                 _effectsPanelExpandedBeforePlayerFullscreen = _effectsPanelExpanded;

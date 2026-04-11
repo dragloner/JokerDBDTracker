@@ -78,8 +78,11 @@ namespace JokerDBDTracker
                 await InitializeNetworkClockAsync();
                 await LoadAndApplySettingsAsync();
                 InitializeLogViewer();
+                DiagnosticsService.LogInfo("App", $"Started, v{GetCurrentAppVersion()}, lang={_appSettings.Language}, scale={_appSettings.UiScale:0.00}");
                 var loadVideosTask = LoadVideosAsync();
-                var updateCheckTask = CheckForUpdatesDuringStartupAsync();
+                var updateCheckTask = _appSettings.AutoCheckUpdates
+                    ? CheckForUpdatesDuringStartupAsync()
+                    : SkipUpdateCheckAsync();
                 await Task.WhenAll(loadVideosTask, updateCheckTask);
                 StartQuestRolloverMonitoring();
                 _questUiRefreshTimer.Start();

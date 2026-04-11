@@ -36,6 +36,13 @@ namespace JokerDBDTracker
                 visible = visible.Where(v => v.Title.Contains(_searchText, StringComparison.CurrentCultureIgnoreCase));
             }
 
+            // Category filter
+            visible = _activeCategory switch
+            {
+                "favorites" => visible.Where(v => v.IsFavorite),
+                _ => visible
+            };
+
             visible = SortVideos(visible, CurrentSortMode());
 
             _suppressSelectionEvents = true;
@@ -50,6 +57,8 @@ namespace JokerDBDTracker
             {
                 SyncSelection(selectedId);
             }
+
+            UpdateStreamsCountLabel();
         }
 
         private void RefreshRecommendations()
@@ -166,5 +175,147 @@ namespace JokerDBDTracker
             _searchDebounceTimer.Stop();
             _searchDebounceTimer.Start();
         }
+
+        private void RefreshContinueWatching()
+        {
+            var inProgress = _allVideos
+                .Where(v => v.HasResumePosition)
+                .OrderByDescending(v => v.LastViewedAtUtc)
+                .Take(5)
+                .ToList();
+
+            ContinueWatchingList.ItemsSource = inProgress;
+            ContinueWatchingSection.Visibility = inProgress.Count > 0
+                ? System.Windows.Visibility.Visible
+                : System.Windows.Visibility.Collapsed;
+        }
+
+        private void UpdateStreamsCountLabel()
+        {
+            if (StreamsCountLabel is null) return;
+            var total = _videos.Count;
+            var all = _allVideos.Count;
+            StreamsCountLabel.Text = _activeCategory == "all" && string.IsNullOrEmpty(_searchText)
+                ? T($"{all} стримов в каталоге", $"{all} streams in catalog")
+                : T($"{total} из {all} стримов", $"{total} of {all} streams");
+        }
+
+        private void CategoryFilterButton_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            if (sender is not System.Windows.Controls.Button btn) return;
+            _activeCategory = btn.Tag?.ToString() ?? "all";
+            UpdateCategoryFilterButtonsVisual();
+            RefreshVisibleVideos();
+            RefreshRecommendations();
+            UpdateStreamsCountLabel();
+        }
+
+        private void UpdateCategoryFilterButtonsVisual()
+        {
+            foreach (var btn in new[]
+                     {
+                         FilterAllButton, FilterFavoritesButton
+                     })
+            {
+                if (btn is null) continue;
+                btn.Background = System.Windows.Media.Brushes.Transparent;
+                btn.BorderBrush = BrushFromHex("#2A4A62");
+                btn.Foreground = BrushFromHex("#8BB8D4");
+            }
+
+            var activeBtn = _activeCategory switch
+            {
+                "favorites" => FilterFavoritesButton,
+                _           => FilterAllButton
+            };
+
+            if (activeBtn is not null)
+            {
+                activeBtn.Background    = BrushFromHex("#1E5060");
+                activeBtn.BorderBrush   = BrushFromHex("#4a8aaa");
+                activeBtn.Foreground    = BrushFromHex("#D4EEFF");
+            }
+        }
+
+        private void RandomStreamButton_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            if (_videos.Count == 0) return;
+            var rnd = new Random();
+            var video = _videos[rnd.Next(_videos.Count)];
+            _ = OpenVideoAsync(video);
+        }
+
+        private void AddToQueueButton_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            if (sender is not System.Windows.Controls.Button btn) return;
+            var videoId = btn.Tag?.ToString();
+            if (string.IsNullOrEmpty(videoId)) return;
+            var video = _allVideos.FirstOrDefault(v => v.VideoId == videoId);
+            if (video is null) return;
+
+            if (_watchQueue.Any(v => v.VideoId == videoId))
+            {
+                var existing = _watchQueue.First(v => v.VideoId == videoId);
+                _watchQueue.Remove(existing);
+            }
+            else
+            {
+                _watchQueue.Add(video);
+            }
+
+            UpdateWatchQueueUI();
+        }
+
+        private void RemoveFromQueueButton_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            if (sender is not System.Windows.Controls.Button btn) return;
+            var videoId = btn.Tag?.ToString();
+            if (string.IsNullOrEmpty(videoId)) return;
+            var existing = _watchQueue.FirstOrDefault(v => v.VideoId == videoId);
+            if (existing is not null) _watchQueue.Remove(existing);
+            UpdateWatchQueueUI();
+        }
+
+        private async void PlayQueueButton_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            await PlayNextInQueueAsync();
+        }
+
+        private async Task PlayNextInQueueAsync()
+        {
+            if (_watchQueue.Count == 0) return;
+            var video = _watchQueue[0];
+            _watchQueue.RemoveAt(0);
+            UpdateWatchQueueUI();
+            await OpenVideoAsync(video);
+            // After player closes, continue with next if queue still has items.
+            if (_watchQueue.Count > 0)
+            {
+                await PlayNextInQueueAsync();
+            }
+        }
+
+        private void UpdateWatchQueueUI()
+        {
+            WatchQueueList.ItemsSource = null;
+            WatchQueueList.ItemsSource = _watchQueue;
+            WatchQueueCountText.Text = _watchQueue.Count.ToString();
+            WatchQueueSection.Visibility = _watchQueue.Count > 0
+                ? System.Windows.Visibility.Visible
+                : System.Windows.Visibility.Collapsed;
+        }
+
+        private void ContinueWatchingList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_suppressSelectionEvents) return;
+            if (ContinueWatchingList.SelectedItem is YouTubeVideo video)
+            {
+                _suppressSelectionEvents = true;
+                ContinueWatchingList.SelectedItem = null;
+                _suppressSelectionEvents = false;
+                _ = OpenVideoAsync(video);
+            }
+        }
+
     }
 }

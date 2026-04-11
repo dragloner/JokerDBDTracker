@@ -9,6 +9,16 @@ namespace JokerDBDTracker
     {
         private async Task LoadVideosAsync()
         {
+            // Load timecodes alongside history — both are lightweight local files.
+            try
+            {
+                _timecodes = await _timecodeService.LoadAsync();
+            }
+            catch
+            {
+                _timecodes = [];
+            }
+
             List<Models.YouTubeVideo> videos = [];
             try
             {
@@ -164,6 +174,11 @@ namespace JokerDBDTracker
 
             try
             {
+                // Build a per-video timecode count lookup.
+                var timecodeCountsByVideoId = _timecodes
+                    .GroupBy(t => t.VideoId, StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(g => g.Key, g => g.Count(), StringComparer.OrdinalIgnoreCase);
+
                 _allVideos.Clear();
                 foreach (var video in videos)
                 {
@@ -178,6 +193,11 @@ namespace JokerDBDTracker
                     }
 
                     video.IsFavorite = _favoriteVideoIds.Contains(video.VideoId);
+                    if (timecodeCountsByVideoId.TryGetValue(video.VideoId, out var timecodeCount))
+                    {
+                        video.TimecodeCount = timecodeCount;
+                    }
+
                     _allVideos.Add(video);
                 }
 
@@ -248,6 +268,8 @@ namespace JokerDBDTracker
             return $"{baseMessage}{Environment.NewLine}{Environment.NewLine}" +
                    T("Проверьте интернет-соединение и попробуйте снова.", "Check internet connection and try again.");
         }
+
+        private Task SaveTimecodesAsync() => _timecodeService.SaveAsync(_timecodes);
 
         private async Task MarkAsWatchedAsync(Models.YouTubeVideo video)
         {

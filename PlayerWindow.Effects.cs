@@ -58,7 +58,7 @@ namespace JokerDBDTracker
 
             UpdateStrengthSlidersEnabledState();
             UpdateEffectDetailsVisibility(animate: true);
-            RequestApplyEffects(immediate: true);
+            RequestApplyEffects(immediate: false);
             SendWtEffectsSync();
         }
 
@@ -331,14 +331,15 @@ namespace JokerDBDTracker
                 Shake = NormalizePositive(ShakeStrengthSlider),
                 JpegDamage = NormalizePositive(JpegDamageStrengthSlider),
                 ColdTone = NormalizeSigned(ColdToneStrengthSlider),
-                AudioVolumeBoost = NormalizePositive(AudioVolumeBoostSlider),
-                AudioPitchSemitones = ClampRange(AudioPitchSemitonesSlider, -8, 8),
-                AudioReverb = NormalizePositive(AudioReverbStrengthSlider),
-                AudioEcho = NormalizePositive(AudioEchoStrengthSlider),
-                AudioDistortion = NormalizePositive(AudioDistortionStrengthSlider),
-                AudioEqLowDb = ClampRange(AudioEqLowDbSlider, -18, 18),
-                AudioEqMidDb = ClampRange(AudioEqMidDbSlider, -18, 18),
-                AudioEqHighDb = ClampRange(AudioEqHighDbSlider, -18, 18)
+                AudioVolumeBoost = ClampRange(AudioVolumeBoostSlider, 0, 3),
+                AudioPitchSemitones = ClampRange(AudioPitchSemitonesSlider, -24, 24),
+                AudioReverb = ClampRange(AudioReverbStrengthSlider, 0, 2),
+                AudioEcho = ClampRange(AudioEchoStrengthSlider, 0, 2),
+                AudioDistortion = ClampRange(AudioDistortionStrengthSlider, 0, 2),
+                AudioWobble = ClampRange(AudioWobbleStrengthSlider, 0, 2),
+                AudioEqLowDb = ClampRange(AudioEqLowDbSlider, -30, 30),
+                AudioEqMidDb = ClampRange(AudioEqMidDbSlider, -30, 30),
+                AudioEqHighDb = ClampRange(AudioEqHighDbSlider, -30, 30)
             };
         }
 
@@ -791,10 +792,10 @@ namespace JokerDBDTracker
                                     return 1;
                                 }
 
-                                return Math.max(0.1, Math.min(4.0, value));
+                                return Math.max(0.1, Math.min(8.0, value));
                             },
                             getConfiguredPitchSemitones() {
-                                return Math.max(-12, Math.min(12, Number(this.settings?.AudioPitchSemitones) || 0));
+                                return Math.max(-24, Math.min(24, Number(this.settings?.AudioPitchSemitones) || 0));
                             },
                             ensurePitchRateObserver() {
                                 if (this.audioRateChangeHandler) {
@@ -842,7 +843,7 @@ namespace JokerDBDTracker
                                 this.video.addEventListener('ratechange', this.audioRateChangeHandler, true);
                             },
                             applyPitchPlaybackRate(semitones) {
-                                const clampedSemitones = Math.max(-12, Math.min(12, Number(semitones) || 0));
+                                const clampedSemitones = Math.max(-24, Math.min(24, Number(semitones) || 0));
                                 const targetFactor = Math.pow(2, clampedSemitones / 12);
                                 const currentRate = this.clampPlaybackRate(this.video.playbackRate);
                                 const previousFactor = Number.isFinite(this.audioLastPitchFactor) && this.audioLastPitchFactor > 0.001
@@ -882,14 +883,14 @@ namespace JokerDBDTracker
                                 this.audioLastPitchFactor = targetFactor;
                             },
                             buildDistortionCurve(strength) {
-                                const normalized = clamp01(strength);
+                                const normalized = Math.max(0, Math.min(2, strength));
                                 if (normalized <= 0.001) {
                                     return null;
                                 }
 
                                 const samples = 2048;
                                 const curve = new Float32Array(samples);
-                                const amount = 12 + normalized * 420;
+                                const amount = 12 + normalized * 700;
                                 const deg = Math.PI / 180;
                                 for (let i = 0; i < samples; i++) {
                                     const x = (i * 2) / (samples - 1) - 1;
@@ -903,19 +904,19 @@ namespace JokerDBDTracker
                                     return null;
                                 }
 
-                                const normalized = clamp01(strength);
+                                const normalized = Math.max(0, Math.min(2, strength));
                                 if (normalized <= 0.001) {
                                     return null;
                                 }
 
-                                const roundedKey = String(Math.round(normalized * 28));
+                                const roundedKey = String(Math.round(normalized * 56));
                                 if (this.audioLastReverbKey === roundedKey && this.audioReverbConvolver?.buffer) {
                                     return this.audioReverbConvolver.buffer;
                                 }
 
                                 const sampleRate = this.audioCtx.sampleRate || 48000;
-                                const seconds = 0.45 + normalized * 2.6;
-                                const decay = 1.8 + normalized * 6.4;
+                                const seconds = 0.45 + normalized * 4.0;
+                                const decay = 1.8 + normalized * 5.0;
                                 const length = Math.max(1, Math.floor(sampleRate * seconds));
                                 const impulse = this.audioCtx.createBuffer(2, length, sampleRate);
 
@@ -953,6 +954,10 @@ namespace JokerDBDTracker
                                     this.audioEchoWetGain &&
                                     this.audioReverbConvolver &&
                                     this.audioReverbWetGain &&
+                                    this.audioWobbleDelayNode &&
+                                    this.audioWobbleLfoOsc &&
+                                    this.audioWobbleLfoGain &&
+                                    this.audioWobbleWetGain &&
                                     this.audioOutputGain)
                                 {
                                     return true;
@@ -972,6 +977,10 @@ namespace JokerDBDTracker
                                     this.audioEchoWetGain = null;
                                     this.audioReverbConvolver = null;
                                     this.audioReverbWetGain = null;
+                                    this.audioWobbleDelayNode = null;
+                                    this.audioWobbleLfoOsc = null;
+                                    this.audioWobbleLfoGain = null;
+                                    this.audioWobbleWetGain = null;
                                     this.audioOutputGain = null;
                                 };
 
@@ -995,6 +1004,10 @@ namespace JokerDBDTracker
                                     const echoWetGain = ctx.createGain();
                                     const convolver = ctx.createConvolver();
                                     const reverbWetGain = ctx.createGain();
+                                    const wobbleDelay = ctx.createDelay(0.05);
+                                    const wobbleLfoOsc = ctx.createOscillator();
+                                    const wobbleLfoGain = ctx.createGain();
+                                    const wobbleWetGain = ctx.createGain();
                                     const outputGain = ctx.createGain();
 
                                     eqLow.type = 'lowshelf';
@@ -1015,6 +1028,12 @@ namespace JokerDBDTracker
                                     outputGain.gain.value = 1;
                                     inputGain.gain.value = 1;
 
+                                    wobbleDelay.delayTime.value = 0.008;
+                                    wobbleWetGain.gain.value = 0;
+                                    wobbleLfoOsc.type = 'sine';
+                                    wobbleLfoOsc.frequency.value = 1.8;
+                                    wobbleLfoGain.gain.value = 0;
+
                                     source.connect(inputGain);
                                     inputGain.connect(eqLow);
                                     eqLow.connect(eqMid);
@@ -1034,6 +1053,13 @@ namespace JokerDBDTracker
                                     convolver.connect(reverbWetGain);
                                     reverbWetGain.connect(outputGain);
 
+                                    distortion.connect(wobbleDelay);
+                                    wobbleDelay.connect(wobbleWetGain);
+                                    wobbleWetGain.connect(outputGain);
+                                    wobbleLfoOsc.connect(wobbleLfoGain);
+                                    wobbleLfoGain.connect(wobbleDelay.delayTime);
+                                    wobbleLfoOsc.start();
+
                                     outputGain.connect(ctx.destination);
 
                                     this.audioCtx = ctx;
@@ -1049,6 +1075,10 @@ namespace JokerDBDTracker
                                     this.audioEchoWetGain = echoWetGain;
                                     this.audioReverbConvolver = convolver;
                                     this.audioReverbWetGain = reverbWetGain;
+                                    this.audioWobbleDelayNode = wobbleDelay;
+                                    this.audioWobbleLfoOsc = wobbleLfoOsc;
+                                    this.audioWobbleLfoGain = wobbleLfoGain;
+                                    this.audioWobbleWetGain = wobbleWetGain;
                                     this.audioOutputGain = outputGain;
                                     this.audioLastReverbKey = '';
                                     this.audioLastDistortionKey = '';
@@ -1096,6 +1126,15 @@ namespace JokerDBDTracker
                                 if (this.audioReverbWetGain) {
                                     this.audioReverbWetGain.gain.value = 0;
                                 }
+                                if (this.audioWobbleLfoGain) {
+                                    this.audioWobbleLfoGain.gain.value = 0;
+                                }
+                                if (this.audioWobbleDelayNode) {
+                                    this.audioWobbleDelayNode.delayTime.value = 0.008;
+                                }
+                                if (this.audioWobbleWetGain) {
+                                    this.audioWobbleWetGain.gain.value = 0;
+                                }
                                 if (this.audioOutputGain) {
                                     this.audioOutputGain.gain.value = 1;
                                 }
@@ -1117,14 +1156,15 @@ namespace JokerDBDTracker
 
                                 this.ensurePitchRateObserver();
 
-                                const volumeBoost = clamp01(this.settings.AudioVolumeBoost);
-                                const pitchSemitones = Math.max(-12, Math.min(12, Number(this.settings.AudioPitchSemitones) || 0));
-                                const reverb = clamp01(this.settings.AudioReverb);
-                                const echo = clamp01(this.settings.AudioEcho);
-                                const distortion = clamp01(this.settings.AudioDistortion);
-                                const eqLowDb = Math.max(-18, Math.min(18, Number(this.settings.AudioEqLowDb) || 0));
-                                const eqMidDb = Math.max(-18, Math.min(18, Number(this.settings.AudioEqMidDb) || 0));
-                                const eqHighDb = Math.max(-18, Math.min(18, Number(this.settings.AudioEqHighDb) || 0));
+                                const volumeBoost = Math.max(0, Math.min(3, Number(this.settings.AudioVolumeBoost) || 0));
+                                const pitchSemitones = Math.max(-24, Math.min(24, Number(this.settings.AudioPitchSemitones) || 0));
+                                const reverb = Math.max(0, Math.min(2, Number(this.settings.AudioReverb) || 0));
+                                const echo = Math.max(0, Math.min(2, Number(this.settings.AudioEcho) || 0));
+                                const distortion = Math.max(0, Math.min(2, Number(this.settings.AudioDistortion) || 0));
+                                const wobble = Math.max(0, Math.min(2, Number(this.settings.AudioWobble) || 0));
+                                const eqLowDb = Math.max(-30, Math.min(30, Number(this.settings.AudioEqLowDb) || 0));
+                                const eqMidDb = Math.max(-30, Math.min(30, Number(this.settings.AudioEqMidDb) || 0));
+                                const eqHighDb = Math.max(-30, Math.min(30, Number(this.settings.AudioEqHighDb) || 0));
 
                                 this.applyPitchPlaybackRate(pitchSemitones);
 
@@ -1132,6 +1172,7 @@ namespace JokerDBDTracker
                                     reverb > 0.001 ||
                                     echo > 0.001 ||
                                     distortion > 0.001 ||
+                                    wobble > 0.001 ||
                                     Math.abs(eqLowDb) > 0.01 ||
                                     Math.abs(eqMidDb) > 0.01 ||
                                     Math.abs(eqHighDb) > 0.01;
@@ -1152,7 +1193,7 @@ namespace JokerDBDTracker
                                 }
 
                                 if (this.audioInputGain) {
-                                    this.audioInputGain.gain.value = 1 + volumeBoost * 2.2;
+                                    this.audioInputGain.gain.value = 1 + volumeBoost * 2.5;
                                 }
                                 if (this.audioEqLow) {
                                     this.audioEqLow.gain.value = eqLowDb;
@@ -1172,23 +1213,37 @@ namespace JokerDBDTracker
                                     }
                                 }
                                 if (this.audioDelayNode) {
-                                    this.audioDelayNode.delayTime.value = 0.12 + echo * 0.34;
+                                    this.audioDelayNode.delayTime.value = 0.12 + echo * 0.44;
                                 }
                                 if (this.audioDelayFeedbackGain) {
-                                    this.audioDelayFeedbackGain.gain.value = echo > 0.001 ? (0.06 + echo * 0.50) : 0;
+                                    this.audioDelayFeedbackGain.gain.value = echo > 0.001 ? Math.min(0.97, 0.06 + echo * 0.43) : 0;
                                 }
                                 if (this.audioEchoWetGain) {
-                                    this.audioEchoWetGain.gain.value = echo > 0.001 ? (0.04 + echo * 0.30) : 0;
+                                    this.audioEchoWetGain.gain.value = echo > 0.001 ? (0.04 + echo * 0.38) : 0;
                                 }
                                 if (this.audioReverbConvolver && this.audioReverbWetGain) {
                                     if (reverb > 0.001) {
                                         this.audioReverbConvolver.buffer = this.buildReverbImpulse(reverb);
-                                        this.audioReverbWetGain.gain.value = 0.05 + reverb * 0.46;
+                                        this.audioReverbWetGain.gain.value = 0.05 + reverb * 0.44;
                                     } else {
                                         this.audioReverbConvolver.buffer = null;
                                         this.audioReverbWetGain.gain.value = 0;
                                         this.audioLastReverbKey = '';
                                     }
+                                }
+                                if (this.audioWobbleDelayNode) {
+                                    this.audioWobbleDelayNode.delayTime.value = wobble > 0.001
+                                        ? (0.006 + wobble * 0.003)
+                                        : 0.008;
+                                }
+                                if (this.audioWobbleLfoGain) {
+                                    this.audioWobbleLfoGain.gain.value = wobble > 0.001 ? (0.0008 + wobble * 0.0016) : 0;
+                                }
+                                if (this.audioWobbleWetGain) {
+                                    this.audioWobbleWetGain.gain.value = wobble > 0.001 ? (0.08 + wobble * 0.18) : 0;
+                                }
+                                if (this.audioWobbleLfoOsc && wobble > 0.001) {
+                                    this.audioWobbleLfoOsc.frequency.value = 1.2 + wobble * 2.4;
                                 }
                                 if (this.audioOutputGain) {
                                     this.audioOutputGain.gain.value = 1;
@@ -1219,6 +1274,13 @@ namespace JokerDBDTracker
                                 disconnectNode(this.audioEchoWetGain);
                                 disconnectNode(this.audioReverbConvolver);
                                 disconnectNode(this.audioReverbWetGain);
+                                if (this.audioWobbleLfoOsc) {
+                                    try { this.audioWobbleLfoOsc.stop(); } catch {}
+                                }
+                                disconnectNode(this.audioWobbleLfoOsc);
+                                disconnectNode(this.audioWobbleLfoGain);
+                                disconnectNode(this.audioWobbleDelayNode);
+                                disconnectNode(this.audioWobbleWetGain);
                                 disconnectNode(this.audioOutputGain);
 
                                 if (this.audioCtx && typeof this.audioCtx.close === 'function') {
@@ -2151,14 +2213,15 @@ namespace JokerDBDTracker
                     runtime.applyAudioEffects();
                     const activeCount = flags.reduce((acc, value) => acc + (value ? 1 : 0), 0);
                     const audioFxActive =
-                        clamp01(settings.AudioVolumeBoost) > 0.001 ||
-                        Math.abs(Math.max(-12, Math.min(12, Number(settings.AudioPitchSemitones) || 0))) > 0.05 ||
-                        clamp01(settings.AudioReverb) > 0.001 ||
-                        clamp01(settings.AudioEcho) > 0.001 ||
-                        clamp01(settings.AudioDistortion) > 0.001 ||
-                        Math.abs(Math.max(-18, Math.min(18, Number(settings.AudioEqLowDb) || 0))) > 0.01 ||
-                        Math.abs(Math.max(-18, Math.min(18, Number(settings.AudioEqMidDb) || 0))) > 0.01 ||
-                        Math.abs(Math.max(-18, Math.min(18, Number(settings.AudioEqHighDb) || 0))) > 0.01;
+                        Math.max(0, Math.min(3, Number(settings.AudioVolumeBoost) || 0)) > 0.001 ||
+                        Math.abs(Math.max(-24, Math.min(24, Number(settings.AudioPitchSemitones) || 0))) > 0.05 ||
+                        Math.max(0, Math.min(2, Number(settings.AudioReverb) || 0)) > 0.001 ||
+                        Math.max(0, Math.min(2, Number(settings.AudioEcho) || 0)) > 0.001 ||
+                        Math.max(0, Math.min(2, Number(settings.AudioDistortion) || 0)) > 0.001 ||
+                        Math.max(0, Math.min(2, Number(settings.AudioWobble) || 0)) > 0.001 ||
+                        Math.abs(Math.max(-30, Math.min(30, Number(settings.AudioEqLowDb) || 0))) > 0.01 ||
+                        Math.abs(Math.max(-30, Math.min(30, Number(settings.AudioEqMidDb) || 0))) > 0.01 ||
+                        Math.abs(Math.max(-30, Math.min(30, Number(settings.AudioEqHighDb) || 0))) > 0.01;
 
                     if (activeCount === 0 && !audioFxActive) {
                         runtime.stopShake();
@@ -2270,6 +2333,11 @@ namespace JokerDBDTracker
                 return;
             }
 
+            if (_appSettings.ApplyEqToSoundEffects)
+            {
+                await SyncSoundEffectsAudioParamsAsync(BuildCurrentSoundEffectAudioParams());
+            }
+
             _lastAppliedEffectsSignature = settingsJson;
         }
 
@@ -2303,6 +2371,7 @@ namespace JokerDBDTracker
             AudioReverbStrengthSlider.Value = 0;
             AudioEchoStrengthSlider.Value = 0;
             AudioDistortionStrengthSlider.Value = 0;
+            AudioWobbleStrengthSlider.Value = 0;
             AudioEqLowDbSlider.Value = 0;
             AudioEqMidDbSlider.Value = 0;
             AudioEqHighDbSlider.Value = 0;
@@ -2319,6 +2388,7 @@ namespace JokerDBDTracker
             AudioReverbStrengthSlider.Value = 0;
             AudioEchoStrengthSlider.Value = 0;
             AudioDistortionStrengthSlider.Value = 0;
+            AudioWobbleStrengthSlider.Value = 0;
             AudioEqLowDbSlider.Value = 0;
             AudioEqMidDbSlider.Value = 0;
             AudioEqHighDbSlider.Value = 0;
@@ -2423,6 +2493,7 @@ namespace JokerDBDTracker
         {
             if (_effectsPanelExpanded)
             {
+                EffectsPanel.IsHitTestVisible = true;
                 EffectsPanel.Visibility = Visibility.Visible;
                 EffectsColumn.Width = new GridLength(420);
                 EffectsSplitterColumn.Width = new GridLength(10);
@@ -2441,6 +2512,12 @@ namespace JokerDBDTracker
                 return;
             }
 
+            // Collapse column and kill hit-testing IMMEDIATELY so the invisible-but-present
+            // panel doesn't absorb clicks during the fade animation (Opacity=0 ≠ Collapsed).
+            EffectsPanel.IsHitTestVisible = false;
+            EffectsSplitterColumn.Width = new GridLength(0);
+            EffectsColumn.Width = new GridLength(0);
+
             if (_appSettings.AnimationsEnabled)
             {
                 var fade = new DoubleAnimation
@@ -2453,16 +2530,12 @@ namespace JokerDBDTracker
                 fade.Completed += (_, _) =>
                 {
                     EffectsPanel.Visibility = Visibility.Collapsed;
-                    EffectsSplitterColumn.Width = new GridLength(0);
-                    EffectsColumn.Width = new GridLength(0);
                 };
                 EffectsPanel.BeginAnimation(UIElement.OpacityProperty, fade);
             }
             else
             {
                 EffectsPanel.Visibility = Visibility.Collapsed;
-                EffectsSplitterColumn.Width = new GridLength(0);
-                EffectsColumn.Width = new GridLength(0);
             }
 
             ToggleEffectsPanelButton.Content = PT("Показать эффекты", "Show effects");
@@ -2470,4 +2543,3 @@ namespace JokerDBDTracker
 
     }
 }
-

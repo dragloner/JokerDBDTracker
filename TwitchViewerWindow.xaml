@@ -1,0 +1,323 @@
+<Window x:Class="JokerDBDTracker.TwitchViewerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        Title="Twitch"
+        WindowState="Maximized"
+        WindowStyle="None"
+        ResizeMode="CanResize"
+        Width="1400"
+        Height="860"
+        MinWidth="700"
+        MinHeight="440"
+        WindowStartupLocation="Manual"
+        Background="#0C0F14"
+        Icon="Assets/app.ico"
+        FontFamily="Bahnschrift SemiCondensed"
+        Closing="Window_Closing">
+
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="0"
+                            ResizeBorderThickness="12"
+                            CornerRadius="0"
+                            GlassFrameThickness="0"
+                            UseAeroCaptionButtons="False"/>
+    </shell:WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <Style x:Key="TwitchButtonStyle" TargetType="Button">
+            <Setter Property="Foreground" Value="#F3FAFF"/>
+            <Setter Property="Background" Value="#CC193344"/>
+            <Setter Property="Padding" Value="14,7"/>
+            <Setter Property="BorderBrush" Value="#5C86A2"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Root"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="14"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#88CFFF"/>
+                                <Setter TargetName="Root" Property="Background" Value="#CC2A4A60"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="EffectSliderStyle" TargetType="Slider">
+            <Setter Property="Height" Value="18"/>
+            <Setter Property="Foreground" Value="#4A90C8"/>
+            <Setter Property="Background" Value="#1A3348"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Slider">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto" MinHeight="{TemplateBinding MinHeight}"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Track x:Name="PART_Track" Grid.Row="1">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Style="{x:Null}" Background="#4A90C8" BorderThickness="0" Height="4" Focusable="False"/>
+                                </Track.DecreaseRepeatButton>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Style="{x:Null}" Background="#1A3348" BorderThickness="0" Height="4" Focusable="False"/>
+                                </Track.IncreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb Width="14" Height="14" Cursor="Hand">
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="Thumb">
+                                                <Ellipse Fill="#7BC4F0" Stroke="#AADDFF" StrokeThickness="1"/>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="48"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition x:Name="EffectsPanelColumn" Width="0"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Top bar -->
+        <Border Grid.Row="0" Grid.ColumnSpan="2"
+                Background="#0E1520"
+                BorderBrush="#1A2D40"
+                BorderThickness="0,0,0,1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Button x:Name="BackButton"
+                        Grid.Column="0"
+                        Style="{StaticResource TwitchButtonStyle}"
+                        Margin="10,0,0,0"
+                        VerticalAlignment="Center"
+                        Click="BackButton_Click">
+                    ← Назад
+                </Button>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal"
+                            HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="📺" FontSize="18" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <TextBlock Text="Twitch"
+                               FontSize="16" FontWeight="Bold"
+                               Foreground="#9146FF"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <Button x:Name="ToggleEffectsPanelButton"
+                        Grid.Column="2"
+                        Style="{StaticResource TwitchButtonStyle}"
+                        Margin="0,0,10,0"
+                        VerticalAlignment="Center"
+                        Click="ToggleEffectsPanel_Click">
+                    Показать эффекты
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- WebView2 -->
+        <wv2:WebView2 x:Name="TwitchWebView"
+                      Grid.Row="1" Grid.Column="0"/>
+
+        <!-- Effects panel -->
+        <Border Grid.Row="1" Grid.Column="1"
+                Background="#0C1520"
+                BorderBrush="#1E3A52"
+                BorderThickness="1,0,0,0">
+            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="12,14,12,14">
+
+                    <TextBlock x:Name="EffectsHeaderText"
+                               Text="Визуальные эффекты"
+                               FontSize="15" FontWeight="Bold"
+                               Foreground="#A8D8FF"
+                               Margin="0,0,0,4"/>
+
+                    <TextBlock x:Name="EffectsHintText"
+                               Text="Только визуальные эффекты. Аудио и таймкоды недоступны."
+                               FontSize="12"
+                               Foreground="#5A8AAA"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,12"/>
+
+                    <Button x:Name="ResetEffectsButton"
+                            Style="{StaticResource TwitchButtonStyle}"
+                            FontSize="13" Padding="10,6"
+                            Margin="0,0,0,14"
+                            Click="ResetEffectsButton_Click">
+                        Сбросить эффекты
+                    </Button>
+
+                    <!-- Effect rows: label + slider + value -->
+                    <!-- 1. Grayscale -->
+                    <TextBlock x:Name="Fx1Label" Text="1. Без цвета" FontSize="13" FontWeight="Bold"
+                               Foreground="#DDF1FF" Margin="0,0,0,2"/>
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="38"/>
+                        </Grid.ColumnDefinitions>
+                        <Slider x:Name="GrayscaleSlider" Grid.Column="0"
+                                Style="{StaticResource EffectSliderStyle}"
+                                Minimum="0" Maximum="1" Value="0" VerticalAlignment="Center"
+                                ValueChanged="EffectSlider_ValueChanged"/>
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center"
+                                   TextAlignment="Right" Foreground="#CFEAFF" FontSize="12"
+                                   Text="{Binding ElementName=GrayscaleSlider, Path=Value, StringFormat={}{0:0.00}}"/>
+                    </Grid>
+
+                    <!-- 2. Sepia -->
+                    <TextBlock x:Name="Fx2Label" Text="2. Сепия" FontSize="13" FontWeight="Bold"
+                               Foreground="#DDF1FF" Margin="0,0,0,2"/>
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="38"/>
+                        </Grid.ColumnDefinitions>
+                        <Slider x:Name="SepiaSlider" Grid.Column="0"
+                                Style="{StaticResource EffectSliderStyle}"
+                                Minimum="0" Maximum="1" Value="0" VerticalAlignment="Center"
+                                ValueChanged="EffectSlider_ValueChanged"/>
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center"
+                                   TextAlignment="Right" Foreground="#CFEAFF" FontSize="12"
+                                   Text="{Binding ElementName=SepiaSlider, Path=Value, StringFormat={}{0:0.00}}"/>
+                    </Grid>
+
+                    <!-- 3. Invert -->
+                    <TextBlock x:Name="Fx3Label" Text="3. Инверсия" FontSize="13" FontWeight="Bold"
+                               Foreground="#DDF1FF" Margin="0,0,0,2"/>
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="38"/>
+                        </Grid.ColumnDefinitions>
+                        <Slider x:Name="InvertSlider" Grid.Column="0"
+                                Style="{StaticResource EffectSliderStyle}"
+                                Minimum="0" Maximum="1" Value="0" VerticalAlignment="Center"
+                                ValueChanged="EffectSlider_ValueChanged"/>
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center"
+                                   TextAlignment="Right" Foreground="#CFEAFF" FontSize="12"
+                                   Text="{Binding ElementName=InvertSlider, Path=Value, StringFormat={}{0:0.00}}"/>
+                    </Grid>
+
+                    <!-- 4. Brightness -->
+                    <TextBlock x:Name="Fx4Label" Text="4. Яркость" FontSize="13" FontWeight="Bold"
+                               Foreground="#DDF1FF" Margin="0,0,0,2"/>
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="38"/>
+                        </Grid.ColumnDefinitions>
+                        <Slider x:Name="BrightnessSlider" Grid.Column="0"
+                                Style="{StaticResource EffectSliderStyle}"
+                                Minimum="0" Maximum="3" Value="1" VerticalAlignment="Center"
+                                ValueChanged="EffectSlider_ValueChanged"/>
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center"
+                                   TextAlignment="Right" Foreground="#CFEAFF" FontSize="12"
+                                   Text="{Binding ElementName=BrightnessSlider, Path=Value, StringFormat={}{0:0.00}}"/>
+                    </Grid>
+
+                    <!-- 5. Contrast -->
+                    <TextBlock x:Name="Fx5Label" Text="5. Контраст" FontSize="13" FontWeight="Bold"
+                               Foreground="#DDF1FF" Margin="0,0,0,2"/>
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="38"/>
+                        </Grid.ColumnDefinitions>
+                        <Slider x:Name="ContrastSlider" Grid.Column="0"
+                                Style="{StaticResource EffectSliderStyle}"
+                                Minimum="0" Maximum="4" Value="1" VerticalAlignment="Center"
+                                ValueChanged="EffectSlider_ValueChanged"/>
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center"
+                                   TextAlignment="Right" Foreground="#CFEAFF" FontSize="12"
+                                   Text="{Binding ElementName=ContrastSlider, Path=Value, StringFormat={}{0:0.00}}"/>
+                    </Grid>
+
+                    <!-- 6. Saturation -->
+                    <TextBlock x:Name="Fx6Label" Text="6. Насыщенность" FontSize="13" FontWeight="Bold"
+                               Foreground="#DDF1FF" Margin="0,0,0,2"/>
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="38"/>
+                        </Grid.ColumnDefinitions>
+                        <Slider x:Name="SaturationSlider" Grid.Column="0"
+                                Style="{StaticResource EffectSliderStyle}"
+                                Minimum="0" Maximum="5" Value="1" VerticalAlignment="Center"
+                                ValueChanged="EffectSlider_ValueChanged"/>
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center"
+                                   TextAlignment="Right" Foreground="#CFEAFF" FontSize="12"
+                                   Text="{Binding ElementName=SaturationSlider, Path=Value, StringFormat={}{0:0.00}}"/>
+                    </Grid>
+
+                    <!-- 7. Hue shift -->
+                    <TextBlock x:Name="Fx7Label" Text="7. Сдвиг оттенка" FontSize="13" FontWeight="Bold"
+                               Foreground="#DDF1FF" Margin="0,0,0,2"/>
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="38"/>
+                        </Grid.ColumnDefinitions>
+                        <Slider x:Name="HueSlider" Grid.Column="0"
+                                Style="{StaticResource EffectSliderStyle}"
+                                Minimum="0" Maximum="360" Value="0" VerticalAlignment="Center"
+                                ValueChanged="EffectSlider_ValueChanged"/>
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center"
+                                   TextAlignment="Right" Foreground="#CFEAFF" FontSize="12"
+                                   Text="{Binding ElementName=HueSlider, Path=Value, StringFormat={}{0:0}°}"/>
+                    </Grid>
+
+                    <!-- 8. Blur -->
+                    <TextBlock x:Name="Fx8Label" Text="8. Размытие" FontSize="13" FontWeight="Bold"
+                               Foreground="#DDF1FF" Margin="0,0,0,2"/>
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="38"/>
+                        </Grid.ColumnDefinitions>
+                        <Slider x:Name="BlurSlider" Grid.Column="0"
+                                Style="{StaticResource EffectSliderStyle}"
+                                Minimum="0" Maximum="20" Value="0" VerticalAlignment="Center"
+                                ValueChanged="EffectSlider_ValueChanged"/>
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center"
+                                   TextAlignment="Right" Foreground="#CFEAFF" FontSize="12"
+                                   Text="{Binding ElementName=BlurSlider, Path=Value, StringFormat={}{0:0}px}"/>
+                    </Grid>
+
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</Window>

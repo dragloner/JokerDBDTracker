@@ -40,7 +40,7 @@ namespace JokerDBDTracker
 
             if (FisheyeCenterPadTitleText is not null)
             {
-                FisheyeCenterPadTitleText.Text = PT("Центр Фишая", "Fisheye Center");
+                FisheyeCenterPadTitleText.Text = PT("Центр фишая", "Fisheye center");
             }
 
             if (AudioFxHeaderText is not null)
@@ -98,6 +98,90 @@ namespace JokerDBDTracker
             if (AudioFxDistortionLabelText is not null)
             {
                 AudioFxDistortionLabelText.Text = PT("Дисторшн", "Distortion");
+            }
+
+            if (AudioFxWobbleLabelText is not null)
+            {
+                AudioFxWobbleLabelText.Text = PT("Wobble", "Wobble");
+            }
+
+            if (TimecodesPanelHintText is not null)
+            {
+                TimecodesPanelHintText.Text = PT(
+                    "Нажми M или кнопку + Таймкод, чтобы сохранить текущий момент видео.",
+                    "Press M or + Timecode to save the current moment.");
+            }
+
+            if (TimecodesPanelEmptyText is not null)
+            {
+                TimecodesPanelEmptyText.Text = PT(
+                    "Нет сохранённых таймкодов. Нажми M или + Таймкод.",
+                    "No saved timecodes yet. Press M or + Timecode.");
+            }
+
+            if (TimecodeAddFromPanelButton is not null)
+            {
+                TimecodeAddFromPanelButton.Content = PT("+ Таймкод", "+ Timecode");
+            }
+
+            if (TimecodesPanelSummaryText is not null)
+            {
+                TimecodesPanelSummaryText.Text = PT(
+                    "Сначала показываются таймкоды этого видео, затем остальные.",
+                    "Current video timecodes are shown first, then the rest.");
+            }
+
+            if (TimecodesSearchPlaceholderText is not null)
+            {
+                TimecodesSearchPlaceholderText.Text = PT(
+                    "Поиск по названию, времени или видео...",
+                    "Search by title, time or video...");
+            }
+
+            if (TimecodePopupHintText is not null)
+            {
+                TimecodePopupHintText.Text = PT(
+                    "Сохрани важный момент и дай ему понятное название.",
+                    "Save the current moment with a clear title.");
+            }
+
+            if (TimecodePopupLabelCaptionText is not null)
+            {
+                TimecodePopupLabelCaptionText.Text = PT("Название таймкода", "Timecode title");
+            }
+
+            if (TimecodePopupSaveButton is not null)
+            {
+                TimecodePopupSaveButton.Content = PT("Сохранить таймкод", "Save timecode");
+            }
+
+            if (TimecodePopupCancelButton is not null)
+            {
+                TimecodePopupCancelButton.Content = PT("Отмена", "Cancel");
+            }
+
+            if (BlockedNavToastText is not null)
+            {
+                BlockedNavToastText.Text = PT("🔒 Только видео YouTube", "🔒 YouTube videos only");
+            }
+
+            if (NonJokerBannerText is not null)
+            {
+                NonJokerBannerText.Text = PT(
+                    "⚠ Стороннее видео — XP и задания не начисляются",
+                    "⚠ Non-JokerDBD video — no XP or quest progress");
+            }
+
+            if (PlayerSfxSpamHeaderText is not null)
+            {
+                PlayerSfxSpamHeaderText.Text = PT("Режим спама звуков", "Sound spam mode");
+            }
+
+            if (PlayerSfxSpamDescText is not null)
+            {
+                PlayerSfxSpamDescText.Text = PT(
+                    "Вкл: спам до 8 звуков. Выкл: стоп при повторном нажатии.",
+                    "On: spam up to 8 sounds. Off: stop on repeat press.");
             }
         }
     }

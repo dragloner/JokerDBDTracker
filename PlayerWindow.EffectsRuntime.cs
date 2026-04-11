@@ -84,31 +84,12 @@ namespace JokerDBDTracker
             _isEffectsBurstReapplyRunning = true;
             try
             {
-                if (_isPlayerClosing)
-                {
-                    return;
-                }
-
-                await Task.Delay(120);
-                if (_isPlayerClosing)
-                {
-                    return;
-                }
-
+                if (_isPlayerClosing) return;
+                await Task.Delay(250);
+                if (_isPlayerClosing) return;
                 await ApplyEffectsSafelyAsync(force: true);
-                await Task.Delay(280);
-                if (_isPlayerClosing)
-                {
-                    return;
-                }
-
-                await ApplyEffectsSafelyAsync(force: true);
-                await Task.Delay(500);
-                if (_isPlayerClosing)
-                {
-                    return;
-                }
-
+                await Task.Delay(700);
+                if (_isPlayerClosing) return;
                 await ApplyEffectsSafelyAsync(force: true);
             }
             finally

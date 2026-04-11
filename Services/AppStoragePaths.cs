@@ -38,7 +38,7 @@ namespace JokerDBDTracker.Services
 
         public static string GetWebViewProfileDirectory()
         {
-            return Path.Combine(GetCurrentLocalAppDataDirectory(), "YouTube_Profile");
+            return Path.Combine(GetCurrentLocalAppDataDirectory(), "WebView_Profile");
         }
     }
 }
