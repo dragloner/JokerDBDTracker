@@ -63,11 +63,13 @@ namespace JokerDBDTracker
             StreamsPanel.Visibility = isOverlayTab ? Visibility.Collapsed : Visibility.Visible;
             RecommendationsPanel.Visibility = (!isOverlayTab && !favoritesMode) ? Visibility.Visible : Visibility.Collapsed;
             FavoritesClipsPanel.Visibility = (!isOverlayTab && favoritesMode) ? Visibility.Visible : Visibility.Collapsed;
+            FavoritesSummaryPanel.Visibility = (!isOverlayTab && favoritesMode) ? Visibility.Visible : Visibility.Collapsed;
             HomeSummaryPanel.Visibility = isOverlayTab || favoritesMode ? Visibility.Collapsed : Visibility.Visible;
             ProfilePanel.Visibility = profileMode ? Visibility.Visible : Visibility.Collapsed;
             QuestsPanel.Visibility = questsMode ? Visibility.Visible : Visibility.Collapsed;
             SettingsPanel.Visibility = settingsMode ? Visibility.Visible : Visibility.Collapsed;
             WatchTogetherPanel.Visibility = watchTogetherMode ? Visibility.Visible : Visibility.Collapsed;
+            TwitchWatchButton.Visibility = (!isOverlayTab && !favoritesMode) ? Visibility.Visible : Visibility.Collapsed;
             RecommendationsColumn.Width = isOverlayTab
                 ? new GridLength(0)
                 : new GridLength(favoritesMode ? 380 : 420);
@@ -90,6 +92,7 @@ namespace JokerDBDTracker
             else if (favoritesMode)
             {
                 RefreshVisibleVideos();
+                RefreshFavoritesSummary();
                 _ = RefreshFavoritesClipsAsync();
             }
             else if (!settingsMode)
@@ -99,11 +102,14 @@ namespace JokerDBDTracker
                 RefreshHomeSummary();
             }
 
+            RefreshSearchPlaceholderText();
+
             foreach (var panel in new FrameworkElement[]
                      {
                          StreamsPanel,
                          RecommendationsPanel,
                          FavoritesClipsPanel,
+                         FavoritesSummaryPanel,
                          HomeSummaryPanel,
                          ProfilePanel,
                          QuestsPanel,

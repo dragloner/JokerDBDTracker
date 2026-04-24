@@ -21,6 +21,8 @@ namespace JokerDBDTracker
         private const string AutoStartRunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
         private const string AutoStartValueName = "JokerDBDTracker";
         private const string BindTargetHideEffects = "hide_effects";
+        private const string BindTargetToggleChat = "toggle_chat";
+        private const string BindTargetToggleComments = "toggle_comments";
         private const string BindTargetAuraFarm = "aura_farm";
         private const string BindTargetLaugh = "laugh";
         private const string BindTargetPsi = "psi";
@@ -360,6 +362,12 @@ namespace JokerDBDTracker
                 case BindTargetHideEffects:
                     _appSettings.HideEffectsPanelBind = bind;
                     break;
+                case BindTargetToggleChat:
+                    _appSettings.ToggleChatBind = bind;
+                    break;
+                case BindTargetToggleComments:
+                    _appSettings.ToggleCommentsBind = bind;
+                    break;
                 case BindTargetAuraFarm:
                     _appSettings.AuraFarmSoundBind = bind;
                     break;
@@ -398,6 +406,18 @@ namespace JokerDBDTracker
             }
 
             HideEffectsPanelBindValueText.Text = FormatBindForUi(_appSettings.HideEffectsPanelBind);
+            if (ToggleChatBindValueText is not null)
+            {
+                ToggleChatBindValueText.Text = string.IsNullOrWhiteSpace(_appSettings.ToggleChatBind)
+                    ? "-"
+                    : FormatBindForUi(_appSettings.ToggleChatBind);
+            }
+            if (ToggleCommentsBindValueText is not null)
+            {
+                ToggleCommentsBindValueText.Text = string.IsNullOrWhiteSpace(_appSettings.ToggleCommentsBind)
+                    ? "-"
+                    : FormatBindForUi(_appSettings.ToggleCommentsBind);
+            }
             AuraFarmBindValueText.Text = FormatBindForUi(_appSettings.AuraFarmSoundBind);
             LaughBindValueText.Text = FormatBindForUi(_appSettings.LaughSoundBind);
             PsiBindValueText.Text = FormatBindForUi(_appSettings.PsiSoundBind);
@@ -448,12 +468,14 @@ namespace JokerDBDTracker
             var buttons = new[]
             {
                 AssignHideEffectsBindButton,
+                AssignToggleChatBindButton,
+                AssignToggleCommentsBindButton,
                 AssignAuraFarmBindButton,
                 AssignLaughBindButton,
                 AssignPsiBindButton,
                 AssignRespectBindButton,
                 AssignSadBindButton
-            };
+            }.Where(b => b is not null).Select(b => b!).ToArray();
 
             foreach (var button in buttons)
             {
@@ -658,6 +680,8 @@ namespace JokerDBDTracker
         private void ResetAllBindsToDefaults()
         {
             _appSettings.HideEffectsPanelBind = "H";
+            _appSettings.ToggleChatBind = "C";
+            _appSettings.ToggleCommentsBind = "V";
             _appSettings.AuraFarmSoundBind = "Y";
             _appSettings.LaughSoundBind = "U";
             _appSettings.PsiSoundBind = "I";

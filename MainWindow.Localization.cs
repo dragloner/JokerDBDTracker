@@ -99,8 +99,8 @@ namespace JokerDBDTracker
 
             SoundModeHeaderText.Text = T("Режим звуковых эффектов", "Sound effects mode");
             SoundModeDescText.Text = T(
-                "Выкл — повторное нажатие останавливает звук. Вкл — спам до 8 звуков одновременно.",
-                "Off — pressing again stops the sound. On — spam up to 8 sounds simultaneously.");
+                "Выкл — повтор останавливает звук. Вкл — до 8 разных эффектов; тот же эффект при повторе заменяет предыдущий.",
+                "Off — repeat press stops the sound. On — up to 8 different effects; repeating the same effect replaces the previous one.");
             SoundSpamModeToggle.Content = string.Empty;
             EqForSoundFxHeaderText.Text = T("Эквалайзер для звуковых эффектов", "Equalizer for sound effects");
             EqForSoundFxDescText.Text = T(
@@ -226,7 +226,22 @@ namespace JokerDBDTracker
             RefreshHomeSummary();
             RefreshProfile();
             RefreshQuestsPage();
+            RefreshFavoritesSummary();
+            RefreshFavoritesClipsView();
+            RefreshSearchPlaceholderText();
             UpdateStreakText();
+        }
+
+        private void RefreshSearchPlaceholderText()
+        {
+            if (SearchPlaceholderText is null)
+            {
+                return;
+            }
+
+            SearchPlaceholderText.Text = IsFavoritesTabSelected()
+                ? T("Поиск по избранному и таймкодам...", "Search favorites and timecodes...")
+                : T("Поиск стримов...", "Search streams...");
         }
 
         private void ApplyLocalizedUpdateStatusText()

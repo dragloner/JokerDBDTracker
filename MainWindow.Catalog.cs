@@ -19,6 +19,13 @@ namespace JokerDBDTracker
             }
 
             RefreshVisibleVideos();
+            if (IsFavoritesTabSelected())
+            {
+                RefreshFavoritesClipsView();
+                RefreshFavoritesSummary();
+                return;
+            }
+
             RefreshRecommendations();
         }
 
@@ -33,13 +40,14 @@ namespace JokerDBDTracker
 
             if (!string.IsNullOrWhiteSpace(_searchText))
             {
-                visible = visible.Where(v => v.Title.Contains(_searchText, StringComparison.CurrentCultureIgnoreCase));
+                visible = visible.Where(v => MatchesVideoSearch(v, _searchText, forFavoritesTab));
             }
 
             // Category filter
             visible = _activeCategory switch
             {
                 "favorites" => visible.Where(v => v.IsFavorite),
+                "with_timecodes" => visible.Where(v => v.HasTimecodes),
                 _ => visible
             };
 
@@ -194,7 +202,18 @@ namespace JokerDBDTracker
         {
             if (StreamsCountLabel is null) return;
             var total = _videos.Count;
-            var all = _allVideos.Count;
+            var all = IsFavoritesTabSelected()
+                ? _allVideos.Count(v => v.IsFavorite)
+                : _allVideos.Count;
+
+            if (IsFavoritesTabSelected())
+            {
+                StreamsCountLabel.Text = string.IsNullOrWhiteSpace(_searchText) && _activeCategory == "all"
+                    ? T($"{all} избранных стримов", $"{all} favorite streams")
+                    : T($"{total} из {all} избранных стримов", $"{total} of {all} favorite streams");
+                return;
+            }
+
             StreamsCountLabel.Text = _activeCategory == "all" && string.IsNullOrEmpty(_searchText)
                 ? T($"{all} стримов в каталоге", $"{all} streams in catalog")
                 : T($"{total} из {all} стримов", $"{total} of {all} streams");
@@ -206,6 +225,10 @@ namespace JokerDBDTracker
             _activeCategory = btn.Tag?.ToString() ?? "all";
             UpdateCategoryFilterButtonsVisual();
             RefreshVisibleVideos();
+            if (IsFavoritesTabSelected())
+            {
+                RefreshFavoritesSummary();
+            }
             RefreshRecommendations();
             UpdateStreamsCountLabel();
         }
@@ -214,7 +237,7 @@ namespace JokerDBDTracker
         {
             foreach (var btn in new[]
                      {
-                         FilterAllButton, FilterFavoritesButton
+                         FilterAllButton, FilterFavoritesButton, FilterTimecodesButton
                      })
             {
                 if (btn is null) continue;
@@ -225,6 +248,7 @@ namespace JokerDBDTracker
 
             var activeBtn = _activeCategory switch
             {
+                "with_timecodes" => FilterTimecodesButton,
                 "favorites" => FilterFavoritesButton,
                 _           => FilterAllButton
             };
@@ -264,6 +288,23 @@ namespace JokerDBDTracker
             }
 
             UpdateWatchQueueUI();
+        }
+
+        private bool MatchesVideoSearch(YouTubeVideo video, string query, bool includeTimecodes)
+        {
+            if (video.Title.Contains(query, StringComparison.CurrentCultureIgnoreCase))
+            {
+                return true;
+            }
+
+            if (!includeTimecodes)
+            {
+                return false;
+            }
+
+            return GetFavoriteClipsSource().Any(timecode =>
+                string.Equals(timecode.VideoId, video.VideoId, StringComparison.OrdinalIgnoreCase) &&
+                MatchesTimecodeSearch(timecode, query));
         }
 
         private void RemoveFromQueueButton_Click(object sender, System.Windows.RoutedEventArgs e)

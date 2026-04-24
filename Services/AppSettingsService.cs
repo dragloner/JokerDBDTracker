@@ -13,6 +13,8 @@ namespace JokerDBDTracker.Services
         public bool LoggingEnabled { get; set; } = true;
         public string FullscreenBehavior { get; set; } = "auto";
         public string HideEffectsPanelBind { get; set; } = "H";
+        public string ToggleChatBind { get; set; } = "C";
+        public string ToggleCommentsBind { get; set; } = "V";
         public string AuraFarmSoundBind { get; set; } = "Y";
         public string LaughSoundBind { get; set; } = "U";
         public string PsiSoundBind { get; set; } = "I";
@@ -210,6 +212,8 @@ namespace JokerDBDTracker.Services
                 ? "windowed"
                 : "auto";
             settings.HideEffectsPanelBind = NormalizeBind(settings.HideEffectsPanelBind, "H");
+            settings.ToggleChatBind = NormalizeBind(settings.ToggleChatBind, "C");
+            settings.ToggleCommentsBind = NormalizeBind(settings.ToggleCommentsBind, "V");
             settings.AuraFarmSoundBind = NormalizeBind(settings.AuraFarmSoundBind, "Y");
             settings.LaughSoundBind = NormalizeBind(settings.LaughSoundBind, "U");
             settings.PsiSoundBind = NormalizeBind(settings.PsiSoundBind, "I");

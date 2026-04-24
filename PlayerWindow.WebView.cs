@@ -42,9 +42,19 @@ namespace JokerDBDTracker
                 if (_video.IsTwitchStream)
                 {
                     EffectsWorkspaceTimecodesTab.Visibility = System.Windows.Visibility.Collapsed;
+                    EffectsWorkspaceCommunityTab.Visibility = System.Windows.Visibility.Collapsed;
+                    if (ToggleChatDockButton is not null)
+                    {
+                        ToggleChatDockButton.Visibility = System.Windows.Visibility.Collapsed;
+                    }
+                    if (ToggleCommentsDockButton is not null)
+                    {
+                        ToggleCommentsDockButton.Visibility = System.Windows.Visibility.Collapsed;
+                    }
                 }
                 else
                 {
+                    EffectsWorkspaceCommunityTab.Visibility = System.Windows.Visibility.Collapsed;
                     _ = LoadVideoTimecodesAsync();
                 }
                 if (PlayerSfxSpamToggle is not null)
@@ -52,6 +62,7 @@ namespace JokerDBDTracker
                     PlayerSfxSpamToggle.IsChecked = _appSettings.SoundSpamMode;
                 }
                 ApplyPlayerLocalization();
+                ApplyCommunityDockLayout();
                 UpdateDynamicBindHints();
                 RegisterGlobalHotkeys();
                 UpdateWindowSizeButtonState();
@@ -73,6 +84,7 @@ namespace JokerDBDTracker
                     var environment = await CoreWebView2Environment.CreateAsync(
                         browserExecutableFolder: null,
                         userDataFolder: userDataFolder);
+                    _webViewEnvironment = environment;
                     await Player.EnsureCoreWebView2Async(environment);
 
                     Player.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
@@ -90,6 +102,8 @@ namespace JokerDBDTracker
                     {
                         await Player.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(
                             BuildEarlyKioskBootstrapScript(_video.VideoId));
+                        await Player.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(
+                            BuildSeekBridgeScript());
                     }
                     Player.CoreWebView2.ContainsFullScreenElementChanged += CoreWebView2_ContainsFullScreenElementChanged;
                     Player.CoreWebView2.NavigationStarting += CoreWebView2_NavigationStarting;
@@ -144,6 +158,7 @@ namespace JokerDBDTracker
             }
             _lastXpSampleUtc = null;
             _lastMeasuredTime = -1;
+            _soundEffectsPrewarmedForCurrentNavigation = false;
 
             if (_video.IsTwitchStream)
             {
@@ -200,6 +215,7 @@ namespace JokerDBDTracker
                     _lastAppliedEffectsSignature = string.Empty;
                     await ApplyEffectsSafelyAsync(force: true);
                     FlushPendingEffectsApplyRequests();
+                    _ = PrewarmWebViewSoundEffectsAsync();
                 }
                 catch
                 {
@@ -240,7 +256,7 @@ namespace JokerDBDTracker
                         _video.VideoId,
                         ReadConfiguredKey(_appSettings.HideEffectsPanelBind, Key.H),
                         [.. BuildPlayerHotkeySet()]),
-                    timeoutMs: 3500,
+                    timeoutMs: 10000,
                     operation: "CoreWebView2_NavigationCompleted.Bootstrap");
                 if (_isPlayerClosing || navigationVersion != _playerNavigationVersion)
                 {
@@ -289,6 +305,7 @@ namespace JokerDBDTracker
                 SetPlayerLoadingOverlay(visible: false);
                 UpdateJokerVideoState();
                 FlushPendingEffectsApplyRequests();
+                _ = PrewarmWebViewSoundEffectsAsync();
             }
             catch
             {
@@ -358,6 +375,25 @@ namespace JokerDBDTracker
                     MarkUserInteraction();
                     RequestTimecodeCapture();
                 }, DispatcherPriority.Input);
+                return;
+            }
+
+            if (message.StartsWith("jdbd:open-community:", StringComparison.Ordinal))
+            {
+                var kind = message.EndsWith(":chat", StringComparison.Ordinal)
+                    ? PlayerCommunityDockKind.Chat
+                    : PlayerCommunityDockKind.Comments;
+                Dispatcher.BeginInvoke(async () =>
+                {
+                    MarkUserInteraction();
+                    await OpenCommunityDockAsync(kind, forceReload: false);
+                }, DispatcherPriority.Input);
+                return;
+            }
+
+            if (string.Equals(message, "jdbd:seeked", StringComparison.Ordinal))
+            {
+                Dispatcher.BeginInvoke(OnSeekDetected, DispatcherPriority.Input);
                 return;
             }
 
@@ -489,15 +525,38 @@ namespace JokerDBDTracker
             const string playbackStateScript = """
                 (() => {
                     const video = document.querySelector('video');
-                    if (!video || !Number.isFinite(video.currentTime)) {
-                        return false;
+                    const player = document.getElementById('movie_player');
+                    if (video instanceof HTMLVideoElement) {
+                        const hasNetworkSource = video.networkState !== HTMLMediaElement.NETWORK_NO_SOURCE;
+                        const hasRenderableFrame = Number.isFinite(video.currentTime) &&
+                            (video.currentTime > 0.15 || video.readyState >= 2);
+                        const isLiveUiReady = !!document.querySelector(
+                            '.ytp-live, .ytp-live-badge, .ytp-time-current, .ytp-time-display');
+                        const isPlayingOrReady =
+                            (!video.paused && hasNetworkSource) ||
+                            hasRenderableFrame ||
+                            (isLiveUiReady && hasNetworkSource && video.readyState >= 1);
+                        if (isPlayingOrReady) {
+                            return true;
+                        }
                     }
 
-                    return video.currentTime > 0.15 || (video.readyState >= 2 && !video.paused);
+                    if (player instanceof HTMLElement) {
+                        const playerClasses = player.className || '';
+                        const isPlayerReady =
+                            playerClasses.includes('playing-mode') ||
+                            playerClasses.includes('paused-mode') ||
+                            player.getAttribute('data-player-size');
+                        if (isPlayerReady) {
+                            return true;
+                        }
+                    }
+
+                    return false;
                 })();
                 """;
 
-            for (var i = 0; i < 60; i++)
+            for (var i = 0; i < 150; i++)
             {
                 if (_isPlayerClosing)
                 {
@@ -508,7 +567,7 @@ namespace JokerDBDTracker
                 {
                     var result = await ExecuteWebScriptWithTimeoutAsync(
                         playbackStateScript,
-                        timeoutMs: 800,
+                        timeoutMs: 1500,
                         operation: "WaitForPlaybackStartAsync");
                     if (result is null)
                     {
@@ -643,6 +702,59 @@ namespace JokerDBDTracker
             }
 
             return videoId;
+        }
+
+        private static string BuildSeekBridgeScript()
+        {
+            return """
+                (() => {
+                    // Only the top-level YouTube watch frame should report seeks.
+                    if (window.frameElement !== null) return;
+                    if (location.hostname !== 'www.youtube.com') return;
+                    if (!location.pathname.startsWith('/watch')) return;
+                    if (window.__jdbdSeekBridgeInstalled) return;
+                    window.__jdbdSeekBridgeInstalled = true;
+
+                    // Track steady-state playback position so we can distinguish
+                    // user-initiated seeks (large jumps) from internal YouTube seeks
+                    // triggered by quality switches, buffering, etc. (near-zero jumps).
+                    let lastSteadyTime = -1;
+                    let attachedVideo = null;
+
+                    const onTimeUpdate = () => {
+                        if (attachedVideo && !attachedVideo.seeking) {
+                            lastSteadyTime = attachedVideo.currentTime;
+                        }
+                    };
+
+                    const onSeeked = () => {
+                        if (!attachedVideo) return;
+                        const newTime = attachedVideo.currentTime;
+                        if (!Number.isFinite(newTime)) return;
+                        // Ignore seeks < 3 s from last known position (quality switches, buffering).
+                        if (lastSteadyTime >= 0 && Math.abs(newTime - lastSteadyTime) < 3) return;
+                        try { window.chrome?.webview?.postMessage('jdbd:seeked'); } catch {}
+                    };
+
+                    const tryAttach = () => {
+                        const video = window.__stwfxRuntime?.video
+                            || document.querySelector('video.html5-main-video')
+                            || document.querySelector('.html5-video-player video');
+                        if (!video || video === attachedVideo) return;
+                        if (attachedVideo) {
+                            attachedVideo.removeEventListener('timeupdate', onTimeUpdate);
+                            attachedVideo.removeEventListener('seeked', onSeeked);
+                        }
+                        attachedVideo = video;
+                        video.addEventListener('timeupdate', onTimeUpdate, { passive: true });
+                        video.addEventListener('seeked', onSeeked, { passive: true });
+                    };
+
+                    const interval = setInterval(tryAttach, 800);
+                    setTimeout(() => clearInterval(interval), 60000);
+                    tryAttach();
+                })();
+                """;
         }
 
         private static string BuildWebInputStateBridgeScript()
@@ -844,6 +956,55 @@ namespace JokerDBDTracker
                         document.addEventListener('keyup', blockReservedShortcut, { capture: true });
                     };
 
+                    const installPlayerSurfaceClickToggle = () => {
+                        if (window.__jdbdPlayerSurfaceClickToggleInstalled) {
+                            return;
+                        }
+
+                        window.__jdbdPlayerSurfaceClickToggleInstalled = true;
+                        const isInteractivePlayerUi = (target) => {
+                            if (!target || !(target instanceof Element)) {
+                                return false;
+                            }
+
+                            return !!target.closest(
+                                '.ytp-chrome-top, .ytp-chrome-bottom, .ytp-popup, .ytp-settings-menu, ' +
+                                '.ytp-menuitem, .ytp-progress-bar-container, .ytp-scrubber-container, ' +
+                                '.ytp-button, button, a[href], [role="button"], [role="menuitem"], [role="slider"], ' +
+                                'input, textarea, select, [contenteditable=""], [contenteditable="true"]');
+                        };
+
+                        document.addEventListener('click', (event) => {
+                            if (!event.isTrusted || event.button !== 0 || event.defaultPrevented || event.detail > 1) {
+                                return;
+                            }
+
+                            const target = event.target;
+                            if (!(target instanceof Element) || isInteractivePlayerUi(target)) {
+                                return;
+                            }
+
+                            const player = document.getElementById('movie_player');
+                            const video = document.querySelector('video');
+                            if (!(player instanceof HTMLElement) || !(video instanceof HTMLVideoElement) || !player.contains(target)) {
+                                return;
+                            }
+
+                            event.preventDefault();
+                            event.stopImmediatePropagation();
+                            event.stopPropagation();
+
+                            if (video.paused) {
+                                const playPromise = video.play?.();
+                                if (playPromise && typeof playPromise.catch === 'function') {
+                                    playPromise.catch(() => {});
+                                }
+                            } else {
+                                video.pause?.();
+                            }
+                        }, { capture: true });
+                    };
+
                     const getPlayerControlText = (element) => {
                         if (!element) {
                             return '';
@@ -942,6 +1103,17 @@ namespace JokerDBDTracker
                                    fullscreenElement.contains(player);
                         } catch {
                             return false;
+                        }
+                    };
+
+                    const isSidePanelHeldOpenByUser = () => false;
+
+                    const syncImmersivePanelBodyClasses = () => {
+                        try {
+                            document.body.classList.remove('jdbd-panel-comments');
+                            document.body.classList.remove('jdbd-panel-chat');
+                        } catch {
+                            // no-op
                         }
                     };
 
@@ -1140,7 +1312,7 @@ namespace JokerDBDTracker
                                 return false;
                             }
 
-                            const keepOpen = window.__jdbdKeepSidePanelOpen === true && !isPlayerInFullscreen();
+                            const keepOpen = false;
                             let changed = false;
                             const knownPanelSelectors = [
                                 '#movie_player [class*="watch-comments" i]',
@@ -1464,19 +1636,26 @@ namespace JokerDBDTracker
                             const control = event.target && event.target.closest ? event.target.closest('.ytp-button, button, [role="button"], a[role="button"]') : null;
                             const panelKind = getSidePanelControlKind(control);
                             if (panelKind) {
-                                const currentKind = String(window.__jdbdOpenSidePanelKind || '');
-                                const isAlreadyOpen = isControlExpanded(control) || (window.__jdbdKeepSidePanelOpen === true && currentKind === panelKind);
-                                const shouldOpen = !isAlreadyOpen;
-
-                                window.__jdbdKeepSidePanelOpen = shouldOpen;
-                                window.__jdbdOpenSidePanelKind = shouldOpen ? panelKind : '';
+                                event.preventDefault();
+                                event.stopImmediatePropagation();
+                                event.stopPropagation();
+                                window.__jdbdKeepSidePanelOpen = false;
+                                window.__jdbdOpenSidePanelKind = '';
+                                syncImmersivePanelBodyClasses();
+                                if (event.type === 'click') {
+                                    try {
+                                        window.chrome?.webview?.postMessage(`jdbd:open-community:${panelKind}`);
+                                    } catch {
+                                        // no-op
+                                    }
+                                }
                                 setTimeout(() => {
                                     try {
                                         window.__jdbdRepairImmersiveLayout?.();
                                     } catch {
                                         // no-op
                                     }
-                                }, shouldOpen ? 180 : 120);
+                                }, 120);
                                 return;
                             }
 
@@ -1484,6 +1663,7 @@ namespace JokerDBDTracker
                             if (text.includes('close') || text.includes('закры') || text === 'x') {
                                 window.__jdbdKeepSidePanelOpen = false;
                                 window.__jdbdOpenSidePanelKind = '';
+                                syncImmersivePanelBodyClasses();
                             }
                         };
 
@@ -1505,6 +1685,7 @@ namespace JokerDBDTracker
                         const resetPanelsToClosed = () => {
                             window.__jdbdKeepSidePanelOpen = false;
                             window.__jdbdOpenSidePanelKind = '';
+                            syncImmersivePanelBodyClasses();
                         };
 
                         document.addEventListener('yt-page-data-updated', () => {
@@ -1657,7 +1838,7 @@ namespace JokerDBDTracker
                                 const text = (panel.innerText || '').toLowerCase();
                                 const commentNodes = panel.querySelectorAll('ytd-comment-thread-renderer, ytd-comment-view-model, [id*="comment"], [class*="comment"]').length;
                                 const chatNodes = panel.querySelectorAll('[class*="chat"], [data-a-target*="chat"]').length;
-                                const allowPanelBecauseUserJustOpenedIt = window.__jdbdKeepSidePanelOpen === true && !isPlayerInFullscreen();
+                                const allowPanelBecauseUserJustOpenedIt = false;
                                 const looksPlaceholderCommentPanel =
                                     (text.includes('featured comments') || text.includes('top is selected')) &&
                                     commentNodes < 3 &&
@@ -1691,6 +1872,108 @@ namespace JokerDBDTracker
                         }
                     };
 
+                    /* YouTube "featured comments" teaser above the progress bar lives inside #movie_player.
+                       It is NOT the same as the full comments side panel — hide it always (even when
+                       jdbd-panel-comments is on for the page-level engagement panel). */
+                    const suppressInlineFeaturedCommentTeasers = () => {
+                        try {
+                            const roots = [
+                                document.getElementById('movie_player'),
+                                document.querySelector('.html5-video-player')
+                            ].filter(Boolean);
+                            const selectors = [
+                                '.ytp-comments-header-renderer',
+                                'ytd-comments-overlay',
+                                '.ytp-comments-trigger',
+                                '[class*="comments-overlay" i]',
+                                '[class*="CommentsOverlay" i]',
+                                '[class*="comments-header" i]',
+                                '[class*="featured-comments" i]',
+                                '[class*="comment-teaser" i]',
+                                '[class*="comment-preview" i]',
+                                '[id*="featured-comments" i]',
+                                '[id*="comment-teaser" i]',
+                                '[aria-label*="featured comments" i]'
+                            ];
+                            for (const root of roots) {
+                                for (const sel of selectors) {
+                                    try {
+                                        root.querySelectorAll(sel).forEach((el) => {
+                                            if (!(el instanceof HTMLElement)) {
+                                                return;
+                                            }
+                                            el.style.setProperty('display', 'none', 'important');
+                                            el.style.setProperty('visibility', 'hidden', 'important');
+                                            el.style.setProperty('pointer-events', 'none', 'important');
+                                            el.style.setProperty('opacity', '0', 'important');
+                                            el.style.setProperty('max-height', '0', 'important');
+                                            el.style.setProperty('overflow', 'hidden', 'important');
+                                        });
+                                    } catch {
+                                        // no-op
+                                    }
+                                }
+
+                                try {
+                                    root.querySelectorAll('*').forEach((el) => {
+                                        if (!(el instanceof HTMLElement)) {
+                                            return;
+                                        }
+
+                                        const text = (el.innerText || '').toLowerCase();
+                                        const looksLikeCommentTeaser =
+                                            text.includes('featured comments') ||
+                                            text.includes('top is selected') ||
+                                            text.includes("you'll see featured comments") ||
+                                            text.includes('reply') ||
+                                            text.includes('комментар') ||
+                                            text.includes('ответить');
+                                        if (!looksLikeCommentTeaser) {
+                                            return;
+                                        }
+
+                                        const rect = el.getBoundingClientRect();
+                                        const rootRect = root.getBoundingClientRect();
+                                        if (rect.width < 180 || rect.height < 20) {
+                                            return;
+                                        }
+
+                                        // We only want bottom teaser bars inside the player, not the control bar itself.
+                                        if (rect.bottom < rootRect.top + rootRect.height * 0.65) {
+                                            return;
+                                        }
+
+                                        let target = el;
+                                        for (let i = 0; i < 4; i++) {
+                                            const parent = target.parentElement;
+                                            if (!(parent instanceof HTMLElement)) {
+                                                break;
+                                            }
+
+                                            const parentRect = parent.getBoundingClientRect();
+                                            if (parentRect.width > rootRect.width * 0.95 || parentRect.height > rootRect.height * 0.55) {
+                                                break;
+                                            }
+
+                                            target = parent;
+                                        }
+
+                                        target.style.setProperty('display', 'none', 'important');
+                                        target.style.setProperty('visibility', 'hidden', 'important');
+                                        target.style.setProperty('pointer-events', 'none', 'important');
+                                        target.style.setProperty('opacity', '0', 'important');
+                                        target.style.setProperty('max-height', '0', 'important');
+                                        target.style.setProperty('overflow', 'hidden', 'important');
+                                    });
+                                } catch {
+                                    // no-op
+                                }
+                            }
+                        } catch {
+                            // no-op
+                        }
+                    };
+
                     // Returns true if the layout is fully stable:
                     //   - ytd-watch-flexy has theater, no two-columns attrs
                     //   - #secondary is explicitly JS-hidden (can't rely on CSS alone because
@@ -1707,12 +1990,20 @@ namespace JokerDBDTracker
                             // Verify #secondary is force-hidden
                             const sec = document.getElementById('secondary');
                             if (sec && sec.style.display !== 'none') { return false; }
-                            // Verify all engagement panels are force-hidden (multiple instances exist:
-                            // right-side panel, bottom comments panel, description panel, etc.)
+                            const comments = document.getElementById('comments');
+                            if (comments && comments.style.display !== 'none') { return false; }
+                            const commentRoots = document.querySelectorAll('ytd-comments, ytd-comments-header-renderer');
+                            for (const root of commentRoots) {
+                                if (root instanceof HTMLElement && root.style.display !== 'none') { return false; }
+                            }
                             const panels = document.querySelectorAll('ytd-engagement-panel-section-list-renderer');
                             for (const p of panels) {
                                 if (p.style.display !== 'none') { return false; }
                             }
+                            const chat = document.getElementById('chat');
+                            if (chat && chat.style.display !== 'none') { return false; }
+                            const chatContainer = document.getElementById('chat-container');
+                            if (chatContainer && chatContainer.style.display !== 'none') { return false; }
                             return true;
                         } catch { return false; }
                     };
@@ -1790,6 +2081,16 @@ namespace JokerDBDTracker
                                 body * {
                                     pointer-events: none !important;
                                 }
+                                #player-container,
+                                #player-container-inner,
+                                #player-container-outer,
+                                #player-theater-container,
+                                #full-bleed-container,
+                                #player-container *,
+                                #player-container-inner *,
+                                #player-container-outer *,
+                                #player-theater-container *,
+                                #full-bleed-container *,
                                 ytd-player, ytd-player *,
                                 #movie_player, #movie_player *,
                                 #player, #player * {
@@ -1800,6 +2101,8 @@ namespace JokerDBDTracker
                                 #secondary, #secondary-inner, #related,
                                 ytd-watch-metadata, ytd-watch-info-text,
                                 #description, #description-inline-expander, #description-inner,
+                                #comments, ytd-comments, ytd-comments-header-renderer,
+                                ytd-comment-thread-renderer, ytd-comment-view-model,
                                 ytd-text-inline-expander,
                                 ytd-merch-shelf-renderer, ytd-reel-shelf-renderer,
                                 ytd-watch-next-secondary-results-renderer, ytd-watch-next-feed-renderer,
@@ -1811,20 +2114,52 @@ namespace JokerDBDTracker
                                     pointer-events: none !important;
                                 }
 
-                                /* Hide live chat, comments panel and all engagement overlays */
-                                #chat, #chat-container, ytd-live-chat-frame,
-                                .ytp-chat-widget, .ytp-fullerscreen-edu-button,
+                                #chat,
+                                #chat-container,
+                                ytd-live-chat-frame,
+                                .ytp-chat-widget,
                                 ytd-engagement-panel-section-list-renderer,
-                                #engagement, ytd-engagement-panel-title-header-renderer,
-                                .ytp-comments-header-renderer, .ytp-panel-anchor,
-                                .ytp-suggested-action-badge-expanded,
-                                .ytp-inline-preview-ui, .ytp-inline-preview-overlay {
+                                #engagement,
+                                ytd-engagement-panel-title-header-renderer,
+                                .ytp-panel-anchor {
                                     display: none !important;
                                     visibility: hidden !important;
                                     pointer-events: none !important;
                                 }
 
-                                /* Keep player controls visible — only hide distracting overlays */
+                                /* Featured-comments teaser inside the player chrome — never show (separate from page comments panel). */
+                                #movie_player .ytp-comments-header-renderer,
+                                #movie_player ytd-comments-overlay,
+                                #movie_player .ytp-comments-trigger,
+                                .html5-video-player .ytp-comments-header-renderer,
+                                .html5-video-player ytd-comments-overlay,
+                                .html5-video-player .ytp-comments-trigger,
+                                #movie_player [class*="comments-overlay" i],
+                                .html5-video-player [class*="comments-overlay" i],
+                                #movie_player [class*="featured-comments" i],
+                                .html5-video-player [class*="featured-comments" i],
+                                #movie_player [class*="comment-teaser" i],
+                                .html5-video-player [class*="comment-teaser" i],
+                                #movie_player [class*="comment-preview" i],
+                                .html5-video-player [class*="comment-preview" i] {
+                                    display: none !important;
+                                    visibility: hidden !important;
+                                    pointer-events: none !important;
+                                    opacity: 0 !important;
+                                    max-height: 0 !important;
+                                    overflow: hidden !important;
+                                }
+
+                                .ytp-fullerscreen-edu-button,
+                                .ytp-suggested-action-badge-expanded,
+                                .ytp-inline-preview-ui,
+                                .ytp-inline-preview-overlay {
+                                    display: none !important;
+                                    visibility: hidden !important;
+                                    pointer-events: none !important;
+                                }
+
+                                /* Keep player controls usable — do NOT hide .ytp-pause-overlay (click-to-play/pause). */
                                 .ytp-chrome-top,
                                 .ytp-gradient-top,
                                 .ytp-title,
@@ -1840,7 +2175,6 @@ namespace JokerDBDTracker
                                 .ytp-ce-element,
                                 .ytp-cards-teaser,
                                 .ytp-cards-button,
-                                .ytp-pause-overlay,
                                 .ytp-share-button-visible {
                                     display: none !important;
                                     visibility: hidden !important;
@@ -1853,6 +2187,7 @@ namespace JokerDBDTracker
                         };
 
                         ensureLayoutStyle();
+                        suppressInlineFeaturedCommentTeasers();
 
                         // Early exit if layout is already correct — prevents the write→observer→write loop.
                         // CSS is injected above (idempotent). Unmute is checked once below.
@@ -1895,19 +2230,18 @@ namespace JokerDBDTracker
 
                         // Force-hide sidebar/chat/engagement elements via inline JS style.
                         // CSS alone can be overridden by YouTube's reactive JS (inline !important).
-                        // Single-instance elements: getElementById is faster and sufficient.
-                        const hideIds = ['secondary', 'secondary-inner', 'related', 'chat', 'chat-container', 'engagement'];
+                        const hideIds = ['secondary', 'secondary-inner', 'related', 'chat', 'chat-container', 'engagement', 'comments'];
                         for (const id of hideIds) {
                             const el = document.getElementById(id);
                             if (el && el.style.display !== 'none') {
                                 el.style.setProperty('display', 'none', 'important');
                             }
                         }
-                        // Single-instance selectors (querySelector is fine — only one in the DOM).
                         const hideSingleSelectors = [
                             'ytd-watch-metadata', 'ytd-watch-info-text',
                             'ytd-masthead', '#masthead-container',
-                            'ytd-live-chat-frame', '.ytp-chat-widget'
+                            'ytd-live-chat-frame', '.ytp-chat-widget',
+                            'ytd-comments', 'ytd-comments-header-renderer'
                         ];
                         for (const sel of hideSingleSelectors) {
                             try {
@@ -1917,10 +2251,15 @@ namespace JokerDBDTracker
                                 }
                             } catch { /* no-op */ }
                         }
-                        // Multi-instance: YouTube renders several engagement panels (comments, description,
-                        // right-side panel, bottom panel). Must use querySelectorAll to catch all of them.
                         try {
                             document.querySelectorAll('ytd-engagement-panel-section-list-renderer').forEach(el => {
+                                if (el.style.display !== 'none') {
+                                    el.style.setProperty('display', 'none', 'important');
+                                }
+                            });
+                        } catch { /* no-op */ }
+                        try {
+                            document.querySelectorAll('ytd-comment-thread-renderer, ytd-comment-view-model').forEach(el => {
                                 if (el.style.display !== 'none') {
                                     el.style.setProperty('display', 'none', 'important');
                                 }
@@ -1940,6 +2279,7 @@ namespace JokerDBDTracker
                     installPanelToggleBridge();
                     installTimecodeBridge();
                     installReservedShortcutBlocker();
+                    installPlayerSurfaceClickToggle();
                     installYouTubeSidePanelGuard();
                     applyImmersiveVideoLayout();
                     // Debounced observer with a proper setTimeout delay.
@@ -1974,11 +2314,11 @@ namespace JokerDBDTracker
                     // We attach a narrow per-element attribute observer (style + class) on each panel
                     // so any YouTube-side show attempt is reverted synchronously (no debounce needed).
                     const attachEngagementPanelGuard = (el) => {
-                        el.style.setProperty('display', 'none', 'important');
-                        const guard = new MutationObserver(() => {
-                            // YouTube changed style/class on this panel — re-hide immediately.
+                        const rehideIfNeeded = () => {
                             el.style.setProperty('display', 'none', 'important');
-                        });
+                        };
+                        rehideIfNeeded();
+                        const guard = new MutationObserver(rehideIfNeeded);
                         guard.observe(el, { attributes: true, attributeFilter: ['style', 'class', 'hidden', 'visibility'] });
                     };
                     const hideAllEngagementPanels = () => {
@@ -2060,6 +2400,16 @@ namespace JokerDBDTracker
                             #secondary, #secondary-inner, #related,
                             ytd-watch-metadata, ytd-watch-info-text,
                             #description, #description-inline-expander, #description-inner,
+                            #comments, ytd-comments, ytd-comments-header-renderer,
+                            ytd-comment-thread-renderer, ytd-comment-view-model,
+                            #chat, #chat-container, ytd-live-chat-frame, .ytp-chat-widget,
+                            ytd-engagement-panel-section-list-renderer, #engagement,
+                            ytd-engagement-panel-title-header-renderer, .ytp-panel-anchor,
+                            .ytp-comments-header-renderer, ytd-comments-overlay,
+                            .ytp-comments-trigger, [class*="comments-overlay" i],
+                            [class*="CommentsOverlay" i], [class*="comments-header" i],
+                            [class*="featured-comments" i], [class*="comment-teaser" i],
+                            [class*="comment-preview" i],
                             ytd-masthead, #masthead-container, #header,
                             #columns > :not(#primary) {
                                 display: none !important;
@@ -2079,8 +2429,7 @@ namespace JokerDBDTracker
                             .ytp-unmute,
                             .ytp-bezel-text-wrapper,
                             .ytp-endscreen-content,
-                            .ytp-ce-element,
-                            .ytp-pause-overlay {
+                            .ytp-ce-element {
                                 display: none !important;
                                 visibility: hidden !important;
                                 pointer-events: none !important;
@@ -2291,8 +2640,19 @@ namespace JokerDBDTracker
             var isGoogleHost = host == "google.com" ||
                                host.EndsWith(".google.com", StringComparison.Ordinal) ||
                                host.EndsWith(".gstatic.com", StringComparison.Ordinal) ||
-                               host.EndsWith(".googleusercontent.com", StringComparison.Ordinal);
+                               host.EndsWith(".googleusercontent.com", StringComparison.Ordinal) ||
+                               host.EndsWith(".googlevideo.com", StringComparison.Ordinal) ||
+                               host.EndsWith(".ggpht.com", StringComparison.Ordinal) ||
+                               host.EndsWith(".gvt1.com", StringComparison.Ordinal) ||
+                               host.EndsWith(".googleapis.com", StringComparison.Ordinal);
             if (isGoogleHost)
+            {
+                return true;
+            }
+
+            if (host == "youtu.be" ||
+                host.EndsWith(".youtube-nocookie.com", StringComparison.Ordinal) ||
+                host.EndsWith(".ytimg.com", StringComparison.Ordinal))
             {
                 return true;
             }
@@ -2302,8 +2662,19 @@ namespace JokerDBDTracker
                 return false;
             }
 
+            if (host.StartsWith("consent.", StringComparison.OrdinalIgnoreCase) ||
+                host.StartsWith("accounts.", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
             if (uri.AbsolutePath.StartsWith("/signin", StringComparison.OrdinalIgnoreCase) ||
-                uri.AbsolutePath.StartsWith("/oauth", StringComparison.OrdinalIgnoreCase))
+                uri.AbsolutePath.StartsWith("/oauth", StringComparison.OrdinalIgnoreCase) ||
+                uri.AbsolutePath.StartsWith("/redirect", StringComparison.OrdinalIgnoreCase) ||
+                uri.AbsolutePath.StartsWith("/consent", StringComparison.OrdinalIgnoreCase) ||
+                uri.AbsolutePath.StartsWith("/sorry", StringComparison.OrdinalIgnoreCase) ||
+                uri.AbsolutePath.StartsWith("/account_advanced", StringComparison.OrdinalIgnoreCase) ||
+                uri.AbsolutePath.StartsWith("/login", StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }
