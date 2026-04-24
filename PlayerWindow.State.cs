@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -17,6 +18,7 @@ namespace JokerDBDTracker
         private readonly DispatcherTimer _positionTimer = new();
         private readonly DispatcherTimer _effectsApplyDebounceTimer = new();
         private readonly DispatcherTimer _resizeSettleDebounceTimer = new();
+        private Microsoft.Web.WebView2.Core.CoreWebView2Environment? _webViewEnvironment;
 
         // Effects runtime state.
         private readonly (CheckBox toggle, FrameworkElement details)[] _effectDetails;
@@ -67,6 +69,8 @@ namespace JokerDBDTracker
         // Whether the currently loaded page is the original JokerDBD video (gates XP/quest progress).
         private bool _isOnJokerVideo = true;
 
+        private DateTime _lastCommunitySeekReloadUtc = DateTime.MinValue;
+
         // Runtime lifecycle flags.
         private bool _isRecoveringBlockedNavigation;
         private bool _isPlayerClosing;
@@ -78,6 +82,7 @@ namespace JokerDBDTracker
         private bool _isPlayerMinimizeAnimating;
         private bool _hasShownSoundPlaybackWarning;
         private DateTime _lastWebScriptTimeoutLogUtc = DateTime.MinValue;
+        private bool _soundEffectsPrewarmedForCurrentNavigation;
 
         // Hotkeys.
         private readonly Dictionary<int, Key> _registeredHotkeys = [];
@@ -87,11 +92,22 @@ namespace JokerDBDTracker
         private Key _lastProcessedAppKeybind = Key.None;
         private DateTime _lastProcessedAppKeybindUtc = DateTime.MinValue;
         private bool _isWebViewTextInputActive;
+        private bool _isCommunityChatBrowserReady;
+        private bool _isCommunityCommentsBrowserReady;
+        private bool _isCommunityChatStateInitialized;
+        private bool _isCommunityCommentsStateInitialized;
+        private bool _isCommunityChatAvailable = true;
+        private bool _isCommunityCommentsAvailable = true;
+        private bool _isCommunityChatOpen;
+        private bool _isCommunityCommentsOpen;
+        private bool _isCommunityChatOpenBeforePlayerFullscreen;
+        private bool _isCommunityCommentsOpenBeforePlayerFullscreen;
 
         // Timecodes.
         private readonly Services.TimecodeService _playerTimecodeService = new();
         private List<Models.Timecode> _videoTimecodes = [];   // current video only
         private List<Models.Timecode> _allTimecodes = [];     // all videos, for clips panel
+        private readonly ObservableCollection<Models.Timecode> _displayedTimecodes = [];
         private bool _isOpeningTimecodePopup;
         private DateTime _lastTimecodeTriggerUtc = DateTime.MinValue;
         private string _timecodeSearchQuery = string.Empty;
@@ -157,6 +173,12 @@ namespace JokerDBDTracker
             public string DescriptionRu { get; init; } = string.Empty;
             public string DescriptionEn { get; init; } = string.Empty;
             public Func<EffectSettings> Factory { get; init; } = null!;
+        }
+
+        private enum PlayerCommunityDockKind
+        {
+            Chat,
+            Comments
         }
 
         public int LastPlaybackSeconds { get; private set; }

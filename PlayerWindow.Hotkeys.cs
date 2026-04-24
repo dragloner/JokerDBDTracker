@@ -62,6 +62,8 @@ namespace JokerDBDTracker
                 Key.M,
                 ReadConfiguredKey(_appSettings.HideEffectsPanelBind, Key.H),
                 ReadConfiguredKey(_appSettings.AuraFarmSoundBind, Key.Y),
+                ReadConfiguredKey(_appSettings.ToggleChatBind, Key.C),
+                ReadConfiguredKey(_appSettings.ToggleCommentsBind, Key.V),
                 ReadConfiguredKey(_appSettings.LaughSoundBind, Key.U),
                 ReadConfiguredKey(_appSettings.PsiSoundBind, Key.I),
                 ReadConfiguredKey(_appSettings.RespectSoundBind, Key.O),

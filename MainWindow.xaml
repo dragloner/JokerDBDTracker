@@ -376,6 +376,160 @@
                     </Grid>
                 </Border>
 
+                <Border x:Name="FavoritesSummaryPanel"
+                        Grid.Row="0"
+                        Grid.ColumnSpan="3"
+                        Padding="18,16"
+                        Visibility="Collapsed"
+                        Style="{StaticResource HomeGlassPanelStyle}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Margin="0,0,18,0">
+                            <TextBlock x:Name="FavoritesOverviewHeaderText"
+                                       Text="Избранное без шума"
+                                       Foreground="#EEF8FF"
+                                       FontSize="24"
+                                       FontWeight="Bold"/>
+                            <TextBlock x:Name="FavoritesOverviewSubText"
+                                       Margin="0,5,0,0"
+                                       Text="Быстрый доступ к любимым стримам и сохранённым моментам."
+                                       Foreground="#8EB8D4"
+                                       FontSize="13"
+                                       TextWrapping="Wrap"/>
+
+                            <Grid Margin="0,14,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="10"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="10"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="10"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <Border Grid.Column="0"
+                                        Padding="12,10"
+                                        CornerRadius="14"
+                                        Background="#B0152636"
+                                        BorderBrush="#3F607B"
+                                        BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock x:Name="FavoritesFavoriteCountLabelText"
+                                                   Text="Избранные стримы"
+                                                   Foreground="#77A6C3"
+                                                   FontSize="12"
+                                                   FontWeight="SemiBold"/>
+                                        <TextBlock x:Name="FavoritesFavoriteCountValueText"
+                                                   Text="0"
+                                                   Foreground="#F0F8FF"
+                                                   FontSize="28"
+                                                   FontWeight="Bold"
+                                                   Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Grid.Column="2"
+                                        Padding="12,10"
+                                        CornerRadius="14"
+                                        Background="#B0192538"
+                                        BorderBrush="#4B6D8B"
+                                        BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock x:Name="FavoritesMomentCountLabelText"
+                                                   Text="Сохранённые моменты"
+                                                   Foreground="#7BB0D1"
+                                                   FontSize="12"
+                                                   FontWeight="SemiBold"/>
+                                        <TextBlock x:Name="FavoritesMomentCountValueText"
+                                                   Text="0"
+                                                   Foreground="#97D8FF"
+                                                   FontSize="28"
+                                                   FontWeight="Bold"
+                                                   Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Grid.Column="4"
+                                        Padding="12,10"
+                                        CornerRadius="14"
+                                        Background="#B0222A39"
+                                        BorderBrush="#5B7590"
+                                        BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock x:Name="FavoritesResumeCountLabelText"
+                                                   Text="Готовы к продолжению"
+                                                   Foreground="#8CB7D1"
+                                                   FontSize="12"
+                                                   FontWeight="SemiBold"/>
+                                        <TextBlock x:Name="FavoritesResumeCountValueText"
+                                                   Text="0"
+                                                   Foreground="#E9F3FF"
+                                                   FontSize="28"
+                                                   FontWeight="Bold"
+                                                   Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Grid.Column="6"
+                                        Padding="12,10"
+                                        CornerRadius="14"
+                                        Background="#B0282434"
+                                        BorderBrush="#6B7394"
+                                        BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock x:Name="FavoritesStreamsWithMomentsLabelText"
+                                                   Text="Стримы с таймкодами"
+                                                   Foreground="#95B7DE"
+                                                   FontSize="12"
+                                                   FontWeight="SemiBold"/>
+                                        <TextBlock x:Name="FavoritesStreamsWithMomentsValueText"
+                                                   Text="0"
+                                                   Foreground="#F6D998"
+                                                   FontSize="28"
+                                                   FontWeight="Bold"
+                                                   Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1"
+                                    Width="260"
+                                    VerticalAlignment="Stretch">
+                            <Button x:Name="ResumeFavoriteButton"
+                                    Margin="0,0,0,8"
+                                    Padding="12,10"
+                                    FontSize="14"
+                                    FontWeight="SemiBold"
+                                    Content="Продолжить лучшее"
+                                    Click="ResumeFavoriteButton_Click"/>
+                            <Button x:Name="RandomFavoriteMomentButton"
+                                    Padding="12,10"
+                                    FontSize="14"
+                                    FontWeight="SemiBold"
+                                    Content="Случайный момент"
+                                    Click="RandomFavoriteMomentButton_Click"/>
+                            <Border Margin="0,12,0,0"
+                                    Padding="12,10"
+                                    CornerRadius="12"
+                                    Background="#8F111C27"
+                                    BorderBrush="#345A73"
+                                    BorderThickness="1">
+                                <TextBlock x:Name="FavoritesSearchHintText"
+                                           Text="Поиск сверху ищет и стримы, и таймкоды."
+                                           Foreground="#8FB8D3"
+                                           FontSize="12"
+                                           TextWrapping="Wrap"/>
+                            </Border>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
                 <Border x:Name="StreamsPanel"
                         Grid.Row="2"
                         Grid.Column="2"
@@ -432,13 +586,25 @@
                                             Content="★ Избранное"
                                             Tag="favorites"
                                             Padding="5,12"
-                                            Margin="0,0,0,0"
+                                            Margin="0,0,6,0"
                                             FontSize="13"
                                             FontWeight="SemiBold"
                                             Background="#12202B"
                                             BorderBrush="#2A4A62"
                                             BorderThickness="1"
                                             Foreground="#E8C445"
+                                            Click="CategoryFilterButton_Click"/>
+                                    <Button x:Name="FilterTimecodesButton"
+                                            Content="# Таймкоды"
+                                            Tag="with_timecodes"
+                                            Padding="5,12"
+                                            Margin="0,0,0,0"
+                                            FontSize="13"
+                                            FontWeight="SemiBold"
+                                            Background="#12202B"
+                                            BorderBrush="#2A4A62"
+                                            BorderThickness="1"
+                                            Foreground="#90BEFF"
                                             Click="CategoryFilterButton_Click"/>
                                 </StackPanel>
 
@@ -986,6 +1152,12 @@
                                        FontSize="16"
                                        FontWeight="Bold"
                                        VerticalAlignment="Center"/>
+                            <TextBlock x:Name="FavoritesClipsSubtitleText"
+                                       Margin="0,24,0,0"
+                                       Foreground="#86ABC4"
+                                       FontSize="12"
+                                       TextWrapping="Wrap"
+                                       VerticalAlignment="Top"/>
                             <TextBlock x:Name="FavoritesClipsCountText"
                                        Grid.Column="1"
                                        Foreground="#4A7890"
@@ -1823,6 +1995,54 @@
                                             <Button x:Name="AssignHideEffectsBindButton"
                                                     Grid.Column="2" Padding="6,4" FontSize="11"
                                                     Content="Назначить" Tag="hide_effects"
+                                                    Click="AssignBindButton_Click"/>
+                                        </Grid>
+
+                                        <!-- ToggleChat -->
+                                        <Grid Margin="0,4,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="56"/>
+                                                <ColumnDefinition Width="92"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="Чат слева (вкл/выкл)"
+                                                       Foreground="#C8E2F5" FontSize="12"
+                                                       VerticalAlignment="Center"/>
+                                            <Border Grid.Column="1" Margin="6,0" Padding="6,3"
+                                                    CornerRadius="6" BorderBrush="#44819DB8"
+                                                    BorderThickness="1" Background="#AA192E43">
+                                                <TextBlock x:Name="ToggleChatBindValueText"
+                                                           Text="-" Foreground="#F3FBFF"
+                                                           FontWeight="Bold" FontSize="12"
+                                                           HorizontalAlignment="Center"/>
+                                            </Border>
+                                            <Button x:Name="AssignToggleChatBindButton"
+                                                    Grid.Column="2" Padding="6,4" FontSize="11"
+                                                    Content="Назначить" Tag="toggle_chat"
+                                                    Click="AssignBindButton_Click"/>
+                                        </Grid>
+
+                                        <!-- ToggleComments -->
+                                        <Grid Margin="0,4,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="56"/>
+                                                <ColumnDefinition Width="92"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="Комментарии снизу (вкл/выкл)"
+                                                       Foreground="#C8E2F5" FontSize="12"
+                                                       VerticalAlignment="Center"/>
+                                            <Border Grid.Column="1" Margin="6,0" Padding="6,3"
+                                                    CornerRadius="6" BorderBrush="#44819DB8"
+                                                    BorderThickness="1" Background="#AA192E43">
+                                                <TextBlock x:Name="ToggleCommentsBindValueText"
+                                                           Text="-" Foreground="#F3FBFF"
+                                                           FontWeight="Bold" FontSize="12"
+                                                           HorizontalAlignment="Center"/>
+                                            </Border>
+                                            <Button x:Name="AssignToggleCommentsBindButton"
+                                                    Grid.Column="2" Padding="6,4" FontSize="11"
+                                                    Content="Назначить" Tag="toggle_comments"
                                                     Click="AssignBindButton_Click"/>
                                         </Grid>
 

@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Threading;
 using JokerDBDTracker.Models;
 
 namespace JokerDBDTracker
@@ -54,14 +55,30 @@ namespace JokerDBDTracker
 
         private void RefreshTimecodesPanelList()
         {
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.Invoke(RefreshTimecodesPanelList);
+                return;
+            }
+
             if (TimecodesPanelList is null)
             {
                 return;
             }
 
             var filtered = BuildFilteredTimecodes();
-            TimecodesPanelList.ItemsSource = null;
-            TimecodesPanelList.ItemsSource = filtered;
+            if (!ReferenceEquals(TimecodesPanelList.ItemsSource, _displayedTimecodes))
+            {
+                TimecodesPanelList.ItemsSource = _displayedTimecodes;
+            }
+
+            _displayedTimecodes.Clear();
+            foreach (var timecode in filtered)
+            {
+                _displayedTimecodes.Add(timecode);
+            }
+
+            TimecodesPanelList.Items.Refresh();
 
             if (TimecodesPanelEmptyText is not null)
             {
@@ -199,8 +216,7 @@ namespace JokerDBDTracker
             {
                 if (_timecodePopupVisible)
                 {
-                    TimecodePopupLabelBox?.Focus();
-                    TimecodePopupLabelBox?.SelectAll();
+                    FocusTimecodePopupTextBox();
                     return;
                 }
 
@@ -300,12 +316,19 @@ namespace JokerDBDTracker
             popup.IsOpen = true;
             _timecodePopupVisible = true;
             UnregisterGlobalHotkeys();
-
-            _ = Dispatcher.BeginInvoke(() =>
+            if (Player is not null)
             {
-                TimecodePopupLabelBox?.Focus();
-                TimecodePopupLabelBox?.SelectAll();
-            }, System.Windows.Threading.DispatcherPriority.Input);
+                Player.IsEnabled = false;
+                Player.IsHitTestVisible = false;
+            }
+            if (PlayerSurfaceHost is not null)
+            {
+                PlayerSurfaceHost.IsHitTestVisible = false;
+            }
+
+            Activate();
+            Focus();
+            FocusTimecodePopupTextBox();
         }
 
         private void HideTimecodePopup()
@@ -317,7 +340,54 @@ namespace JokerDBDTracker
 
             _timecodePopupVisible = false;
             _editingTimecodeId = null;
-            Dispatcher.BeginInvoke(UpdateGlobalHotkeysForTypingFocusState, System.Windows.Threading.DispatcherPriority.Input);
+            if (Player is not null)
+            {
+                Player.IsEnabled = true;
+                Player.IsHitTestVisible = true;
+            }
+            if (PlayerSurfaceHost is not null)
+            {
+                PlayerSurfaceHost.IsHitTestVisible = true;
+            }
+            Dispatcher.BeginInvoke(UpdateGlobalHotkeysForTypingFocusState, DispatcherPriority.Input);
+        }
+
+        private void FocusTimecodePopupTextBox()
+        {
+            if (TimecodePopupLabelBox is null)
+            {
+                return;
+            }
+
+            void ApplyFocus()
+            {
+                Activate();
+                Focus();
+                Keyboard.Focus(TimecodePopupLabelBox);
+                TimecodePopupLabelBox.Focus();
+                TimecodePopupLabelBox.SelectAll();
+                CaretIndexToEndIfNeeded();
+            }
+
+            void CaretIndexToEndIfNeeded()
+            {
+                if (TimecodePopupLabelBox is null)
+                {
+                    return;
+                }
+
+                var textLength = TimecodePopupLabelBox.Text?.Length ?? 0;
+                if (textLength <= 0)
+                {
+                    return;
+                }
+
+                TimecodePopupLabelBox.CaretIndex = textLength;
+            }
+
+            _ = Dispatcher.BeginInvoke((Action)ApplyFocus, DispatcherPriority.Input);
+            _ = Dispatcher.BeginInvoke((Action)ApplyFocus, DispatcherPriority.Background);
+            _ = Dispatcher.BeginInvoke((Action)ApplyFocus, DispatcherPriority.ContextIdle);
         }
 
         private void TimecodePopupSaveButton_Click(object sender, RoutedEventArgs e)

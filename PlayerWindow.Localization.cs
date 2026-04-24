@@ -180,9 +180,10 @@ namespace JokerDBDTracker
             if (PlayerSfxSpamDescText is not null)
             {
                 PlayerSfxSpamDescText.Text = PT(
-                    "Вкл: спам до 8 звуков. Выкл: стоп при повторном нажатии.",
-                    "On: spam up to 8 sounds. Off: stop on repeat press.");
+                    "Вкл: до 8 разных эффектов; повтор того же заменяет предыдущий (не залипает). Выкл: повтор — стоп.",
+                    "On: up to 8 different effects; repeating the same one replaces the previous (no unstoppable stack). Off: repeat press stops.");
             }
+            ApplyCommunityLocalization();
         }
     }
 }

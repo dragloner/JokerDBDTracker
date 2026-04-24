@@ -452,17 +452,20 @@ namespace JokerDBDTracker
                 return;
             }
 
-            EffectsWorkspaceTabs.SelectedIndex = showPresets ? 1 : 0;
+            EffectsWorkspaceTabs.SelectedItem = showPresets
+                ? EffectsWorkspacePresetsTab
+                : EffectsWorkspaceEffectsTab;
             UpdatePresetWorkspaceSwitcherState();
         }
 
         private void UpdatePresetWorkspaceSwitcherState()
         {
-            var isPresetsPage = EffectsWorkspaceTabs?.SelectedIndex == 1;
+            var isEffectsPage = EffectsWorkspaceEffectsTab?.IsSelected == true;
+            var isPresetsPage = EffectsWorkspacePresetsTab?.IsSelected == true;
 
             if (ShowEffectsWorkspaceButton is not null)
             {
-                ShowEffectsWorkspaceButton.IsEnabled = isPresetsPage;
+                ShowEffectsWorkspaceButton.IsEnabled = !isEffectsPage;
             }
 
             if (ShowPresetsWorkspaceButton is not null)

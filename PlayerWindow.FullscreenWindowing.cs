@@ -141,6 +141,7 @@ namespace JokerDBDTracker
             {
                 _effectsPanelExpandedBeforePlayerFullscreen = _effectsPanelExpanded;
                 _effectsPanelExpanded = false;
+                ApplyCommunityFullscreenState(isFullscreen: true);
                 if (EffectsPanel is not null)
                 {
                     EffectsPanel.BeginAnimation(UIElement.OpacityProperty, null);
@@ -168,6 +169,7 @@ namespace JokerDBDTracker
 
             _effectsPanelExpanded = _effectsPanelExpandedBeforePlayerFullscreen;
             ApplyEffectsPanelLayout();
+            ApplyCommunityFullscreenState(isFullscreen: false);
         }
 
         private async Task ExitEmbeddedPlayerFullscreenAsync()
@@ -465,6 +467,8 @@ namespace JokerDBDTracker
                     Player.CoreWebView2.Stop();
                     Player.CoreWebView2.Navigate("about:blank");
                 }
+
+                TeardownCommunityBrowsers();
             }
             catch
             {

@@ -55,6 +55,7 @@ namespace JokerDBDTracker
 
                 video.LastPlaybackSeconds = player.LastPlaybackSeconds;
                 _playbackSecondsHistory[video.VideoId] = player.LastPlaybackSeconds;
+                await RefreshFavoritesClipsAsync();
 
                 if (!_firstViewRewardedVideoIds.Contains(video.VideoId))
                 {
@@ -266,6 +267,8 @@ namespace JokerDBDTracker
                 RefreshProfile();
                 RefreshHomeSummary();
                 RefreshVisibleVideos(video.VideoId);
+                RefreshFavoritesClipsView();
+                RefreshFavoritesSummary();
                 ClearAllSelections();
             }
             catch

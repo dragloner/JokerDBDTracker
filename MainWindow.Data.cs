@@ -160,7 +160,8 @@ namespace JokerDBDTracker
 
             try
             {
-                videos = await _streamsService.GetAllStreamsAsync(StreamsUrl);
+                using var streamsLoadCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                videos = await _streamsService.GetAllStreamsAsync(StreamsUrl, streamsLoadCts.Token);
             }
             catch (Exception ex)
             {

@@ -1,5 +1,6 @@
-﻿﻿using System.Globalization;
+﻿using System.Globalization;
 using System.IO;
+using System.Text.Json;
 using System.Windows.Media;
 using System.Windows;
 using System.Windows.Controls;
@@ -159,6 +160,11 @@ namespace JokerDBDTracker
                 return true;
             }
 
+            if (TryHandleCommunityDockToggleKey(key))
+            {
+                return true;
+            }
+
             if (TryHandleSoundEffectKey(key))
             {
                 return true;
@@ -199,6 +205,28 @@ namespace JokerDBDTracker
 
             ToggleEffectsPanelState();
             return true;
+        }
+
+        private bool TryHandleCommunityDockToggleKey(Key key)
+        {
+            if (key == Key.None)
+            {
+                return false;
+            }
+
+            if (key == ReadConfiguredKey(_appSettings.ToggleChatBind, Key.C))
+            {
+                _ = ToggleCommunityDockAsync(PlayerCommunityDockKind.Chat);
+                return true;
+            }
+
+            if (key == ReadConfiguredKey(_appSettings.ToggleCommentsBind, Key.V))
+            {
+                _ = ToggleCommunityDockAsync(PlayerCommunityDockKind.Comments);
+                return true;
+            }
+
+            return false;
         }
 
         private bool TryHandleSoundEffectKey(Key key)
@@ -333,6 +361,8 @@ namespace JokerDBDTracker
                 }
                 else
                 {
+                    // Spam mode still should not stack the SAME effect endlessly.
+                    StopSoundEffect(kind);
                     if (_activeSoundPlayers.Count >= 8)
                     {
                         return;
@@ -462,8 +492,21 @@ namespace JokerDBDTracker
                 var script = $$"""
                     (async () => {
                         try {
-                            window.__jdbdSfx = window.__jdbdSfx || { playing: {}, count: 0, currentParams: null };
+                            window.__jdbdSfx = window.__jdbdSfx || {
+                                playing: {},
+                                count: 0,
+                                currentParams: null,
+                                bufferCache: {},
+                                bufferPromises: {},
+                                startGen: {},
+                                decoding: {},
+                                decodeCtx: null
+                            };
                             const sfx = window.__jdbdSfx;
+                            sfx.bufferCache = sfx.bufferCache || {};
+                            sfx.bufferPromises = sfx.bufferPromises || {};
+                            sfx.startGen = sfx.startGen || {};
+                            sfx.decoding = sfx.decoding || {};
                             const kind = '{{kindStr}}';
                             const toggleMode = {{toggleJs}};
                             const stopEntriesForKind = () => {
@@ -483,21 +526,69 @@ namespace JokerDBDTracker
                                 return stoppedAny;
                             };
 
-                            if (toggleMode && stopEntriesForKind()) {
+                            const nextGen = (sfx.startGen[kind] || 0) + 1;
+                            sfx.startGen[kind] = nextGen;
+                            const gen = nextGen;
+                            const hadActivePlayback = stopEntriesForKind();
+                            const hadDecodeInFlight = sfx.decoding[kind] === true;
+
+                            // Toggle mode: 1st press starts, 2nd press cancels even if the sound is
+                            // still decoding and hasn't started playing yet.
+                            if (toggleMode && (hadActivePlayback || hadDecodeInFlight)) {
                                 return;
                             }
 
                             if (!toggleMode && sfx.count >= 8) { return; }
 
                             const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
-                            if (!AudioContextCtor) { return; }
+                            if (!AudioContextCtor) {
+                                return;
+                            }
+
+                            try {
+                            sfx.decoding[kind] = true;
+
+                            const ensureDecodedBuffer = async () => {
+                                if (sfx.bufferCache[kind]) {
+                                    return sfx.bufferCache[kind];
+                                }
+
+                                if (!sfx.bufferPromises[kind]) {
+                                    sfx.bufferPromises[kind] = (async () => {
+                                        const decodeCtx = sfx.decodeCtx && sfx.decodeCtx.state !== 'closed'
+                                            ? sfx.decodeCtx
+                                            : new AudioContextCtor();
+                                        sfx.decodeCtx = decodeCtx;
+                                        if (decodeCtx.state === 'suspended') {
+                                            await decodeCtx.resume();
+                                        }
+
+                                        const binary = atob('{{b64}}');
+                                        const pcm = new Uint8Array(binary.length);
+                                        for (let i = 0; i < binary.length; i++) {
+                                            pcm[i] = binary.charCodeAt(i);
+                                        }
+
+                                        const copy = pcm.buffer.slice(0);
+                                        const decoded = await decodeCtx.decodeAudioData(copy);
+                                        sfx.bufferCache[kind] = decoded;
+                                        return decoded;
+                                    })().finally(() => {
+                                        delete sfx.bufferPromises[kind];
+                                    });
+                                }
+
+                                return await sfx.bufferPromises[kind];
+                            };
+
+                            const buf = await ensureDecodedBuffer();
                             const ctx = new AudioContextCtor();
                             if (ctx.state === 'suspended') { await ctx.resume(); }
 
-                            const binary = atob('{{b64}}');
-                            const pcm = new Uint8Array(binary.length);
-                            for (let i = 0; i < binary.length; i++) { pcm[i] = binary.charCodeAt(i); }
-                            const buf = await ctx.decodeAudioData(pcm.buffer);
+                            if (sfx.startGen[kind] !== gen) {
+                                try { await ctx.close(); } catch {}
+                                return;
+                            }
 
                             const src = ctx.createBufferSource();
                             src.buffer = buf;
@@ -679,6 +770,9 @@ namespace JokerDBDTracker
                                 }
                                 sfx.count = Math.max(0, sfx.count - 1);
                             };
+                            } finally {
+                                sfx.decoding[kind] = false;
+                            }
                         } catch {}
                     })();
                     """;
@@ -688,6 +782,121 @@ namespace JokerDBDTracker
             catch
             {
                 // No-op: sound playback via WebView is best-effort.
+            }
+        }
+
+        private async Task PrewarmWebViewSoundEffectsAsync()
+        {
+            if (_soundEffectsPrewarmedForCurrentNavigation ||
+                !_appSettings.ApplyEqToSoundEffects ||
+                Player?.CoreWebView2 is null ||
+                _isPlayerClosing)
+            {
+                return;
+            }
+
+            _soundEffectsPrewarmedForCurrentNavigation = true;
+
+            try
+            {
+                var payload = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var kind in Enum.GetValues<SoundEffectKind>())
+                {
+                    var uri = ResolveSoundEffectResourceUri(kind);
+                    if (uri is null)
+                    {
+                        continue;
+                    }
+
+                    var filePath = uri.LocalPath;
+                    if (!_soundEffectBase64Cache.TryGetValue(filePath, out var b64))
+                    {
+                        var bytes = await File.ReadAllBytesAsync(filePath);
+                        b64 = Convert.ToBase64String(bytes);
+                        _soundEffectBase64Cache[filePath] = b64;
+                    }
+
+                    payload[kind.ToString()] = b64;
+                }
+
+                if (payload.Count == 0 || Player?.CoreWebView2 is null || _isPlayerClosing)
+                {
+                    return;
+                }
+
+                var payloadJson = JsonSerializer.Serialize(payload);
+                var script = $$"""
+                    (async () => {
+                        try {
+                            const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+                            if (!AudioContextCtor) {
+                                return;
+                            }
+
+                            window.__jdbdSfx = window.__jdbdSfx || {
+                                playing: {},
+                                count: 0,
+                                currentParams: null,
+                                bufferCache: {},
+                                bufferPromises: {},
+                                startGen: {},
+                                decoding: {},
+                                decodeCtx: null
+                            };
+
+                            const sfx = window.__jdbdSfx;
+                            sfx.bufferCache = sfx.bufferCache || {};
+                            sfx.bufferPromises = sfx.bufferPromises || {};
+
+                            const payload = {{payloadJson}};
+                            const ensureDecodedBuffer = async (kind, b64) => {
+                                if (!b64 || sfx.bufferCache[kind]) {
+                                    return;
+                                }
+
+                                if (!sfx.bufferPromises[kind]) {
+                                    sfx.bufferPromises[kind] = (async () => {
+                                        const decodeCtx = sfx.decodeCtx && sfx.decodeCtx.state !== 'closed'
+                                            ? sfx.decodeCtx
+                                            : new AudioContextCtor();
+                                        sfx.decodeCtx = decodeCtx;
+                                        if (decodeCtx.state === 'suspended') {
+                                            await decodeCtx.resume();
+                                        }
+
+                                        const binary = atob(b64);
+                                        const pcm = new Uint8Array(binary.length);
+                                        for (let i = 0; i < binary.length; i++) {
+                                            pcm[i] = binary.charCodeAt(i);
+                                        }
+
+                                        const copy = pcm.buffer.slice(0);
+                                        const decoded = await decodeCtx.decodeAudioData(copy);
+                                        sfx.bufferCache[kind] = decoded;
+                                        return decoded;
+                                    })().finally(() => {
+                                        delete sfx.bufferPromises[kind];
+                                    });
+                                }
+
+                                await sfx.bufferPromises[kind];
+                            };
+
+                            for (const [kind, b64] of Object.entries(payload)) {
+                                await ensureDecodedBuffer(kind, b64);
+                            }
+                        } catch {
+                            // no-op
+                        }
+                    })();
+                    """;
+
+                await Player.CoreWebView2.ExecuteScriptAsync(script);
+            }
+            catch (Exception ex)
+            {
+                DiagnosticsService.LogInfo("SoundPlayback", $"Prewarm failed: {ex.Message}");
+                _soundEffectsPrewarmedForCurrentNavigation = false;
             }
         }
 
@@ -789,8 +998,7 @@ namespace JokerDBDTracker
                 player.Stop();
                 player.Close();
                 _activeSoundPlayers.Remove(player);
-                if (!spamMode &&
-                    _activeSoundPlayersByKind.TryGetValue(kind, out var activePlayer) &&
+                if (_activeSoundPlayersByKind.TryGetValue(kind, out var activePlayer) &&
                     ReferenceEquals(activePlayer, player))
                 {
                     _activeSoundPlayersByKind.Remove(kind);
@@ -800,8 +1008,7 @@ namespace JokerDBDTracker
             {
                 player.Close();
                 _activeSoundPlayers.Remove(player);
-                if (!spamMode &&
-                    _activeSoundPlayersByKind.TryGetValue(kind, out var activePlayer) &&
+                if (_activeSoundPlayersByKind.TryGetValue(kind, out var activePlayer) &&
                     ReferenceEquals(activePlayer, player))
                 {
                     _activeSoundPlayersByKind.Remove(kind);
@@ -810,10 +1017,7 @@ namespace JokerDBDTracker
             };
 
             _activeSoundPlayers.Add(player);
-            if (!spamMode)
-            {
-                _activeSoundPlayersByKind[kind] = player;
-            }
+            _activeSoundPlayersByKind[kind] = player;
 
             player.Play();
         }
@@ -854,6 +1058,8 @@ namespace JokerDBDTracker
 
         private void StopAllSoundEffects()
         {
+            StopAllWebViewInjectedSoundEffects();
+
             foreach (var player in _activeSoundPlayers.ToArray())
             {
                 try
@@ -871,11 +1077,63 @@ namespace JokerDBDTracker
             _activeSoundPlayersByKind.Clear();
         }
 
+        private void StopAllWebViewInjectedSoundEffects()
+        {
+            try
+            {
+                if (Player?.CoreWebView2 is null)
+                {
+                    return;
+                }
+
+                _ = Player.CoreWebView2.ExecuteScriptAsync(
+                    """
+                    (() => {
+                        try {
+                            const sfx = window.__jdbdSfx;
+                            if (!sfx) {
+                                return;
+                            }
+                            sfx.startGen = sfx.startGen || {};
+                            sfx.decoding = sfx.decoding || {};
+                            const kinds = new Set(['AuraFarm', 'Laugh', 'PsiRadiation', 'Respect', 'Sad']);
+                            for (const k of Object.keys(sfx.decoding)) {
+                                kinds.add(k);
+                            }
+                            for (const entry of Object.values(sfx.playing || {})) {
+                                if (entry?.kind) {
+                                    kinds.add(entry.kind);
+                                }
+                            }
+                            for (const k of kinds) {
+                                sfx.startGen[k] = (sfx.startGen[k] || 0) + 1;
+                                sfx.decoding[k] = false;
+                            }
+                            for (const entry of Object.values(sfx.playing || {})) {
+                                try { entry?.source?.stop?.(); } catch {}
+                                try { entry?.ctx?.close?.(); } catch {}
+                            }
+                            sfx.playing = {};
+                            sfx.count = 0;
+                        } catch {
+                            // no-op
+                        }
+                    })();
+                    """);
+            }
+            catch
+            {
+                // WebView may already be torn down.
+            }
+        }
+
         private void UpdateDynamicBindHints()
         {
             if (BindsHintText is not null)
             {
                 var hide = FormatBindLabel(_appSettings.HideEffectsPanelBind);
+                var chat = FormatBindLabel(_appSettings.ToggleChatBind);
+                var comments = FormatBindLabel(_appSettings.ToggleCommentsBind);
                 var aura = FormatBindLabel(_appSettings.AuraFarmSoundBind);
                 var laugh = FormatBindLabel(_appSettings.LaughSoundBind);
                 var psi = FormatBindLabel(_appSettings.PsiSoundBind);
