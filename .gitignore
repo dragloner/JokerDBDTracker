@@ -3,6 +3,7 @@ obj/
 artifacts/
 .claude/
 .vs/
+_ai/
 *.user
 *.suo
 *.cache

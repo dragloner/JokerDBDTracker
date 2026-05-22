@@ -203,7 +203,7 @@ namespace JokerDBDTracker
                 return false;
             }
 
-            ToggleEffectsPanelState();
+            _ = ToggleEffectsPanelStateAsync();
             return true;
         }
 

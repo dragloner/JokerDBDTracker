@@ -2476,12 +2476,39 @@ namespace JokerDBDTracker
                 new DoubleAnimation(details.Opacity, 0, duration) { EasingFunction = easing });
         }
 
-        private void ToggleEffectsPanelButton_Click(object sender, RoutedEventArgs e)
+        private async void ToggleEffectsPanelButton_Click(object sender, RoutedEventArgs e)
         {
-            ToggleEffectsPanelState();
+            await ToggleEffectsPanelStateAsync();
         }
 
-        private void ToggleEffectsPanelState()
+        private async Task ToggleEffectsPanelStateAsync()
+        {
+            if (_isTogglingEffectsPanel || _isPlayerClosing)
+            {
+                return;
+            }
+
+            _isTogglingEffectsPanel = true;
+            try
+            {
+                if (_isPlayerElementFullScreen)
+                {
+                    await ExitEmbeddedPlayerFullscreenAsync();
+                    if (_isPlayerClosing)
+                    {
+                        return;
+                    }
+                }
+
+                ToggleEffectsPanelStateCore();
+            }
+            finally
+            {
+                _isTogglingEffectsPanel = false;
+            }
+        }
+
+        private void ToggleEffectsPanelStateCore()
         {
             _effectsPanelExpanded = !_effectsPanelExpanded;
             ApplyEffectsPanelLayout();
@@ -2493,6 +2520,7 @@ namespace JokerDBDTracker
         {
             if (_effectsPanelExpanded)
             {
+                EffectsPanel.BeginAnimation(UIElement.OpacityProperty, null);
                 EffectsPanel.IsHitTestVisible = true;
                 EffectsPanel.Visibility = Visibility.Visible;
                 EffectsColumn.Width = new GridLength(420);
@@ -2508,6 +2536,10 @@ namespace JokerDBDTracker
                         Duration = TimeSpan.FromMilliseconds(240),
                         EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
                     });
+                }
+                else
+                {
+                    EffectsPanel.Opacity = 1;
                 }
                 return;
             }
@@ -2529,7 +2561,10 @@ namespace JokerDBDTracker
                 };
                 fade.Completed += (_, _) =>
                 {
-                    EffectsPanel.Visibility = Visibility.Collapsed;
+                    if (!_effectsPanelExpanded)
+                    {
+                        EffectsPanel.Visibility = Visibility.Collapsed;
+                    }
                 };
                 EffectsPanel.BeginAnimation(UIElement.OpacityProperty, fade);
             }

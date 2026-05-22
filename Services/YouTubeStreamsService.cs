@@ -11,6 +11,9 @@ namespace JokerDBDTracker.Services
 {
     public class YouTubeStreamsService
     {
+        private const int MaxContinuationRequestCount = 200;
+        private const int YouTubeVideoIdLength = 11;
+
         private static readonly Lazy<HttpClient> SharedHttpClient = new(() => CreateHttpClient(forceFreshSockets: false));
 
         private static HttpClient CreateHttpClient(bool forceFreshSockets)
@@ -53,8 +56,49 @@ namespace JokerDBDTracker.Services
 
         private static async Task<string> DownloadHtmlAsync(HttpClient httpClient, string url, CancellationToken cancellationToken)
         {
+            var html = await DownloadHtmlOnceAsync(httpClient, url, cancellationToken);
+            if (!IsYouTubeConsentPage(html))
+            {
+                return html;
+            }
+
+            var consentHtml = await SubmitYouTubeConsentAsync(httpClient, html, cancellationToken);
+            if (LooksLikeYouTubeDataPage(consentHtml))
+            {
+                return consentHtml;
+            }
+
+            return await DownloadHtmlOnceAsync(httpClient, AddQueryParameter(url, "cbrd", "1"), cancellationToken);
+        }
+
+        private static async Task<string> DownloadHtmlOnceAsync(HttpClient httpClient, string url, CancellationToken cancellationToken)
+        {
             using var request = new HttpRequestMessage(HttpMethod.Get, url);
             request.Headers.Referrer = new Uri("https://www.youtube.com/");
+            using var response = await httpClient.SendAsync(
+                request,
+                HttpCompletionOption.ResponseHeadersRead,
+                cancellationToken);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadAsStringAsync(cancellationToken);
+        }
+
+        private static async Task<string> SubmitYouTubeConsentAsync(
+            HttpClient httpClient,
+            string consentHtml,
+            CancellationToken cancellationToken)
+        {
+            var form = ExtractConsentForm(consentHtml);
+            if (form.Count == 0)
+            {
+                throw new InvalidOperationException("YouTube consent page did not contain a usable consent form.");
+            }
+
+            using var request = new HttpRequestMessage(HttpMethod.Post, "https://consent.youtube.com/save")
+            {
+                Content = new FormUrlEncodedContent(form)
+            };
+            request.Headers.Referrer = new Uri("https://consent.youtube.com/");
             using var response = await httpClient.SendAsync(
                 request,
                 HttpCompletionOption.ResponseHeadersRead,
@@ -103,18 +147,37 @@ namespace JokerDBDTracker.Services
             var videosById = new Dictionary<string, YouTubeVideo>(StringComparer.OrdinalIgnoreCase);
             var orderCounter = 0;
             string? continuationToken;
+            var seenContinuationTokens = new HashSet<string>(StringComparer.Ordinal);
 
             using (var initialData = JsonDocument.Parse(initialDataJson))
             {
                 ExtractVideosFromJson(initialData.RootElement, videosById, ref orderCounter);
-                continuationToken = ExtractContinuationToken(initialData.RootElement);
+                continuationToken = ExtractContinuationToken(initialData.RootElement, seenContinuationTokens);
             }
 
             var apiKey = ExtractConfigValueFromHtml(html, "INNERTUBE_API_KEY");
             var clientVersion = ExtractConfigValueFromHtml(html, "INNERTUBE_CLIENT_VERSION");
+            var continuationRequestCount = 0;
             while (!string.IsNullOrWhiteSpace(continuationToken))
             {
                 cancellationToken.ThrowIfCancellationRequested();
+
+                if (!seenContinuationTokens.Add(continuationToken))
+                {
+                    DiagnosticsService.LogInfo(
+                        "YouTubeStreamsService",
+                        "Stopping stream continuation loading because YouTube returned an already processed token.");
+                    break;
+                }
+
+                continuationRequestCount++;
+                if (continuationRequestCount > MaxContinuationRequestCount)
+                {
+                    DiagnosticsService.LogInfo(
+                        "YouTubeStreamsService",
+                        $"Stopping stream continuation loading after {MaxContinuationRequestCount} pages.");
+                    break;
+                }
 
                 if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(clientVersion))
                 {
@@ -130,7 +193,7 @@ namespace JokerDBDTracker.Services
                     cancellationToken);
 
                 ExtractVideosFromJson(continuationResponse.RootElement, videosById, ref orderCounter);
-                continuationToken = ExtractContinuationToken(continuationResponse.RootElement);
+                continuationToken = ExtractContinuationToken(continuationResponse.RootElement, seenContinuationTokens);
             }
 
             return videosById.Values.OrderBy(v => v.OriginalOrder).ToList();
@@ -209,6 +272,111 @@ namespace JokerDBDTracker.Services
                    html.Contains("\"videoRenderer\"", StringComparison.Ordinal);
         }
 
+        private static bool IsYouTubeConsentPage(string html)
+        {
+            if (string.IsNullOrWhiteSpace(html))
+            {
+                return false;
+            }
+
+            return html.Contains("consent.youtube.com", StringComparison.OrdinalIgnoreCase) &&
+                   html.Contains("name=\"continue\"", StringComparison.OrdinalIgnoreCase) &&
+                   html.Contains("action=\"https://consent.youtube.com/save\"", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static List<KeyValuePair<string, string>> ExtractConsentForm(string html)
+        {
+            var formHtml = ExtractConsentFormHtml(html, preferRejectAll: true);
+            if (string.IsNullOrWhiteSpace(formHtml))
+            {
+                formHtml = ExtractConsentFormHtml(html, preferRejectAll: false);
+            }
+
+            if (string.IsNullOrWhiteSpace(formHtml))
+            {
+                return [];
+            }
+
+            var values = new List<KeyValuePair<string, string>>();
+            foreach (Match inputMatch in Regex.Matches(
+                         formHtml,
+                         "<input\\b[^>]*>",
+                         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
+            {
+                var input = inputMatch.Value;
+                var name = ExtractHtmlAttribute(input, "name");
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    continue;
+                }
+
+                values.Add(new KeyValuePair<string, string>(
+                    WebUtility.HtmlDecode(name),
+                    WebUtility.HtmlDecode(ExtractHtmlAttribute(input, "value"))));
+            }
+
+            return values;
+        }
+
+        private static string ExtractConsentFormHtml(string html, bool preferRejectAll)
+        {
+            foreach (Match formMatch in Regex.Matches(
+                         html,
+                         "<form\\b[^>]*action=\"https://consent\\.youtube\\.com/save\"[^>]*>.*?(?=<form\\b|</body>|</html>)",
+                         RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant))
+            {
+                var formHtml = formMatch.Value;
+                var hasRejectAllInput = formHtml.Contains("name=\"set_eom\" value=\"true\"", StringComparison.OrdinalIgnoreCase);
+                var hasAcceptAllInput = formHtml.Contains("name=\"set_ytc\" value=\"true\"", StringComparison.OrdinalIgnoreCase) ||
+                                        formHtml.Contains("name=\"set_apyt\" value=\"true\"", StringComparison.OrdinalIgnoreCase);
+                if (preferRejectAll && hasRejectAllInput && !hasAcceptAllInput)
+                {
+                    return formHtml;
+                }
+
+                if (!preferRejectAll && (hasRejectAllInput || hasAcceptAllInput))
+                {
+                    return formHtml;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private static string ExtractHtmlAttribute(string htmlTag, string attributeName)
+        {
+            var match = Regex.Match(
+                htmlTag,
+                $"{Regex.Escape(attributeName)}\\s*=\\s*(?:\"([^\"]*)\"|'([^']*)'|([^\\s>]+))",
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+            if (!match.Success)
+            {
+                return string.Empty;
+            }
+
+            for (var i = 1; i < match.Groups.Count; i++)
+            {
+                if (match.Groups[i].Success)
+                {
+                    return match.Groups[i].Value;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private static string AddQueryParameter(string url, string name, string value)
+        {
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            {
+                return url;
+            }
+
+            var query = uri.Query;
+            var separator = string.IsNullOrWhiteSpace(query) ? "?" : "&";
+            return $"{uri.GetLeftPart(UriPartial.Path)}{query}{separator}{Uri.EscapeDataString(name)}={Uri.EscapeDataString(value)}";
+        }
+
         private static async Task<JsonDocument> LoadContinuationAsync(
             HttpClient httpClient,
             string apiKey,
@@ -247,12 +415,20 @@ namespace JokerDBDTracker.Services
         {
             foreach (var objectElement in EnumerateObjects(root))
             {
-                if (!objectElement.TryGetProperty("videoRenderer", out var videoRenderer))
+                YouTubeVideo? video = null;
+                if (objectElement.TryGetProperty("videoRenderer", out var videoRenderer))
                 {
-                    continue;
+                    video = ParseVideoRenderer(videoRenderer);
+                }
+                else if (objectElement.TryGetProperty("gridVideoRenderer", out var gridVideoRenderer))
+                {
+                    video = ParseVideoRenderer(gridVideoRenderer);
+                }
+                else if (objectElement.TryGetProperty("lockupViewModel", out var lockupViewModel))
+                {
+                    video = ParseLockupViewModel(lockupViewModel);
                 }
 
-                var video = ParseVideoRenderer(videoRenderer);
                 if (video is null || string.IsNullOrWhiteSpace(video.VideoId))
                 {
                     continue;
@@ -273,8 +449,8 @@ namespace JokerDBDTracker.Services
                 return null;
             }
 
-            var videoId = idElement.GetString();
-            if (string.IsNullOrWhiteSpace(videoId))
+            var videoId = idElement.GetString() ?? string.Empty;
+            if (!IsValidYouTubeVideoId(videoId))
             {
                 return null;
             }
@@ -295,6 +471,45 @@ namespace JokerDBDTracker.Services
                 PublishedAtText = string.IsNullOrWhiteSpace(published) ? "No date" : published,
                 ThumbnailUrl = thumbnailUrl
             };
+        }
+
+        private static YouTubeVideo? ParseLockupViewModel(JsonElement lockupViewModel)
+        {
+            if (!lockupViewModel.TryGetProperty("contentId", out var idElement))
+            {
+                return null;
+            }
+
+            var videoId = idElement.GetString() ?? string.Empty;
+            if (!IsValidYouTubeVideoId(videoId))
+            {
+                return null;
+            }
+
+            var title = ReadTextAtPath(lockupViewModel, "metadata", "lockupMetadataViewModel", "title");
+            var published = ReadLockupMetadataText(lockupViewModel);
+            var thumbnailUrl = TryReadLockupThumbnailUrl(lockupViewModel);
+
+            return new YouTubeVideo
+            {
+                VideoId = videoId,
+                Title = string.IsNullOrWhiteSpace(title) ? videoId : title,
+                PublishedAtText = string.IsNullOrWhiteSpace(published) ? "No date" : published,
+                ThumbnailUrl = thumbnailUrl
+            };
+        }
+
+        private static bool IsValidYouTubeVideoId(string? videoId)
+        {
+            if (string.IsNullOrWhiteSpace(videoId) || videoId.Length != YouTubeVideoIdLength)
+            {
+                return false;
+            }
+
+            return videoId.All(ch =>
+                char.IsAsciiLetterOrDigit(ch) ||
+                ch == '-' ||
+                ch == '_');
         }
 
         private static string TryReadThumbnailUrl(JsonElement videoRenderer)
@@ -325,6 +540,38 @@ namespace JokerDBDTracker.Services
             return candidate ?? string.Empty;
         }
 
+        private static string TryReadLockupThumbnailUrl(JsonElement lockupViewModel)
+        {
+            if (!lockupViewModel.TryGetProperty("contentImage", out var contentImage))
+            {
+                return string.Empty;
+            }
+
+            string? candidate = null;
+            foreach (var objectElement in EnumerateObjects(contentImage))
+            {
+                if (!objectElement.TryGetProperty("sources", out var sources) ||
+                    sources.ValueKind != JsonValueKind.Array)
+                {
+                    continue;
+                }
+
+                foreach (var source in sources.EnumerateArray())
+                {
+                    if (source.TryGetProperty("url", out var urlElement))
+                    {
+                        var url = urlElement.GetString();
+                        if (!string.IsNullOrWhiteSpace(url))
+                        {
+                            candidate = url;
+                        }
+                    }
+                }
+            }
+
+            return candidate ?? string.Empty;
+        }
+
         private static string ReadText(JsonElement parent, string propertyName)
         {
             if (!parent.TryGetProperty(propertyName, out var element))
@@ -332,6 +579,26 @@ namespace JokerDBDTracker.Services
                 return string.Empty;
             }
 
+            return ReadTextElement(element);
+        }
+
+        private static string ReadTextAtPath(JsonElement root, params string[] path)
+        {
+            var current = root;
+            foreach (var propertyName in path)
+            {
+                if (current.ValueKind != JsonValueKind.Object ||
+                    !current.TryGetProperty(propertyName, out current))
+                {
+                    return string.Empty;
+                }
+            }
+
+            return ReadTextElement(current);
+        }
+
+        private static string ReadTextElement(JsonElement element)
+        {
             if (element.ValueKind == JsonValueKind.String)
             {
                 return element.GetString() ?? string.Empty;
@@ -342,6 +609,11 @@ namespace JokerDBDTracker.Services
                 if (element.TryGetProperty("simpleText", out var simpleText))
                 {
                     return simpleText.GetString() ?? string.Empty;
+                }
+
+                if (element.TryGetProperty("content", out var content))
+                {
+                    return content.GetString() ?? string.Empty;
                 }
 
                 if (element.TryGetProperty("runs", out var runs) && runs.ValueKind == JsonValueKind.Array)
@@ -362,33 +634,73 @@ namespace JokerDBDTracker.Services
             return string.Empty;
         }
 
-        private static string? ExtractContinuationToken(JsonElement root)
+        private static string ReadLockupMetadataText(JsonElement lockupViewModel)
+        {
+            if (!lockupViewModel.TryGetProperty("metadata", out var metadataRoot))
+            {
+                return string.Empty;
+            }
+
+            foreach (var objectElement in EnumerateObjects(metadataRoot))
+            {
+                var text = ReadTextElement(objectElement);
+                if (!string.IsNullOrWhiteSpace(text) &&
+                    !string.Equals(text, ReadTextAtPath(lockupViewModel, "metadata", "lockupMetadataViewModel", "title"), StringComparison.Ordinal))
+                {
+                    return text;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private static string? ExtractContinuationToken(JsonElement root, ISet<string> seenTokens)
         {
             foreach (var objectElement in EnumerateObjects(root))
             {
-                if (!objectElement.TryGetProperty("continuationEndpoint", out var endpoint))
+                if (!objectElement.TryGetProperty("continuationItemRenderer", out var continuationItemRenderer))
                 {
                     continue;
                 }
 
-                if (!endpoint.TryGetProperty("continuationCommand", out var command))
+                var token = TryReadContinuationToken(continuationItemRenderer);
+                if (!string.IsNullOrWhiteSpace(token) && !seenTokens.Contains(token))
                 {
-                    continue;
+                    return token;
                 }
+            }
 
-                if (!command.TryGetProperty("token", out var tokenElement))
-                {
-                    continue;
-                }
-
-                var token = tokenElement.GetString();
-                if (!string.IsNullOrWhiteSpace(token))
+            foreach (var objectElement in EnumerateObjects(root))
+            {
+                var token = TryReadContinuationToken(objectElement);
+                if (!string.IsNullOrWhiteSpace(token) && !seenTokens.Contains(token))
                 {
                     return token;
                 }
             }
 
             return null;
+        }
+
+        private static string? TryReadContinuationToken(JsonElement parent)
+        {
+            if (!parent.TryGetProperty("continuationEndpoint", out var endpoint))
+            {
+                return null;
+            }
+
+            if (!endpoint.TryGetProperty("continuationCommand", out var command))
+            {
+                return null;
+            }
+
+            if (!command.TryGetProperty("token", out var tokenElement))
+            {
+                return null;
+            }
+
+            var token = tokenElement.GetString();
+            return string.IsNullOrWhiteSpace(token) ? null : token;
         }
 
         private static IEnumerable<JsonElement> EnumerateObjects(JsonElement root)

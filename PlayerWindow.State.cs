@@ -47,6 +47,7 @@ namespace JokerDBDTracker
         private bool _effectsPanelExpandedBeforePlayerFullscreen = true;
         private Thickness _windowChromeResizeBorderBeforeFullscreen = new Thickness(12);
         private bool _isApplyingFullMonitorBounds;
+        private bool _isTogglingEffectsPanel;
 
         // Playback and XP tracking.
         private double _lastMeasuredTime = -1;
