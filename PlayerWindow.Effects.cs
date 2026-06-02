@@ -1004,7 +1004,7 @@ namespace JokerDBDTracker
                                     const echoWetGain = ctx.createGain();
                                     const convolver = ctx.createConvolver();
                                     const reverbWetGain = ctx.createGain();
-                                    const wobbleDelay = ctx.createDelay(0.05);
+                                    const wobbleDelay = ctx.createDelay(0.12);
                                     const wobbleLfoOsc = ctx.createOscillator();
                                     const wobbleLfoGain = ctx.createGain();
                                     const wobbleWetGain = ctx.createGain();
@@ -1028,10 +1028,10 @@ namespace JokerDBDTracker
                                     outputGain.gain.value = 1;
                                     inputGain.gain.value = 1;
 
-                                    wobbleDelay.delayTime.value = 0.008;
+                                    wobbleDelay.delayTime.value = 0.025;
                                     wobbleWetGain.gain.value = 0;
                                     wobbleLfoOsc.type = 'sine';
-                                    wobbleLfoOsc.frequency.value = 1.8;
+                                    wobbleLfoOsc.frequency.value = 2.5;
                                     wobbleLfoGain.gain.value = 0;
 
                                     source.connect(inputGain);
@@ -1130,7 +1130,7 @@ namespace JokerDBDTracker
                                     this.audioWobbleLfoGain.gain.value = 0;
                                 }
                                 if (this.audioWobbleDelayNode) {
-                                    this.audioWobbleDelayNode.delayTime.value = 0.008;
+                                    this.audioWobbleDelayNode.delayTime.value = 0.025;
                                 }
                                 if (this.audioWobbleWetGain) {
                                     this.audioWobbleWetGain.gain.value = 0;
@@ -1233,17 +1233,17 @@ namespace JokerDBDTracker
                                 }
                                 if (this.audioWobbleDelayNode) {
                                     this.audioWobbleDelayNode.delayTime.value = wobble > 0.001
-                                        ? (0.006 + wobble * 0.003)
-                                        : 0.008;
+                                        ? (0.020 + wobble * 0.010)
+                                        : 0.025;
                                 }
                                 if (this.audioWobbleLfoGain) {
-                                    this.audioWobbleLfoGain.gain.value = wobble > 0.001 ? (0.0008 + wobble * 0.0016) : 0;
+                                    this.audioWobbleLfoGain.gain.value = wobble > 0.001 ? (0.003 + wobble * 0.009) : 0;
                                 }
                                 if (this.audioWobbleWetGain) {
-                                    this.audioWobbleWetGain.gain.value = wobble > 0.001 ? (0.08 + wobble * 0.18) : 0;
+                                    this.audioWobbleWetGain.gain.value = wobble > 0.001 ? (0.25 + wobble * 0.35) : 0;
                                 }
                                 if (this.audioWobbleLfoOsc && wobble > 0.001) {
-                                    this.audioWobbleLfoOsc.frequency.value = 1.2 + wobble * 2.4;
+                                    this.audioWobbleLfoOsc.frequency.value = 1.5 + wobble * 3.5;
                                 }
                                 if (this.audioOutputGain) {
                                     this.audioOutputGain.gain.value = 1;

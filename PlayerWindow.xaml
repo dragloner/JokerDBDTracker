@@ -1563,14 +1563,19 @@
                         <Button x:Name="SadSoundButton"
                                 Grid.Row="2"
                                 Grid.Column="0"
-                                Grid.ColumnSpan="2"
-                                Margin="0"
+                                Margin="0,0,6,6"
                                 Padding="12,8"
                                 FontSize="14"
-                                MaxWidth="260"
-                                HorizontalAlignment="Center"
                                 Content="5. Sadness Sound"
                                 Click="SadSoundButton_Click"/>
+                        <Button x:Name="DaUzhTochnoSoundButton"
+                                Grid.Row="2"
+                                Grid.Column="1"
+                                Margin="6,0,0,6"
+                                Padding="12,8"
+                                FontSize="14"
+                                Content="6. Да уж точно"
+                                Click="DaUzhTochnoSoundButton_Click"/>
 
                         <!-- SFX spam mode toggle (mirrors Settings panel) -->
                         <Border Grid.Row="3"
@@ -1990,15 +1995,15 @@
                                                 <Button x:Name="PresetJNightmareButton" Margin="0,0,6,6" Padding="10,7" FontSize="13" Tag="j_nightmare" Click="ApplyBuiltInPresetButton_Click" Content="JNightmare"/>
                                                 <Button x:Name="PresetJFireButton" Margin="6,0,0,6" Padding="10,7" FontSize="13" Tag="j_fire" Click="ApplyBuiltInPresetButton_Click" Content="JFire"/>
                                                 <Button x:Name="PresetJRelaxingButton" Margin="0,6,6,6" Padding="10,7" FontSize="13" Tag="j_relaxing" Click="ApplyBuiltInPresetButton_Click" Content="JRelaxing"/>
-                                                <Button x:Name="PresetRetroButton" Margin="6,6,0,6" Padding="10,7" FontSize="13" Tag="retro_vhs" Click="ApplyBuiltInPresetButton_Click" Content="Retro VHS"/>
-                                                <Button x:Name="PresetDreamButton" Margin="0,6,6,6" Padding="10,7" FontSize="13" Tag="dream" Click="ApplyBuiltInPresetButton_Click" Content="Dream Glow"/>
-                                                <Button x:Name="PresetChaosButton" Margin="6,6,0,6" Padding="10,7" FontSize="13" Tag="chaos" Click="ApplyBuiltInPresetButton_Click" Content="Chaos"/>
-                                                <Button x:Name="PresetCinemaButton" Margin="0,6,6,6" Padding="10,7" FontSize="13" Tag="cinema" Click="ApplyBuiltInPresetButton_Click" Content="Cinema Cold"/>
-                                                <Button x:Name="PresetBlurButton" Margin="6,6,0,6" Padding="10,7" FontSize="13" Tag="deep_blur" Click="ApplyBuiltInPresetButton_Click" Content="Deep Blur"/>
-                                                <Button x:Name="PresetColdGlitchButton" Margin="0,6,6,0" Padding="10,7" FontSize="13" Tag="cold_glitch" Click="ApplyBuiltInPresetButton_Click" Content="Cold Glitch"/>
-                                                <Button x:Name="PresetDemonTunnelButton" Margin="6,6,0,0" Padding="10,7" FontSize="13" Tag="demon_tunnel" Click="ApplyBuiltInPresetButton_Click" Content="Demon Tunnel"/>
-                                                <Button x:Name="PresetMirrorPrisonButton" Margin="0,6,6,0" Padding="10,7" FontSize="13" Tag="mirror_prison" Click="ApplyBuiltInPresetButton_Click" Content="Mirror Prison"/>
-                                                <Button x:Name="PresetPoisonTapeButton" Margin="6,6,0,0" Padding="10,7" FontSize="13" Tag="poison_tape" Click="ApplyBuiltInPresetButton_Click" Content="Poison Tape"/>
+                                                <Button x:Name="PresetRetroButton" Margin="6,6,0,6" Padding="10,7" FontSize="13" Tag="j_retro_tape" Click="ApplyBuiltInPresetButton_Click" Content="Retro VHS"/>
+                                                <Button x:Name="PresetDreamButton" Margin="0,6,6,6" Padding="10,7" FontSize="13" Tag="j_dream" Click="ApplyBuiltInPresetButton_Click" Content="Dream Glow"/>
+                                                <Button x:Name="PresetChaosButton" Margin="6,6,0,6" Padding="10,7" FontSize="13" Tag="j_void" Click="ApplyBuiltInPresetButton_Click" Content="Chaos"/>
+                                                <Button x:Name="PresetCinemaButton" Margin="0,6,6,6" Padding="10,7" FontSize="13" Tag="j_ice" Click="ApplyBuiltInPresetButton_Click" Content="Cinema Cold"/>
+                                                <Button x:Name="PresetBlurButton" Margin="6,6,0,6" Padding="10,7" FontSize="13" Tag="j_haze" Click="ApplyBuiltInPresetButton_Click" Content="Deep Blur"/>
+                                                <Button x:Name="PresetColdGlitchButton" Margin="0,6,6,0" Padding="10,7" FontSize="13" Tag="j_frostbite" Click="ApplyBuiltInPresetButton_Click" Content="Cold Glitch"/>
+                                                <Button x:Name="PresetDemonTunnelButton" Margin="6,6,0,0" Padding="10,7" FontSize="13" Tag="j_tunnel" Click="ApplyBuiltInPresetButton_Click" Content="Demon Tunnel"/>
+                                                <Button x:Name="PresetMirrorPrisonButton" Margin="0,6,6,0" Padding="10,7" FontSize="13" Tag="j_mirror" Click="ApplyBuiltInPresetButton_Click" Content="Mirror Prison"/>
+                                                <Button x:Name="PresetPoisonTapeButton" Margin="6,6,0,0" Padding="10,7" FontSize="13" Tag="j_poison" Click="ApplyBuiltInPresetButton_Click" Content="Poison Tape"/>
                                             </UniformGrid>
                                         </StackPanel>
                                     </Border>

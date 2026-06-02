@@ -753,6 +753,7 @@ namespace JokerDBDTracker
             p.AudioEqMidDb = 24.0;          // Strong mid boost
             p.AudioEqHighDb = 30.0;         // Strong high boost
             p.Contrast = 1.0;               // Very high contrast
+            p.AudioPitchSemitones = -4.0;   // Slowdown -4 semitones
             return p;
         }
 
@@ -765,6 +766,7 @@ namespace JokerDBDTracker
             p.AudioEqLowDb = 28.0;
             p.AudioEqMidDb = 8.0;
             p.AudioEqHighDb = -4.0;
+            p.AudioPitchSemitones = -2.0;   // Slight slowdown -2 semitones
             return p;
         }
 

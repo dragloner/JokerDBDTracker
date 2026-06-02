@@ -20,6 +20,7 @@ namespace JokerDBDTracker.Services
         public string PsiSoundBind { get; set; } = "I";
         public string RespectSoundBind { get; set; } = "O";
         public string SadSoundBind { get; set; } = "P";
+        public string DaUzhTochnoSoundBind { get; set; } = "J";
         public string Effect1Bind { get; set; } = "D1";
         public string Effect2Bind { get; set; } = "D2";
         public string Effect3Bind { get; set; } = "D3";
@@ -219,6 +220,7 @@ namespace JokerDBDTracker.Services
             settings.PsiSoundBind = NormalizeBind(settings.PsiSoundBind, "I");
             settings.RespectSoundBind = NormalizeBind(settings.RespectSoundBind, "O");
             settings.SadSoundBind = NormalizeBind(settings.SadSoundBind, "P");
+            settings.DaUzhTochnoSoundBind = NormalizeBind(settings.DaUzhTochnoSoundBind, "J");
             settings.Effect1Bind = NormalizeBind(settings.Effect1Bind, "D1");
             settings.Effect2Bind = NormalizeBind(settings.Effect2Bind, "D2");
             settings.Effect3Bind = NormalizeBind(settings.Effect3Bind, "D3");

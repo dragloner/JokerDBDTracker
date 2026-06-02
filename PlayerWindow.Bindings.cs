@@ -20,7 +20,8 @@ namespace JokerDBDTracker
             Laugh,
             PsiRadiation,
             Respect,
-            Sad
+            Sad,
+            DaUzhTochno
         }
 
         private void PlayerWindow_PreviewMouseDown(object sender, MouseButtonEventArgs e)
@@ -258,6 +259,12 @@ namespace JokerDBDTracker
             if (key == ReadConfiguredKey(_appSettings.SadSoundBind, Key.P))
             {
                 PlaySoundEffect(SoundEffectKind.Sad);
+                return true;
+            }
+
+            if (key == ReadConfiguredKey(_appSettings.DaUzhTochnoSoundBind, Key.J))
+            {
+                PlaySoundEffect(SoundEffectKind.DaUzhTochno);
                 return true;
             }
 
@@ -646,7 +653,7 @@ namespace JokerDBDTracker
                             const echoWet    = ctx.createGain();
                             const convolver  = ctx.createConvolver();
                             const reverbWet  = ctx.createGain();
-                            const wobbleDelay = ctx.createDelay(0.05);
+                            const wobbleDelay = ctx.createDelay(0.12);
                             const wobbleLfoOsc = ctx.createOscillator();
                             const wobbleLfoGain = ctx.createGain();
                             const wobbleWet  = ctx.createGain();
@@ -660,10 +667,10 @@ namespace JokerDBDTracker
                             eqHigh.type = 'highshelf';
                             eqHigh.frequency.value = 3600;
 
-                            wobbleDelay.delayTime.value = 0.008;
+                            wobbleDelay.delayTime.value = 0.025;
                             wobbleWet.gain.value = 0;
                             wobbleLfoOsc.type = 'sine';
-                            wobbleLfoOsc.frequency.value = 1.8;
+                            wobbleLfoOsc.frequency.value = 2.5;
                             wobbleLfoGain.gain.value = 0;
                             wobbleLfoOsc.connect(wobbleLfoGain);
                             wobbleLfoGain.connect(wobbleDelay.delayTime);
@@ -736,11 +743,11 @@ namespace JokerDBDTracker
                                 reverbWet.gain.value = reverbStrength > 0.001 ? (0.05 + reverbStrength * 0.44) : 0;
 
                                 const wobbleStrength = Math.max(0, Math.min(2, Number(current.Wobble) || 0));
-                                const wobbleBaseDelay = wobbleStrength > 0.001 ? (0.006 + wobbleStrength * 0.003) : 0.008;
+                                const wobbleBaseDelay = wobbleStrength > 0.001 ? (0.020 + wobbleStrength * 0.010) : 0.025;
                                 wobbleDelay.delayTime.value = wobbleBaseDelay;
-                                wobbleWet.gain.value = wobbleStrength > 0.001 ? (0.08 + wobbleStrength * 0.18) : 0;
-                                wobbleLfoOsc.frequency.value = wobbleStrength > 0.001 ? (1.2 + wobbleStrength * 2.4) : 1.8;
-                                wobbleLfoGain.gain.value = wobbleStrength > 0.001 ? (0.0008 + wobbleStrength * 0.0016) : 0;
+                                wobbleWet.gain.value = wobbleStrength > 0.001 ? (0.25 + wobbleStrength * 0.35) : 0;
+                                wobbleLfoOsc.frequency.value = wobbleStrength > 0.001 ? (1.5 + wobbleStrength * 3.5) : 2.5;
+                                wobbleLfoGain.gain.value = wobbleStrength > 0.001 ? (0.003 + wobbleStrength * 0.009) : 0;
                             };
 
                             sfx.currentParams = sfx.currentParams || {
@@ -909,6 +916,7 @@ namespace JokerDBDTracker
                 SoundEffectKind.PsiRadiation => "psi.mp3",
                 SoundEffectKind.Respect => "donmafia.mp3",
                 SoundEffectKind.Sad => "sadness.mp3",
+                SoundEffectKind.DaUzhTochno => "dauzhtochno.mp3",
                 _ => null
             };
 
@@ -1096,7 +1104,7 @@ namespace JokerDBDTracker
                             }
                             sfx.startGen = sfx.startGen || {};
                             sfx.decoding = sfx.decoding || {};
-                            const kinds = new Set(['AuraFarm', 'Laugh', 'PsiRadiation', 'Respect', 'Sad']);
+                            const kinds = new Set(['AuraFarm', 'Laugh', 'PsiRadiation', 'Respect', 'Sad', 'DaUzhTochno']);
                             for (const k of Object.keys(sfx.decoding)) {
                                 kinds.add(k);
                             }
@@ -1139,6 +1147,7 @@ namespace JokerDBDTracker
                 var psi = FormatBindLabel(_appSettings.PsiSoundBind);
                 var respect = FormatBindLabel(_appSettings.RespectSoundBind);
                 var sad = FormatBindLabel(_appSettings.SadSoundBind);
+                var dauzhtochno = FormatBindLabel(_appSettings.DaUzhTochnoSoundBind);
                 var fxRow1 = string.Join("/", new[]
                 {
                     FormatBindLabel(_appSettings.Effect1Bind),
@@ -1161,8 +1170,8 @@ namespace JokerDBDTracker
                     FormatBindLabel(_appSettings.Effect15Bind)
                 });
                 BindsHintText.Text = PT(
-                    $"FX 1-10: {fxRow1}\nFX 11-15: {fxRow2} | H:{hide} | Y:{aura} U:{laugh} I:{psi} O:{respect} P:{sad}",
-                    $"FX 1-10: {fxRow1}\nFX 11-15: {fxRow2} | H:{hide} | Y:{aura} U:{laugh} I:{psi} O:{respect} P:{sad}");
+                    $"FX 1-10: {fxRow1}\nFX 11-15: {fxRow2} | H:{hide} | Y:{aura} U:{laugh} I:{psi} O:{respect} P:{sad} J:{dauzhtochno}",
+                    $"FX 1-10: {fxRow1}\nFX 11-15: {fxRow2} | H:{hide} | Y:{aura} U:{laugh} I:{psi} O:{respect} P:{sad} J:{dauzhtochno}");
             }
 
             if (AuraFarmSoundButton is not null)
@@ -1193,6 +1202,12 @@ namespace JokerDBDTracker
             {
                 SadSoundButton.Content = PT("5. Звук Грусть", "5. Sadness Sound") +
                                          $" [{FormatBindLabel(_appSettings.SadSoundBind)}]";
+            }
+
+            if (DaUzhTochnoSoundButton is not null)
+            {
+                DaUzhTochnoSoundButton.Content = PT("6. Да уж точно", "6. Da uzh tochno") +
+                                                 $" [{FormatBindLabel(_appSettings.DaUzhTochnoSoundBind)}]";
             }
         }
 
@@ -1426,6 +1441,12 @@ namespace JokerDBDTracker
         {
             MarkUserInteraction();
             PlaySoundEffect(SoundEffectKind.Sad);
+        }
+
+        private void DaUzhTochnoSoundButton_Click(object sender, RoutedEventArgs e)
+        {
+            MarkUserInteraction();
+            PlaySoundEffect(SoundEffectKind.DaUzhTochno);
         }
     }
 }

@@ -99,6 +99,14 @@ namespace JokerDBDTracker
             WindowState = _windowStateBeforePlayerFullscreen == WindowState.Minimized
                 ? WindowState.Maximized
                 : _windowStateBeforePlayerFullscreen;
+            // Re-apply panel layout after window state transition settles to ensure column widths stick.
+            Dispatcher.BeginInvoke(() =>
+            {
+                if (!_isPlayerElementFullScreen && !_isPlayerClosing)
+                {
+                    ApplyEffectsPanelLayout();
+                }
+            }, DispatcherPriority.Loaded);
             RequestApplyEffects(immediate: false);
         }
 
