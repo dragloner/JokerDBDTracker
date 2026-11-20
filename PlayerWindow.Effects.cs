@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Web;
@@ -59,7 +59,6 @@ namespace JokerDBDTracker
             UpdateStrengthSlidersEnabledState();
             UpdateEffectDetailsVisibility(animate: true);
             RequestApplyEffects(immediate: false);
-            SendWtEffectsSync();
         }
 
         private void StrengthSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -70,7 +69,6 @@ namespace JokerDBDTracker
             }
 
             RequestApplyEffects(immediate: false);
-            SendWtEffectsSync();
         }
 
         private void FisheyeCenterPad_Loaded(object sender, RoutedEventArgs e)
@@ -438,7 +436,7 @@ namespace JokerDBDTracker
 
                     const video = pickMainVideo();
                     if (!video) {
-                        return;
+                        return false;
                     }
 
                     const clamp01 = (value) => Math.max(0, Math.min(1, Number(value) || 0));
@@ -2321,6 +2319,7 @@ namespace JokerDBDTracker
                     });
                     vhsOverlay.style.display = flags[9] ? 'block' : 'none';
                     vhsOverlay.style.opacity = (0.30 + clamp01(settings.Vhs) * 0.70).toFixed(2);
+                    return true;
                 })();
                 """;
 
@@ -2328,7 +2327,7 @@ namespace JokerDBDTracker
                 script,
                 timeoutMs: 1800,
                 operation: "ApplyEffectsAsync");
-            if (applyResult is null)
+            if (!string.Equals(applyResult, "true", StringComparison.Ordinal))
             {
                 return;
             }

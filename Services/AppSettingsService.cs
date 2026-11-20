@@ -1,4 +1,5 @@
-﻿using System.IO;
+using System.Windows.Input;
+using System.IO;
 using System.Security.Cryptography;
 using System.Text.Json;
 
@@ -37,7 +38,6 @@ namespace JokerDBDTracker.Services
         public string Effect14Bind { get; set; } = "R";
         public string Effect15Bind { get; set; } = "T";
         public bool AutoCheckUpdates { get; set; } = true;
-        public bool WatchTogetherFirewallAccepted { get; set; }
         public bool SoundSpamMode { get; set; }
         public bool ApplyEqToSoundEffects { get; set; } = true;
         public List<string> PlayerCustomPresetNames { get; set; } = [];
@@ -47,7 +47,7 @@ namespace JokerDBDTracker.Services
     public sealed class AppSettingsService
     {
         private static readonly SemaphoreSlim FileAccessLock = new(1, 1);
-        // App-specific DPAPI entropy — prevents other apps from decrypting our data even under same user.
+        // DPAPI protects at the Windows account boundary; entropy identifies this application format.
         private static readonly byte[] DpapiEntropy = [0x4A, 0x6F, 0x6B, 0x65, 0x72, 0x44, 0x42, 0x44, 0x54, 0x72, 0x61, 0x63, 0x6B, 0x65, 0x72, 0x53];
         private readonly string _settingsPath;
         private readonly string _legacySettingsPath;
@@ -102,6 +102,8 @@ namespace JokerDBDTracker.Services
 
                     if (!File.Exists(_settingsPath))
                     {
+                        if (File.Exists(_settingsPath + ".bak"))
+                            return Normalize(DeserializeSettingsPayload(await File.ReadAllBytesAsync(_settingsPath + ".bak", cancellationToken)) ?? new AppSettingsData());
                         return new AppSettingsData();
                     }
                 }
@@ -110,9 +112,15 @@ namespace JokerDBDTracker.Services
                 var loaded = DeserializeSettingsPayload(payload);
                 return Normalize(loaded ?? new AppSettingsData());
             }
-            catch
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                return new AppSettingsData();
+                DiagnosticsService.LogException("Settings.Load", ex);
+                if (File.Exists(_settingsPath + ".bak"))
+                {
+                    var backup = await File.ReadAllBytesAsync(_settingsPath + ".bak", cancellationToken);
+                    return Normalize(DeserializeSettingsPayload(backup) ?? new AppSettingsData());
+                }
+                throw new InvalidDataException("Settings could not be read. Original files were preserved.", ex);
             }
             finally
             {
@@ -126,37 +134,9 @@ namespace JokerDBDTracker.Services
             try
             {
                 var normalized = Normalize(settings);
-                var tempPath = $"{_settingsPath}.tmp";
                 var rawPayload = JsonSerializer.SerializeToUtf8Bytes(normalized);
-                var encryptedPayload = ProtectedData.Protect(rawPayload, DpapiEntropy, DataProtectionScope.CurrentUser);
-                var envelope = new EncryptedEnvelope
-                {
-                    Version = 1,
-                    Protected = true,
-                    Payload = Convert.ToBase64String(encryptedPayload)
-                };
-
-                await using (var stream = new FileStream(
-                                 tempPath,
-                                 FileMode.Create,
-                                 FileAccess.Write,
-                                 FileShare.None,
-                                 bufferSize: 4096,
-                                 useAsync: true))
-                {
-                    await JsonSerializer.SerializeAsync(stream, envelope, cancellationToken: cancellationToken);
-                    await stream.FlushAsync(cancellationToken);
-                }
-
-                File.Move(tempPath, _settingsPath, overwrite: true);
-                try
-                {
-                    File.Copy(_settingsPath, _legacySettingsPath, overwrite: true);
-                }
-                catch
-                {
-                    // Keep current settings even if legacy mirror write fails.
-                }
+                var encrypted = ProtectedData.Protect(rawPayload, DpapiEntropy, DataProtectionScope.CurrentUser);
+                await AtomicFile.WriteAsync(_settingsPath, JsonSerializer.SerializeToUtf8Bytes(new EncryptedEnvelope { Version = 2, Protected = true, Payload = Convert.ToBase64String(encrypted) }), cancellationToken);
             }
             finally
             {
@@ -168,10 +148,14 @@ namespace JokerDBDTracker.Services
         {
             if (payload.Length == 0)
             {
-                return new AppSettingsData();
+                throw new InvalidDataException("Settings file is empty.");
             }
 
             using var document = JsonDocument.Parse(payload);
+            if (document.RootElement.ValueKind != JsonValueKind.Object)
+                throw new InvalidDataException("Settings must be an object.");
+            if (document.RootElement.TryGetProperty("Protected", out var flag) && flag.ValueKind != JsonValueKind.True)
+                throw new InvalidDataException("Invalid settings envelope.");
             if (document.RootElement.ValueKind == JsonValueKind.Object &&
                 document.RootElement.TryGetProperty("Protected", out var protectedFlag) &&
                 protectedFlag.ValueKind == JsonValueKind.True &&
@@ -181,7 +165,7 @@ namespace JokerDBDTracker.Services
                 var encryptedPayloadText = encryptedPayloadElement.GetString();
                 if (string.IsNullOrWhiteSpace(encryptedPayloadText))
                 {
-                    return new AppSettingsData();
+                    throw new InvalidDataException("Settings payload is empty.");
                 }
 
                 var encryptedPayload = Convert.FromBase64String(encryptedPayloadText);
@@ -208,7 +192,7 @@ namespace JokerDBDTracker.Services
             settings.Language = string.Equals(settings.Language, "en", StringComparison.OrdinalIgnoreCase)
                 ? "en"
                 : "ru";
-            settings.UiScale = Math.Clamp(settings.UiScale, 0.85, 1.35);
+            settings.UiScale = double.IsFinite(settings.UiScale) ? Math.Clamp(settings.UiScale, 0.85, 1.35) : 1.0;
             settings.FullscreenBehavior = string.Equals(settings.FullscreenBehavior, "windowed", StringComparison.OrdinalIgnoreCase)
                 ? "windowed"
                 : "auto";
@@ -246,6 +230,21 @@ namespace JokerDBDTracker.Services
                 settings.LaughSoundBind = "U";
                 settings.PsiSoundBind = "I";
                 settings.RespectSoundBind = "O";
+            }
+
+            var defaults = new AppSettingsData();
+            var used = new HashSet<Key>();
+            foreach (var property in typeof(AppSettingsData).GetProperties().Where(property => property.Name.EndsWith("Bind", StringComparison.Ordinal)))
+            {
+                Enum.TryParse<Key>(property.GetValue(settings)?.ToString(), true, out var key);
+                if (!KeyBindingRules.IsAllowed(key) || !used.Add(KeyBindingRules.Canonical(key)))
+                {
+                    Enum.TryParse<Key>(property.GetValue(defaults)?.ToString(), true, out var fallback);
+                    if (!KeyBindingRules.IsAllowed(fallback) || used.Contains(KeyBindingRules.Canonical(fallback)))
+                        fallback = Enumerable.Range((int)Key.F1, (int)Key.F24 - (int)Key.F1 + 1).Select(value => (Key)value).First(candidate => KeyBindingRules.IsAllowed(candidate) && !used.Contains(candidate));
+                    used.Add(KeyBindingRules.Canonical(fallback));
+                    property.SetValue(settings, fallback.ToString().ToUpperInvariant());
+                }
             }
 
             settings.PlayerCustomPresetNames ??= [];
@@ -288,7 +287,7 @@ namespace JokerDBDTracker.Services
                 return fallback;
             }
 
-            return value.Trim().ToUpperInvariant();
+            return Enum.TryParse<Key>(value.Trim(), true, out var key) && KeyBindingRules.IsAllowed(key) ? key.ToString().ToUpperInvariant() : fallback;
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Security.Cryptography;
 using System.Text.Json;
 
@@ -12,6 +12,8 @@ namespace JokerDBDTracker.Services
         public HashSet<string> FavoriteVideoIds { get; set; } = new(StringComparer.OrdinalIgnoreCase);
         public HashSet<string> Achievements { get; set; } = new(StringComparer.OrdinalIgnoreCase);
         public HashSet<string> FirstViewRewardedVideoIds { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, HashSet<string>> WatchedVideoIdsByDay { get; set; } = new(StringComparer.Ordinal);
+        public int ClaimedQuestCount { get; set; }
         public int TotalXp { get; set; }
         public int Prestige { get; set; }
         public int PrestigeXp { get; set; }
@@ -42,352 +44,116 @@ namespace JokerDBDTracker.Services
         public List<string> ActiveWeeklyQuestIds { get; set; } = [];
     }
 
-    public class WatchHistoryService
+    public sealed class WatchHistoryService
     {
-        private static readonly SemaphoreSlim FileAccessLock = new(1, 1);
-        // App-specific DPAPI entropy — prevents other apps from decrypting our data even under same user.
         private static readonly byte[] DpapiEntropy = [0x4A, 0x6F, 0x6B, 0x65, 0x72, 0x44, 0x42, 0x44, 0x54, 0x72, 0x61, 0x63, 0x6B, 0x65, 0x72, 0x48];
         private readonly string _historyPath;
-        private readonly string _backupPath;
         private readonly string _legacyHistoryPath;
+        private readonly SemaphoreSlim _gate;
+        private sealed record Envelope(int Version, bool Protected, string Payload);
 
-        private sealed class EncryptedEnvelope
+        public WatchHistoryService(string? directory = null)
         {
-            public int Version { get; set; } = 1;
-            public bool Protected { get; set; } = true;
-            public string Payload { get; set; } = string.Empty;
-        }
-
-        public WatchHistoryService()
-        {
-            var appFolder = AppStoragePaths.GetCurrentAppDataDirectory();
-            Directory.CreateDirectory(appFolder);
-            _historyPath = Path.Combine(appFolder, "watch-history.json");
-            _backupPath = $"{_historyPath}.bak";
-
-            var legacyFolder = AppStoragePaths.GetLegacyAppDataDirectory();
-            Directory.CreateDirectory(legacyFolder);
-            _legacyHistoryPath = Path.Combine(legacyFolder, "watch-history.json");
-            MigrateLegacyHistoryIfNeeded();
-        }
-
-        private void MigrateLegacyHistoryIfNeeded()
-        {
-            try
-            {
-                if (File.Exists(_historyPath))
-                {
-                    return;
-                }
-
-                if (!File.Exists(_legacyHistoryPath))
-                {
-                    return;
-                }
-
-                File.Copy(_legacyHistoryPath, _historyPath, overwrite: false);
-            }
-            catch (Exception ex)
-            {
-                DiagnosticsService.LogException("MigrateLegacyHistoryIfNeeded", ex);
-            }
+            _historyPath = Path.Combine(directory ?? AppStoragePaths.GetCurrentAppDataDirectory(), "watch-history.json");
+            _legacyHistoryPath = Path.Combine(AppStoragePaths.GetLegacyAppDataDirectory(), "watch-history.json");
+            _gate = AtomicFile.Gate(_historyPath);
         }
 
         public async Task<WatchHistoryData> LoadAsync(CancellationToken cancellationToken = default)
         {
-            await FileAccessLock.WaitAsync(cancellationToken);
+            await _gate.WaitAsync(cancellationToken);
             try
             {
-                var current = await TryLoadPrimaryCurrentAsync(cancellationToken);
-                var legacy = await TryLoadPathOrDefaultAsync(_legacyHistoryPath, cancellationToken);
-
-                if (current is null && legacy is null)
+                // The current file is authoritative. Legacy storage is only a migration/recovery source.
+                var candidates = new[] { _historyPath, _historyPath + ".bak", _legacyHistoryPath };
+                Exception? failure = null;
+                foreach (var path in candidates)
                 {
-                    return new WatchHistoryData();
+                    if (!File.Exists(path)) continue;
+                    try
+                    {
+                        var data = await LoadFromPathAsync(path, cancellationToken);
+                        if (path != _historyPath)
+                        {
+                            // Keep a damaged primary for diagnosis and never replace the good backup with it.
+                            if (File.Exists(_historyPath)) File.Move(_historyPath, _historyPath + ".corrupt-" + DateTime.UtcNow.Ticks);
+                            await WriteCoreAsync(data, cancellationToken);
+                            DiagnosticsService.LogInfo("History", "Profile recovered from a backup or migrated from legacy storage.");
+                        }
+                        return data;
+                    }
+                    catch (Exception ex) when (ex is JsonException or CryptographicException or FormatException or IOException or InvalidDataException or UnauthorizedAccessException)
+                    {
+                        failure = ex;
+                        DiagnosticsService.LogException("History.Load", ex);
+                    }
                 }
-
-                if (current is null)
-                {
-                    TryCopyFile(_legacyHistoryPath, _historyPath);
-                    return legacy!;
-                }
-
-                if (legacy is null)
-                {
-                    return current;
-                }
-
-                if (IsSecondHistoryBetter(current, legacy))
-                {
-                    TryCopyFile(_legacyHistoryPath, _historyPath);
-                    return legacy;
-                }
-
-                if (IsSecondHistoryBetter(legacy, current))
-                {
-                    TryCopyFile(_historyPath, _legacyHistoryPath);
-                    return current;
-                }
-
-                if (TryGetFileWriteTimeUtc(_legacyHistoryPath, out var legacyWrite) &&
-                    TryGetFileWriteTimeUtc(_historyPath, out var currentWrite) &&
-                    legacyWrite > currentWrite)
-                {
-                    TryCopyFile(_legacyHistoryPath, _historyPath);
-                    return legacy;
-                }
-
-                TryCopyFile(_historyPath, _legacyHistoryPath);
-                return current;
+                if (failure is not null) throw new InvalidDataException("Profile and its recovery copies could not be read. Original files were preserved.", failure);
+                return new WatchHistoryData();
             }
-            finally
-            {
-                FileAccessLock.Release();
-            }
+            finally { _gate.Release(); }
         }
 
         public async Task SaveAsync(WatchHistoryData data, CancellationToken cancellationToken = default)
         {
-            await FileAccessLock.WaitAsync(cancellationToken);
-            try
-            {
-                var tempPath = $"{_historyPath}.tmp";
-                await using (var stream = new FileStream(
-                                 tempPath,
-                                 FileMode.Create,
-                                 FileAccess.Write,
-                                 FileShare.None,
-                                 bufferSize: 8192,
-                                 useAsync: true))
-                {
-                    var rawPayload = JsonSerializer.SerializeToUtf8Bytes(data);
-                    var encryptedPayload = ProtectedData.Protect(rawPayload, DpapiEntropy, DataProtectionScope.CurrentUser);
-                    var envelope = new EncryptedEnvelope
-                    {
-                        Version = 1,
-                        Protected = true,
-                        Payload = Convert.ToBase64String(encryptedPayload)
-                    };
-                    await JsonSerializer.SerializeAsync(stream, envelope, cancellationToken: cancellationToken);
-                    await stream.FlushAsync(cancellationToken);
-                }
-
-                if (File.Exists(_historyPath))
-                {
-                    File.Copy(_historyPath, _backupPath, overwrite: true);
-                }
-
-                File.Move(tempPath, _historyPath, overwrite: true);
-                TryCopyFile(_historyPath, _legacyHistoryPath);
-            }
-            finally
-            {
-                FileAccessLock.Release();
-            }
+            await _gate.WaitAsync(cancellationToken);
+            try { await WriteCoreAsync(Normalize(data), cancellationToken); }
+            finally { _gate.Release(); }
         }
 
-        private async Task<WatchHistoryData?> TryLoadPrimaryCurrentAsync(CancellationToken cancellationToken)
+        private Task WriteCoreAsync(WatchHistoryData data, CancellationToken cancellationToken)
         {
-            if (!File.Exists(_historyPath))
-            {
-                if (!File.Exists(_backupPath))
-                {
-                    return null;
-                }
-
-                TryCopyFile(_backupPath, _historyPath);
-            }
-
-            try
-            {
-                return await LoadFromPathAsync(_historyPath, cancellationToken);
-            }
-            catch (JsonException)
-            {
-                if (!File.Exists(_backupPath))
-                {
-                    return null;
-                }
-
-                var recovered = await LoadFromPathAsync(_backupPath, cancellationToken);
-                TryCopyFile(_backupPath, _historyPath);
-                return recovered;
-            }
-            catch (CryptographicException)
-            {
-                return null;
-            }
-            catch (IOException)
-            {
-                if (!File.Exists(_backupPath))
-                {
-                    return null;
-                }
-
-                var recovered = await LoadFromPathAsync(_backupPath, cancellationToken);
-                TryCopyFile(_backupPath, _historyPath);
-                return recovered;
-            }
-        }
-
-        private static async Task<WatchHistoryData?> TryLoadPathOrDefaultAsync(string path, CancellationToken cancellationToken)
-        {
-            if (!File.Exists(path))
-            {
-                return null;
-            }
-
-            try
-            {
-                return await LoadFromPathAsync(path, cancellationToken);
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        private static bool IsSecondHistoryBetter(WatchHistoryData first, WatchHistoryData second)
-        {
-            if (second.Prestige != first.Prestige)
-            {
-                return second.Prestige > first.Prestige;
-            }
-
-            if (second.TotalXp != first.TotalXp)
-            {
-                return second.TotalXp > first.TotalXp;
-            }
-
-            if (second.PrestigeXp != first.PrestigeXp)
-            {
-                return second.PrestigeXp > first.PrestigeXp;
-            }
-
-            if (second.LastWatchedByVideoId.Count != first.LastWatchedByVideoId.Count)
-            {
-                return second.LastWatchedByVideoId.Count > first.LastWatchedByVideoId.Count;
-            }
-
-            if (second.FirstViewRewardedVideoIds.Count != first.FirstViewRewardedVideoIds.Count)
-            {
-                return second.FirstViewRewardedVideoIds.Count > first.FirstViewRewardedVideoIds.Count;
-            }
-
-            return false;
-        }
-
-        private static bool TryGetFileWriteTimeUtc(string path, out DateTime writeTimeUtc)
-        {
-            writeTimeUtc = DateTime.MinValue;
-            try
-            {
-                if (!File.Exists(path))
-                {
-                    return false;
-                }
-
-                writeTimeUtc = File.GetLastWriteTimeUtc(path);
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        private static void TryCopyFile(string sourcePath, string targetPath)
-        {
-            try
-            {
-                if (!File.Exists(sourcePath))
-                {
-                    return;
-                }
-
-                var targetDir = Path.GetDirectoryName(targetPath);
-                if (!string.IsNullOrWhiteSpace(targetDir))
-                {
-                    Directory.CreateDirectory(targetDir);
-                }
-
-                File.Copy(sourcePath, targetPath, overwrite: true);
-            }
-            catch
-            {
-                // Best-effort sync between legacy/current storage locations.
-            }
+            var bytes = JsonSerializer.SerializeToUtf8Bytes(data);
+            var encrypted = ProtectedData.Protect(bytes, DpapiEntropy, DataProtectionScope.CurrentUser);
+            return AtomicFile.WriteAsync(_historyPath, JsonSerializer.SerializeToUtf8Bytes(new Envelope(2, true, Convert.ToBase64String(encrypted))), cancellationToken);
         }
 
         private static async Task<WatchHistoryData> LoadFromPathAsync(string path, CancellationToken cancellationToken)
         {
-            var payloadBytes = await File.ReadAllBytesAsync(path, cancellationToken);
-            if (payloadBytes.Length == 0)
+            var bytes = await File.ReadAllBytesAsync(path, cancellationToken);
+            using var document = JsonDocument.Parse(bytes);
+            var root = document.RootElement;
+            if (root.ValueKind != JsonValueKind.Object) throw new InvalidDataException("Profile root must be an object.");
+            if (root.TryGetProperty("Protected", out _))
             {
-                return new WatchHistoryData();
+                var envelope = root.Deserialize<Envelope>() ?? throw new InvalidDataException("Invalid profile envelope.");
+                if (!envelope.Protected || envelope.Version is < 1 or > 2 || string.IsNullOrWhiteSpace(envelope.Payload)) throw new InvalidDataException("Unsupported profile envelope.");
+                var encrypted = Convert.FromBase64String(envelope.Payload);
+                byte[] plain;
+                try { plain = ProtectedData.Unprotect(encrypted, DpapiEntropy, DataProtectionScope.CurrentUser); }
+                catch (CryptographicException) when (envelope.Version == 1)
+                { plain = ProtectedData.Unprotect(encrypted, null, DataProtectionScope.CurrentUser); }
+                return Normalize(JsonSerializer.Deserialize<WatchHistoryData>(plain) ?? throw new InvalidDataException("Profile is empty."));
             }
-
-            using var document = JsonDocument.Parse(payloadBytes);
-            if (TryParseEncryptedEnvelope(document.RootElement, out var unprotectedJson))
-            {
-                using var unprotectedDoc = JsonDocument.Parse(unprotectedJson);
-                return ParseHistoryRoot(unprotectedDoc.RootElement);
-            }
-
-            return ParseHistoryRoot(document.RootElement);
-        }
-
-        private static bool TryParseEncryptedEnvelope(JsonElement root, out byte[] unprotectedJson)
-        {
-            unprotectedJson = [];
-            if (root.ValueKind != JsonValueKind.Object ||
-                !root.TryGetProperty("Protected", out var protectedFlag) ||
-                protectedFlag.ValueKind != JsonValueKind.True ||
-                !root.TryGetProperty("Payload", out var payloadElement) ||
-                payloadElement.ValueKind != JsonValueKind.String)
-            {
-                return false;
-            }
-
-            var payload = payloadElement.GetString();
-            if (string.IsNullOrWhiteSpace(payload))
-            {
-                return false;
-            }
-
-            var encryptedBytes = Convert.FromBase64String(payload);
-            // Try with entropy first (new format), fall back to without (legacy files).
-            try
-            {
-                unprotectedJson = ProtectedData.Unprotect(encryptedBytes, DpapiEntropy, DataProtectionScope.CurrentUser);
-            }
-            catch (CryptographicException)
-            {
-                unprotectedJson = ProtectedData.Unprotect(encryptedBytes, optionalEntropy: null, DataProtectionScope.CurrentUser);
-            }
-            return true;
-        }
-
-        private static WatchHistoryData ParseHistoryRoot(JsonElement root)
-        {
-            if (root.ValueKind == JsonValueKind.Object &&
-                root.TryGetProperty("LastWatchedByVideoId", out _))
-            {
-                var typed = root.Deserialize<WatchHistoryData>();
-                return typed ?? new WatchHistoryData();
-            }
-
-            var oldFormat = root.Deserialize<Dictionary<string, DateTime>>() ??
-                            new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
-
+            // One-time compatibility with profiles written before encryption was introduced.
+            if (root.TryGetProperty("LastWatchedByVideoId", out _)) return Normalize(root.Deserialize<WatchHistoryData>()!);
+            var old = root.Deserialize<Dictionary<string, DateTime>>() ?? throw new InvalidDataException("Invalid legacy profile.");
             var migrated = new WatchHistoryData();
-            foreach (var item in oldFormat)
-            {
-                migrated.LastWatchedByVideoId[item.Key] = item.Value;
-                migrated.WatchedDays.Add(item.Value.ToLocalTime().Date.ToString("yyyy-MM-dd"));
-            }
+            foreach (var pair in old) migrated.LastWatchedByVideoId[pair.Key] = pair.Value;
+            return Normalize(migrated);
+        }
 
-            return migrated;
+        private static WatchHistoryData Normalize(WatchHistoryData data)
+        {
+            if (data is null || data.LastWatchedByVideoId is null) throw new InvalidDataException("Profile watch history is missing.");
+            // Repair optional collections introduced in later versions, including explicit JSON nulls.
+            foreach (var property in typeof(WatchHistoryData).GetProperties())
+            {
+                if (property.GetValue(data) is null && property.PropertyType != typeof(string) && !property.PropertyType.IsValueType)
+                    property.SetValue(data, Activator.CreateInstance(property.PropertyType));
+            }
+            data.ClaimedQuestCount = Math.Max(data.ClaimedQuestCount, data.RewardedQuestKeys.Count);
+            data.TotalXp = Math.Max(0, data.TotalXp);
+            data.Prestige = Math.Clamp(data.Prestige, 0, 100);
+            data.PrestigeXp = Math.Max(0, data.PrestigeXp);
+            // Preserve the best information available when upgrading the old last-view-only schema.
+            foreach (var pair in data.LastWatchedByVideoId)
+            {
+                var day = ProfileClock.Day(pair.Value).ToString("yyyy-MM-dd");
+                if (!data.WatchedVideoIdsByDay.TryGetValue(day, out var ids) || ids is null) data.WatchedVideoIdsByDay[day] = ids = new(StringComparer.Ordinal);
+                ids.Add(pair.Key);
+            }
+            return data;
         }
     }
 }

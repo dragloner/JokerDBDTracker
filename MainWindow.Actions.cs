@@ -1,4 +1,4 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Controls;
 using JokerDBDTracker.Models;
 
@@ -17,15 +17,13 @@ namespace JokerDBDTracker
             _selectedVideoId = video.VideoId;
             try
             {
-                await MarkAsWatchedAsync(video);
-                NotifyWatchTogetherVideoOpened(video);
 
-                var wtService = GetWatchTogetherService();
-                var player = new PlayerWindow(video, video.LastPlaybackSeconds, wtService)
+                var player = new PlayerWindow(video, video.LastPlaybackSeconds, GetTrustedUtcNow)
                 {
                     Owner = this
                 };
 
+                ConnectPlayerProgress(player, video);
                 try
                 {
                     await AnimateWindowOpacityAsync(0.0, 220);
@@ -55,87 +53,8 @@ namespace JokerDBDTracker
 
                 video.LastPlaybackSeconds = player.LastPlaybackSeconds;
                 _playbackSecondsHistory[video.VideoId] = player.LastPlaybackSeconds;
+                await LoadAndApplySettingsAsync();
                 await RefreshFavoritesClipsAsync();
-
-                if (!_firstViewRewardedVideoIds.Contains(video.VideoId))
-                {
-                    _firstViewRewardedVideoIds.Add(video.VideoId);
-                    AddXp(XpFirstWatch);
-                }
-
-                AddXp((int)Math.Round(player.WatchXpEarned * WatchSessionXpMultiplier));
-                ApplySessionXpBonuses(player.EligibleWatchSeconds);
-                var today = GetTrustedToday();
-
-                if (player.WatchedWithAnyEffects)
-                {
-                    _effectSessionsAny++;
-                    _effectSessionsByDay.TryGetValue(today, out var effectSessionsToday);
-                    _effectSessionsByDay[today] = effectSessionsToday + 1;
-                }
-
-                if (player.MaxEnabledEffectsCount >= 5)
-                {
-                    _effectSessionsFivePlus++;
-                }
-
-                if (player.MaxEnabledEffectsCount >= 10)
-                {
-                    _effectSessionsTenPlus++;
-                }
-
-                if (player.UsedStrongBlur)
-                {
-                    _effectSessionsStrongBlur++;
-                }
-
-                if (player.UsedStrongRedGlow)
-                {
-                    _effectSessionsStrongRedGlow++;
-                }
-
-                if (player.UsedStrongVioletGlow)
-                {
-                    _effectSessionsStrongVioletGlow++;
-                }
-
-                if (player.UsedStrongShake)
-                {
-                    _effectSessionsStrongShake++;
-                }
-
-                if (player.UsedAnyPreset)
-                {
-                    _effectPresetSessionsAny++;
-                    _presetSessionsByDay.TryGetValue(today, out var presetSessionsToday);
-                    _presetSessionsByDay[today] = presetSessionsToday + 1;
-                }
-
-                if (player.UsedCustomPreset)
-                {
-                    _effectPresetSessionsCustom++;
-                }
-
-                if (player.UsedRetroPreset)
-                {
-                    _effectPresetSessionsRetro++;
-                }
-
-                if (player.UsedChaosPreset)
-                {
-                    _effectPresetSessionsChaos++;
-                }
-
-                if (player.UsedDreamPreset)
-                {
-                    _effectPresetSessionsDream++;
-                }
-
-                if (player.CursedMasterUnlocked && !_unlockedAchievements.Contains(AchievementCursed15))
-                {
-                    _unlockedAchievements.Add(AchievementCursed15);
-                    AddXp(XpAchievement);
-                }
 
                 await SaveHistoryAsync();
                 RefreshRecommendations();

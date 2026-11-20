@@ -1,4 +1,5 @@
-﻿using System.IO;
+using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Web;
@@ -32,6 +33,7 @@ namespace JokerDBDTracker
                     _appSettings = new AppSettingsData();
                 }
 
+                if (_isPlayerClosing) return;
                 UiAnimation.SetIsEnabled(this, _appSettings.AnimationsEnabled);
                 DiagnosticsService.SetEnabled(_appSettings.LoggingEnabled);
                 PositionWindowToOwnerMonitor();
@@ -69,7 +71,6 @@ namespace JokerDBDTracker
                 UpdateStrengthSlidersEnabledState();
                 UpdateEffectDetailsVisibility(animate: false);
                 SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
-                InitializeWatchTogetherSync();
                 _isPlayerNavigationInProgress = true;
                 _isPlayerRuntimeReady = false;
                 SetPlayerInteractionsEnabled(false);
@@ -85,7 +86,9 @@ namespace JokerDBDTracker
                         browserExecutableFolder: null,
                         userDataFolder: userDataFolder);
                     _webViewEnvironment = environment;
+                    if (_isPlayerClosing) return;
                     await Player.EnsureCoreWebView2Async(environment);
+                    if (_isPlayerClosing) { Player.Dispose(); return; }
 
                     Player.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
                     Player.CoreWebView2.Settings.IsStatusBarEnabled = false;
@@ -110,6 +113,7 @@ namespace JokerDBDTracker
                     Player.CoreWebView2.NewWindowRequested += CoreWebView2_NewWindowRequested;
                     Player.CoreWebView2.NavigationCompleted += CoreWebView2_NavigationCompleted;
                     Player.CoreWebView2.WebMessageReceived += CoreWebView2_WebMessageReceived;
+                    Player.CoreWebView2.SourceChanged += CoreWebView2_SourceChanged;
                     Player.CoreWebView2.Navigate(BuildLockedWatchUrl(_startSeconds));
                     _positionTimer.Start();
                 }
@@ -148,40 +152,32 @@ namespace JokerDBDTracker
             e.Handled = true;
         }
 
+        private ulong _activeNavigationId;
         private void CoreWebView2_NavigationStarting(object? sender, CoreWebView2NavigationStartingEventArgs e)
         {
+            if (_isPlayerClosing || !IsAllowedPlayerNavigation(e.Uri)) { e.Cancel = true; return; }
+            _activeNavigationId = e.NavigationId;
             _isPlayerNavigationInProgress = true;
             _isPlayerRuntimeReady = false;
             unchecked
             {
                 _playerNavigationVersion++;
             }
-            _lastXpSampleUtc = null;
+            _lastXpSampleTimestamp = null;
             _lastMeasuredTime = -1;
             _soundEffectsPrewarmedForCurrentNavigation = false;
 
             if (_video.IsTwitchStream)
             {
                 // Twitch: don't hide the surface during navigations (login redirects, page loads).
-                // Just check if the URL is allowed and cancel if not.
                 SetPlayerInteractionsEnabled(false);
-                if (!IsAllowedPlayerNavigation(e.Uri))
-                {
-                    e.Cancel = true;
-                }
                 return;
             }
 
             SetPlayerInteractionsEnabled(false);
             SetPlayerLoadingOverlay(visible: true, PT("Загрузка видео...", "Loading video..."));
             SetPlayerSurfaceVisible(false);
-            if (IsAllowedPlayerNavigation(e.Uri))
-            {
-                return;
-            }
 
-            e.Cancel = true;
-            _ = RecoverLockedVideoAsync();
         }
 
         private async void CoreWebView2_NavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
@@ -191,6 +187,8 @@ namespace JokerDBDTracker
                 return;
             }
 
+            if (e.NavigationId != _activeNavigationId) return;
+            DiagnosticsService.LogInfo("Player.Navigation", $"Completed: success={e.IsSuccess}, status={e.WebErrorStatus}.");
             var navigationVersion = _playerNavigationVersion;
 
             // Twitch mode: handle before YouTube error-recovery logic.
@@ -242,6 +240,8 @@ namespace JokerDBDTracker
                     "Не удалось загрузить плеер. Проверьте интернет и попробуйте снова.",
                     "Failed to load player. Check internet connection and try again."));
                 SetPlayerInteractionsEnabled(false);
+                RetryPlayerButton.Visibility = Visibility.Visible;
+                PlayerLoadingProgress.Visibility = Visibility.Collapsed;
                 return;
             }
 
@@ -320,6 +320,14 @@ namespace JokerDBDTracker
             }
         }
 
+        private void CoreWebView2_SourceChanged(object? sender, CoreWebView2SourceChangedEventArgs e)
+        {
+            if (_isPlayerClosing || _video.IsTwitchStream) return;
+            UpdateJokerVideoState();
+            if (Player.CoreWebView2 is not null && !IsAllowedPlayerNavigation(Player.CoreWebView2.Source))
+                _ = RecoverLockedVideoAsync();
+        }
+
         private void UpdateJokerVideoState()
         {
             if (_video.IsTwitchStream)
@@ -336,7 +344,7 @@ namespace JokerDBDTracker
                 uri.AbsolutePath.Equals("/watch", StringComparison.OrdinalIgnoreCase))
             {
                 var q = HttpUtility.ParseQueryString(uri.Query);
-                isJoker = string.Equals(q.Get("v"), _video.VideoId, StringComparison.OrdinalIgnoreCase);
+                isJoker = string.Equals(q.Get("v"), _video.VideoId, StringComparison.Ordinal);
             }
 
             _isOnJokerVideo = isJoker;
@@ -351,9 +359,22 @@ namespace JokerDBDTracker
                 : System.Windows.Visibility.Collapsed;
         }
 
+        private bool TryReadTrustedWebMessage(CoreWebView2WebMessageReceivedEventArgs e, out string message)
+        {
+            message = string.Empty;
+            if (!Uri.TryCreate(e.Source, UriKind.Absolute, out var source) || source.Scheme != Uri.UriSchemeHttps) return false;
+            var trusted = _video.IsTwitchStream
+                ? source.Host == "www.twitch.tv" || source.Host == "twitch.tv"
+                : source.Host == "www.youtube.com" && source.AbsolutePath == "/watch" &&
+                  string.Equals(HttpUtility.ParseQueryString(source.Query).Get("v"), _video.VideoId, StringComparison.Ordinal);
+            if (!trusted) return false;
+            try { message = e.TryGetWebMessageAsString(); return !string.IsNullOrEmpty(message) && message.Length <= 512; }
+            catch (ArgumentException ex) { DiagnosticsService.LogException("WebMessage.Type", ex); return false; }
+        }
+
         private void CoreWebView2_WebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
         {
-            var message = e.TryGetWebMessageAsString();
+            if (!TryReadTrustedWebMessage(e, out var message)) return;
             if (string.Equals(message, "jdbd:web-input-on", StringComparison.Ordinal))
             {
                 _isWebViewTextInputActive = true;
@@ -415,6 +436,13 @@ namespace JokerDBDTracker
             }, DispatcherPriority.Input);
         }
 
+        private async void RetryPlayerButton_Click(object sender, RoutedEventArgs e)
+        {
+            _navigationCompletedFailureCount = 0;
+            _isRecoveringBlockedNavigation = false;
+            await RecoverLockedVideoAsync();
+        }
+
         private void SetPlayerLoadingOverlay(bool visible, string? text = null)
         {
             if (PlayerLoadingOverlay is null)
@@ -423,6 +451,8 @@ namespace JokerDBDTracker
             }
 
             PlayerLoadingOverlay.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+            RetryPlayerButton.Visibility = Visibility.Collapsed;
+            PlayerLoadingProgress.Visibility = Visibility.Visible;
             if (!string.IsNullOrWhiteSpace(text) && PlayerLoadingText is not null)
             {
                 PlayerLoadingText.Text = text;
@@ -2566,25 +2596,6 @@ namespace JokerDBDTracker
                 timeoutMs: 500,
                 operation: $"MirrorPlaybackKeyToWebViewAsync.{key}");
 
-            // Notify Watch Together peers about this playback action.
-            if (action is "togglePlayPause" or "seekBackward" or "seekForward")
-            {
-                var pos = await GetCurrentPlaybackPositionAsync();
-                if (action == "togglePlayPause")
-                {
-                    // Determine actual state after toggle by checking pause status.
-                    var stateResult = await ExecuteWebScriptWithTimeoutAsync(
-                        "(() => { const v = document.querySelector('video'); return v ? (v.paused ? 'paused' : 'playing') : 'unknown'; })()",
-                        timeoutMs: 400,
-                        operation: "WtSync.CheckPauseState");
-                    var wtType = stateResult == "\"paused\"" || stateResult == "paused" ? "pause" : "play";
-                    NotifyWtPlaybackAction(wtType, pos >= 0 ? pos : null);
-                }
-                else
-                {
-                    NotifyWtPlaybackAction(action, pos >= 0 ? pos : null);
-                }
-            }
         }
 
         private bool IsAllowedPlayerNavigation(string? uriText)
@@ -2617,45 +2628,11 @@ namespace JokerDBDTracker
                 static bool HostMatches(string value, string expected) =>
                     value == expected || value.EndsWith($".{expected}", StringComparison.Ordinal);
 
-                var isTwitchHost = HostMatches(host, "twitch.tv") ||
-                                   HostMatches(host, "ttvnw.net") ||
-                                   HostMatches(host, "twitchsvc.net") ||
-                                   HostMatches(host, "jtvnw.net") ||
-                                   HostMatches(host, "twitchapps.com") ||
-                                   HostMatches(host, "passport.twitch.tv") ||
-                                   HostMatches(host, "id.twitch.tv") ||
-                                   HostMatches(host, "ext-twitch.tv") ||
-                                   HostMatches(host, "hcaptcha.com") ||
-                                   HostMatches(host, "recaptcha.net") ||
-                                   HostMatches(host, "amazon.com") ||
-                                   HostMatches(host, "amazonaws.com") ||
-                                   HostMatches(host, "cloudfront.net") ||
-                                   HostMatches(host, "gstatic.com") ||
-                                   HostMatches(host, "google.com") ||
-                                   HostMatches(host, "apple.com") ||
-                                   HostMatches(host, "icloud.com");
+                var isTwitchHost = HostMatches(host, "twitch.tv") || host == "www.amazon.com" || host == "accounts.google.com" || host == "appleid.apple.com";
                 return isTwitchHost;
             }
 
-            var isGoogleHost = host == "google.com" ||
-                               host.EndsWith(".google.com", StringComparison.Ordinal) ||
-                               host.EndsWith(".gstatic.com", StringComparison.Ordinal) ||
-                               host.EndsWith(".googleusercontent.com", StringComparison.Ordinal) ||
-                               host.EndsWith(".googlevideo.com", StringComparison.Ordinal) ||
-                               host.EndsWith(".ggpht.com", StringComparison.Ordinal) ||
-                               host.EndsWith(".gvt1.com", StringComparison.Ordinal) ||
-                               host.EndsWith(".googleapis.com", StringComparison.Ordinal);
-            if (isGoogleHost)
-            {
-                return true;
-            }
-
-            if (host == "youtu.be" ||
-                host.EndsWith(".youtube-nocookie.com", StringComparison.Ordinal) ||
-                host.EndsWith(".ytimg.com", StringComparison.Ordinal))
-            {
-                return true;
-            }
+            if (host is "accounts.google.com" or "consent.google.com") return true;
 
             if (host != "youtube.com" && !host.EndsWith(".youtube.com", StringComparison.Ordinal))
             {
@@ -2670,7 +2647,6 @@ namespace JokerDBDTracker
 
             if (uri.AbsolutePath.StartsWith("/signin", StringComparison.OrdinalIgnoreCase) ||
                 uri.AbsolutePath.StartsWith("/oauth", StringComparison.OrdinalIgnoreCase) ||
-                uri.AbsolutePath.StartsWith("/redirect", StringComparison.OrdinalIgnoreCase) ||
                 uri.AbsolutePath.StartsWith("/consent", StringComparison.OrdinalIgnoreCase) ||
                 uri.AbsolutePath.StartsWith("/sorry", StringComparison.OrdinalIgnoreCase) ||
                 uri.AbsolutePath.StartsWith("/account_advanced", StringComparison.OrdinalIgnoreCase) ||
@@ -2683,11 +2659,11 @@ namespace JokerDBDTracker
             {
                 var query = HttpUtility.ParseQueryString(uri.Query);
                 var videoId = query.Get("v");
-                return !string.IsNullOrEmpty(videoId); // Allow any YouTube video; XP gating is done in playback layer
+                return string.Equals(videoId, _video.VideoId, StringComparison.Ordinal);
             }
 
             // Allow embed player and YouTube internal API/resource paths.
-            if (uri.AbsolutePath.StartsWith("/embed/", StringComparison.OrdinalIgnoreCase) ||
+            if (uri.AbsolutePath.Equals("/embed/" + _video.VideoId, StringComparison.Ordinal) ||
                 uri.AbsolutePath.StartsWith("/api/", StringComparison.OrdinalIgnoreCase) ||
                 uri.AbsolutePath.StartsWith("/youtubei/", StringComparison.OrdinalIgnoreCase) ||
                 uri.AbsolutePath.StartsWith("/s/", StringComparison.OrdinalIgnoreCase) ||

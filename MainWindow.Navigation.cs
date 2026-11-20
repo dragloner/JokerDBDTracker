@@ -10,7 +10,6 @@ namespace JokerDBDTracker
         private bool IsProfileTabSelected() => TopTabControl.SelectedIndex == 2;
         private bool IsQuestsTabSelected() => TopTabControl.SelectedIndex == 3;
         private bool IsSettingsTabSelected() => TopTabControl.SelectedIndex == 4;
-        private bool IsWatchTogetherTabSelected() => TopTabControl.SelectedIndex == 5;
 
         private void SelectTopTab(int index)
         {
@@ -27,7 +26,6 @@ namespace JokerDBDTracker
             ApplyTopNavState(HomeNavButton, TopTabControl.SelectedIndex == 0);
             ApplyTopNavState(FavoritesNavButton, TopTabControl.SelectedIndex == 1);
             ApplyTopNavState(ProfileNavButton, TopTabControl.SelectedIndex == 2 || TopTabControl.SelectedIndex == 3);
-            ApplyTopNavState(WatchTogetherNavButton, TopTabControl.SelectedIndex == 5);
             ApplyTopNavState(SettingsNavButton, TopTabControl.SelectedIndex == 4);
 
             void ApplyTopNavState(Button button, bool selected)
@@ -58,17 +56,16 @@ namespace JokerDBDTracker
             var questsMode = IsQuestsTabSelected();
             var settingsMode = IsSettingsTabSelected();
             var favoritesMode = IsFavoritesTabSelected();
-            var watchTogetherMode = IsWatchTogetherTabSelected();
-            var isOverlayTab = profileMode || questsMode || settingsMode || watchTogetherMode;
+            var isOverlayTab = profileMode || questsMode || settingsMode;
             StreamsPanel.Visibility = isOverlayTab ? Visibility.Collapsed : Visibility.Visible;
             RecommendationsPanel.Visibility = (!isOverlayTab && !favoritesMode) ? Visibility.Visible : Visibility.Collapsed;
             FavoritesClipsPanel.Visibility = (!isOverlayTab && favoritesMode) ? Visibility.Visible : Visibility.Collapsed;
             FavoritesSummaryPanel.Visibility = (!isOverlayTab && favoritesMode) ? Visibility.Visible : Visibility.Collapsed;
+            LibraryHero.Visibility = isOverlayTab || favoritesMode ? Visibility.Collapsed : Visibility.Visible;
             HomeSummaryPanel.Visibility = isOverlayTab || favoritesMode ? Visibility.Collapsed : Visibility.Visible;
             ProfilePanel.Visibility = profileMode ? Visibility.Visible : Visibility.Collapsed;
             QuestsPanel.Visibility = questsMode ? Visibility.Visible : Visibility.Collapsed;
             SettingsPanel.Visibility = settingsMode ? Visibility.Visible : Visibility.Collapsed;
-            WatchTogetherPanel.Visibility = watchTogetherMode ? Visibility.Visible : Visibility.Collapsed;
             TwitchWatchButton.Visibility = (!isOverlayTab && !favoritesMode) ? Visibility.Visible : Visibility.Collapsed;
             RecommendationsColumn.Width = isOverlayTab
                 ? new GridLength(0)
@@ -84,10 +81,6 @@ namespace JokerDBDTracker
             else if (questsMode)
             {
                 RefreshQuestsPage();
-            }
-            else if (watchTogetherMode)
-            {
-                RefreshWatchTogetherPanel();
             }
             else if (favoritesMode)
             {
@@ -114,7 +107,6 @@ namespace JokerDBDTracker
                          ProfilePanel,
                          QuestsPanel,
                          SettingsPanel,
-                         WatchTogetherPanel
                      })
             {
                 AnimatePanelEntrance(panel);
@@ -136,20 +128,7 @@ namespace JokerDBDTracker
             SelectTopTab(2);
         }
 
-        private async void WatchTogetherNavButton_Click(object sender, RoutedEventArgs e)
-        {
-            // First-time dialog: explain network setup and ask for firewall consent.
-            if (!_watchTogetherFirewallAccepted)
-            {
-                var accepted = await ShowWatchTogetherFirstTimeDialogAsync();
-                if (!accepted)
-                {
-                    return;
-                }
-            }
 
-            SelectTopTab(5);
-        }
 
         private void SettingsNavButton_Click(object sender, RoutedEventArgs e)
         {

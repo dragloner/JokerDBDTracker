@@ -16,14 +16,16 @@ namespace JokerDBDTracker.Models
 
         public string TimeFormatted => TimeSpan.FromSeconds(Seconds).ToString(@"hh\:mm\:ss");
 
+        public static bool UseEnglish { get; set; }
+
         public string SavedAtText
         {
             get
             {
                 var local = SavedAtUtc.ToLocalTime();
                 var daysAgo = (DateTime.Now.Date - local.Date).Days;
-                if (daysAgo <= 0) return $"сегодня {local:HH:mm}";
-                if (daysAgo == 1) return $"вчера {local:HH:mm}";
+                if (daysAgo <= 0) return UseEnglish ? $"today {local:HH:mm}" : $"сегодня {local:HH:mm}";
+                if (daysAgo == 1) return UseEnglish ? $"yesterday {local:HH:mm}" : $"вчера {local:HH:mm}";
                 return $"{local:yyyy-MM-dd HH:mm}";
             }
         }

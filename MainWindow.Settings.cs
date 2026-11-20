@@ -1,4 +1,4 @@
-﻿﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -47,11 +47,11 @@ namespace JokerDBDTracker
             ApplySettingsToRuntime();
             ApplySettingsToControls();
             ApplyLocalization();
-            LoadWatchTogetherFirewallConsent(_appSettings.WatchTogetherFirewallAccepted);
         }
 
         private void ApplySettingsToRuntime()
         {
+            JokerDBDTracker.Models.Timecode.UseEnglish = _appSettings.Language == "en";
             ApplyUiScale(_appSettings.UiScale);
             UiAnimation.SetIsEnabled(this, _appSettings.AnimationsEnabled);
             DiagnosticsService.SetEnabled(_appSettings.LoggingEnabled);
@@ -132,9 +132,10 @@ namespace JokerDBDTracker
             {
                 await _settingsService.SaveAsync(_appSettings);
             }
-            catch
+            catch (Exception ex)
             {
-                // Best-effort persistence.
+                DiagnosticsService.LogException("Settings.Save", ex);
+                MessageBox.Show(T("Не удалось сохранить настройки: ", "Could not save settings: ") + ex.Message);
             }
         }
 
@@ -343,6 +344,33 @@ namespace JokerDBDTracker
                 return;
             }
 
+            if (!KeyBindingRules.IsAllowed(key))
+            {
+                SetBindCaptureStatus(T("Эта клавиша зарезервирована. Выберите другую.", "This key is reserved. Choose another key."));
+                e.Handled = true;
+                return;
+            }
+            var targetProperty = _bindCaptureTarget switch
+            {
+                BindTargetHideEffects => nameof(AppSettingsData.HideEffectsPanelBind),
+                BindTargetToggleChat => nameof(AppSettingsData.ToggleChatBind),
+                BindTargetToggleComments => nameof(AppSettingsData.ToggleCommentsBind),
+                BindTargetAuraFarm => nameof(AppSettingsData.AuraFarmSoundBind),
+                BindTargetLaugh => nameof(AppSettingsData.LaughSoundBind),
+                BindTargetPsi => nameof(AppSettingsData.PsiSoundBind),
+                BindTargetRespect => nameof(AppSettingsData.RespectSoundBind),
+                BindTargetSad => nameof(AppSettingsData.SadSoundBind),
+                "da_uzh_tochno" => nameof(AppSettingsData.DaUzhTochnoSoundBind),
+                _ => TryParseEffectBindTarget(_bindCaptureTarget, out var index) ? $"Effect{index}Bind" : string.Empty
+            };
+            var collision = typeof(AppSettingsData).GetProperties().Any(property => property.Name.EndsWith("Bind", StringComparison.Ordinal) && property.Name != targetProperty &&
+                Enum.TryParse<Key>(property.GetValue(_appSettings)?.ToString(), true, out var assigned) && KeyBindingRules.Canonical(assigned) == KeyBindingRules.Canonical(key));
+            if (collision)
+            {
+                SetBindCaptureStatus(T("Клавиша уже назначена другому действию.", "This key is already assigned to another action."));
+                e.Handled = true;
+                return;
+            }
             var bind = key.ToString().ToUpperInvariant();
             ApplyBindToTarget(_bindCaptureTarget, bind);
             DiagnosticsService.LogInfo("Settings", $"Bind [{_bindCaptureTarget}] → {bind}");
@@ -379,6 +407,9 @@ namespace JokerDBDTracker
                     break;
                 case BindTargetRespect:
                     _appSettings.RespectSoundBind = bind;
+                    break;
+                case "da_uzh_tochno":
+                    _appSettings.DaUzhTochnoSoundBind = bind;
                     break;
                 case BindTargetSad:
                     _appSettings.SadSoundBind = bind;
@@ -423,6 +454,7 @@ namespace JokerDBDTracker
             PsiBindValueText.Text = FormatBindForUi(_appSettings.PsiSoundBind);
             RespectBindValueText.Text = FormatBindForUi(_appSettings.RespectSoundBind);
             SadBindValueText.Text = FormatBindForUi(_appSettings.SadSoundBind);
+            DaUzhTochnoBindValueText.Text = FormatBindForUi(_appSettings.DaUzhTochnoSoundBind);
             UpdateEffectBindButtons();
         }
 
@@ -474,7 +506,8 @@ namespace JokerDBDTracker
                 AssignLaughBindButton,
                 AssignPsiBindButton,
                 AssignRespectBindButton,
-                AssignSadBindButton
+                AssignSadBindButton,
+                AssignDaUzhTochnoBindButton
             }.Where(b => b is not null).Select(b => b!).ToArray();
 
             foreach (var button in buttons)
@@ -687,6 +720,7 @@ namespace JokerDBDTracker
             _appSettings.PsiSoundBind = "I";
             _appSettings.RespectSoundBind = "O";
             _appSettings.SadSoundBind = "P";
+            _appSettings.DaUzhTochnoSoundBind = "J";
             for (var effectIndex = 1; effectIndex <= EffectBindCount; effectIndex++)
             {
                 SetEffectBindByIndex(effectIndex, GetDefaultEffectBindByIndex(effectIndex));

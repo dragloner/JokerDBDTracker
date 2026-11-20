@@ -9,18 +9,24 @@ namespace JokerDBDTracker.Services
 
         public static string GetCurrentAppDataDirectory()
         {
+            var custom = Environment.GetEnvironmentVariable("JOKERDBD_DATA_ROOT");
+            if (!string.IsNullOrWhiteSpace(custom)) return Path.Combine(Path.GetFullPath(custom), "data");
             var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
             return Path.Combine(appData, CurrentFolderName);
         }
 
         public static string GetLegacyAppDataDirectory()
         {
+            var custom = Environment.GetEnvironmentVariable("JOKERDBD_DATA_ROOT");
+            if (!string.IsNullOrWhiteSpace(custom)) return Path.Combine(Path.GetFullPath(custom), "legacy");
             var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
             return Path.Combine(appData, LegacyFolderName);
         }
 
         public static string GetCurrentLocalAppDataDirectory()
         {
+            var custom = Environment.GetEnvironmentVariable("JOKERDBD_DATA_ROOT");
+            if (!string.IsNullOrWhiteSpace(custom)) return Path.Combine(Path.GetFullPath(custom), "local");
             var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             return Path.Combine(localAppData, CurrentFolderName);
         }

@@ -6,7 +6,7 @@ namespace JokerDBDTracker
 {
     public partial class MainWindow
     {
-        private void StartPortableSelfUpdate(string zipPath)
+        private async Task StartPortableSelfUpdateAsync(string zipPath)
         {
             var currentExePath = Environment.ProcessPath;
             if (string.IsNullOrWhiteSpace(currentExePath))
@@ -27,7 +27,7 @@ namespace JokerDBDTracker
             var updatesFolder = Path.GetDirectoryName(zipPath) ?? Path.GetTempPath();
             var extractRoot = Path.Combine(updatesFolder, $"update_extract_{Guid.NewGuid():N}");
             Directory.CreateDirectory(extractRoot);
-            ExtractZipSafely(zipPath, extractRoot);
+            await Task.Run(() => ExtractZipSafely(zipPath, extractRoot));
 
             var exeName = Path.GetFileName(currentExePath);
             var stagedRoot = ResolveStagedRoot(extractRoot, exeName);
@@ -94,6 +94,10 @@ namespace JokerDBDTracker
             }
 
             using var archive = ZipFile.OpenRead(zipPath);
+            const long maximumExpandedBytes = 2L * 1024 * 1024 * 1024;
+            const int maximumEntries = 20000;
+            if (archive.Entries.Count > maximumEntries || archive.Entries.Sum(entry => entry.Length) > maximumExpandedBytes)
+                throw new InvalidDataException("Update archive exceeds extraction limits.");
             foreach (var entry in archive.Entries)
             {
                 if (string.IsNullOrEmpty(entry.FullName))
@@ -132,87 +136,49 @@ namespace JokerDBDTracker
 
         private static string BuildApplyUpdateScript(int parentProcessId, string sourceDirectory, string targetDirectory, string executableName)
         {
-            // PowerShell single-quoted strings only need '' escaping for literal quotes.
-            // Additionally strip characters that should never appear in filesystem paths.
-            static string Esc(string value) => SanitizePath(value).Replace("'", "''");
-            static string SanitizePath(string path)
-            {
-                // Remove characters that are invalid in Windows paths and could be used for injection.
-                var invalid = new HashSet<char>(Path.GetInvalidPathChars()) { '`', '$', '{', '}', '|', '&', ';' };
-                var sb = new System.Text.StringBuilder(path.Length);
-                foreach (var c in path)
-                {
-                    if (!invalid.Contains(c))
-                    {
-                        sb.Append(c);
-                    }
-                }
-                return sb.ToString();
-            }
-
+            static string Esc(string value) => value.Replace("'", "''");
             return $@"$ErrorActionPreference = 'Stop'
-$parentPid = {parentProcessId}
 $source = '{Esc(sourceDirectory)}'
 $target = '{Esc(targetDirectory)}'
 $exeName = '{Esc(executableName)}'
+$backup = Join-Path ([IO.Path]::GetDirectoryName($source.TrimEnd('\'))) ('rollback_' + [Guid]::NewGuid().ToString('N'))
 $logFile = Join-Path $target 'update_apply.log'
-
 function Write-Log([string]$message) {{
+    Add-Content -LiteralPath $logFile -Value ('[' + (Get-Date -Format o) + '] ' + $message)
+}}
+function Copy-Tree([string]$from, [string]$to) {{
+    & robocopy $from $to /E /IS /IT /XJ /R:3 /W:1 /NFL /NDL /NJH /NJS /NP /XD Logs YouTube_Profile WebView_Profile /XF update_apply.log | Out-Null
+    if ($LASTEXITCODE -ge 8) {{ throw ('File copy failed: ' + $LASTEXITCODE) }}
+}}
+try {{
+    $parent = Get-Process -Id {parentProcessId} -ErrorAction SilentlyContinue
+    if ($parent) {{ $parent.WaitForExit(90000) | Out-Null }}
+    if (Get-Process -Id {parentProcessId} -ErrorAction SilentlyContinue) {{ throw 'Application is still running. Update aborted.' }}
+    if (!(Test-Path -LiteralPath $source -PathType Container) -or !(Test-Path -LiteralPath $target -PathType Container)) {{ throw 'Update directories are missing.' }}
+    Copy-Tree $target $backup
     try {{
-        Add-Content -Path $logFile -Value ('[' + (Get-Date -Format o) + '] ' + $message)
+        Copy-Tree $source $target
     }} catch {{
+        Write-Log ('Update failed; restoring backup: ' + $_.Exception.Message)
+        Copy-Tree $backup $target
+        foreach ($file in Get-ChildItem -LiteralPath $source -File -Recurse) {{
+            $relative = $file.FullName.Substring($source.TrimEnd('\').Length + 1)
+            if (!(Test-Path -LiteralPath (Join-Path $backup $relative))) {{
+                $introducedFile = [IO.Path]::GetFullPath((Join-Path $target $relative))
+                if ($introducedFile.StartsWith([IO.Path]::GetFullPath($target).TrimEnd('\') + '\', [StringComparison]::OrdinalIgnoreCase)) {{
+                    Remove-Item -LiteralPath $introducedFile -Force -ErrorAction SilentlyContinue
+                }}
+            }}
+        }}
+        throw
     }}
-}}
-
-Write-Log 'Updater script started.'
-
-for ($i = 0; $i -lt 360; $i++) {{
-    try {{
-        Get-Process -Id $parentPid -ErrorAction Stop | Out-Null
-        Start-Sleep -Milliseconds 250
-    }} catch {{
-        break
-    }}
-}}
-
-if (!(Test-Path $source) -or !(Test-Path $target)) {{
-    Write-Log 'Source or target path is missing.'
-    if (Test-Path (Join-Path $target $exeName)) {{
-        Start-Process -FilePath (Join-Path $target $exeName)
-    }}
-    exit 1
-}}
-
-$updatedExe = Join-Path $target $exeName
-$copyOk = $false
-
-for ($attempt = 1; $attempt -le 8; $attempt++) {{
-    Start-Sleep -Milliseconds 120
-    $robocopyResult = & robocopy $source $target /E /R:4 /W:1 /NFL /NDL /NJH /NJS /NP
-    $exitCode = $LASTEXITCODE
-    if ($exitCode -lt 8) {{
-        $copyOk = $true
-        break
-    }}
-
-    Start-Sleep -Milliseconds 700
-}}
-
-if (-not $copyOk) {{
-    Write-Log 'Copy failed after retries. Starting existing executable.'
-    if (Test-Path $updatedExe) {{
-        Start-Process -FilePath $updatedExe
-    }}
-    exit 2
-}}
-
-if (Test-Path $updatedExe) {{
-    Start-Sleep -Milliseconds 300
-    Write-Log 'Copy succeeded. Starting updated executable.'
-    Start-Process -FilePath $updatedExe
-}}
-
-Write-Log 'Updater script finished.'";
+    Write-Log 'Update completed successfully.'
+}} catch {{
+    try {{ Write-Log $_.Exception.Message }} catch {{ }}
+}} finally {{
+    $exe = Join-Path $target $exeName
+    if (Test-Path -LiteralPath $exe) {{ Start-Process -FilePath $exe -WorkingDirectory $target }}
+}}";
         }
     }
 }

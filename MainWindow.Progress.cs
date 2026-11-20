@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 
 namespace JokerDBDTracker
 {
@@ -129,20 +129,7 @@ namespace JokerDBDTracker
             public bool IsCompleted => Progress >= Target;
         }
 
-        private void ApplySessionXpBonuses(int eligibleWatchSeconds)
-        {
-            if (eligibleWatchSeconds <= 0)
-            {
-                return;
-            }
 
-            var today = GetTrustedToday();
-            _watchedSecondsByDay.TryGetValue(today, out var todayWatchSeconds);
-            _watchedSecondsByDay[today] = todayWatchSeconds + eligibleWatchSeconds;
-
-            _bestSessionSecondsByDay.TryGetValue(today, out var bestSessionSeconds);
-            _bestSessionSecondsByDay[today] = Math.Max(bestSessionSeconds, eligibleWatchSeconds);
-        }
 
         private bool TryClaimQuestReward(string claimKey)
         {
@@ -161,6 +148,7 @@ namespace JokerDBDTracker
             }
 
             _rewardedQuestKeys.Add(claimKey);
+            _claimedQuestCount++;
             AddXp((int)Math.Round(candidate.RewardXp * QuestRewardXpMultiplier));
             return true;
         }
@@ -318,11 +306,13 @@ namespace JokerDBDTracker
             };
         }
 
-        private int GetWatchedStreamsCountForDay(DateOnly day)
-        {
-            var localDate = day.ToDateTime(TimeOnly.MinValue).Date;
-            return _watchHistory.Values.Count(v => v.ToLocalTime().Date == localDate);
-        }
+
+
+        private int GetWatchedStreamsCountForDay(DateOnly day) => _watchedVideoIdsByDay.GetValueOrDefault(day.ToString("yyyy-MM-dd"))?.Count ?? 0;
+
+        private int GetWatchedStreamsCountForWeek(DateOnly day) => _watchedVideoIdsByDay
+            .Where(pair => DateOnly.TryParse(pair.Key, out var date) && GetIsoWeekKey(date) == GetIsoWeekKey(day))
+            .SelectMany(pair => pair.Value).Distinct(StringComparer.Ordinal).Count();
 
         private int GetWatchedSecondsForDay(DateOnly day)
         {
@@ -350,15 +340,7 @@ namespace JokerDBDTracker
             return _watchedDays.Count(day => string.Equals(GetIsoWeekKey(day), weekKey, StringComparison.Ordinal));
         }
 
-        private int GetWatchedStreamsCountForWeek(DateOnly anchorDay)
-        {
-            var weekKey = GetIsoWeekKey(anchorDay);
-            return _watchHistory.Values.Count(dt =>
-            {
-                var localDay = DateOnly.FromDateTime(dt.ToLocalTime().Date);
-                return string.Equals(GetIsoWeekKey(localDay), weekKey, StringComparison.Ordinal);
-            });
-        }
+
 
         private int GetWatchedSecondsForWeek(DateOnly anchorDay)
         {

@@ -1,4 +1,5 @@
-﻿using System.IO;
+using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Web;
@@ -29,11 +30,17 @@ namespace JokerDBDTracker
             // Twitch mode: no XP, no playback position tracking.
             if (_video.IsTwitchStream)
             {
+                if (!CanProcessPlayerCommands()) return;
+                var missing = await ExecuteWebScriptWithTimeoutAsync("Boolean(document.querySelector('video') && (!window.__stwfxRuntime?.video?.isConnected || window.__stwfxRuntime.video !== document.querySelector('video')))", 500, "Twitch.VideoChanged");
+                if (missing == "true") await ApplyEffectsSafelyAsync(force: true);
                 return;
             }
 
+            if (_positionTickRunning) return;
+            _positionTickRunning = true;
             try
             {
+                UpdateJokerVideoState();
                 const string script = """
                     (() => {
                         const pickMainVideo = () => {
@@ -112,12 +119,12 @@ namespace JokerDBDTracker
                         };
 
                         const video = pickMainVideo();
-                        if (!video || !Number.isFinite(video.currentTime) || !Number.isFinite(video.duration)) {
+                        if (!video || !Number.isFinite(video.currentTime)) {
                             return { current: -1, duration: 0, paused: true, seeking: false, playbackRate: 1 };
                         }
                         return {
                             current: video.currentTime,
-                            duration: video.duration,
+                            duration: Number.isFinite(video.duration) ? video.duration : 0,
                             paused: !!video.paused,
                             seeking: !!video.seeking,
                             playbackRate: Number.isFinite(video.playbackRate) ? video.playbackRate : 1
@@ -140,13 +147,13 @@ namespace JokerDBDTracker
                 var paused = document.RootElement.GetProperty("paused").GetBoolean();
                 var seeking = document.RootElement.GetProperty("seeking").GetBoolean();
                 var playbackRate = document.RootElement.GetProperty("playbackRate").GetDouble();
-                if (current < 0 || duration <= 0)
+                if (current < 0)
                 {
-                    _lastXpSampleUtc = DateTime.UtcNow;
+                    _lastXpSampleTimestamp = Stopwatch.GetTimestamp();
                     return;
                 }
 
-                LastPlaybackSeconds = (int)Math.Floor(current);
+                if (_isOnJokerVideo) LastPlaybackSeconds = (int)Math.Floor(current);
                 if (current > 0.15)
                 {
                     SetPlayerSurfaceVisible(true);
@@ -154,9 +161,9 @@ namespace JokerDBDTracker
                 }
 
                 var nowUtc = DateTime.UtcNow;
-                if (!_lastXpSampleUtc.HasValue)
+                if (!_lastXpSampleTimestamp.HasValue)
                 {
-                    _lastXpSampleUtc = nowUtc;
+                    _lastXpSampleTimestamp = Stopwatch.GetTimestamp();
                     _lastMeasuredTime = current;
                     if (_isResizeInteractionInProgress)
                     {
@@ -170,8 +177,8 @@ namespace JokerDBDTracker
                     return;
                 }
 
-                var elapsedWallSeconds = (nowUtc - _lastXpSampleUtc.Value).TotalSeconds;
-                _lastXpSampleUtc = nowUtc;
+                var elapsedWallSeconds = Stopwatch.GetElapsedTime(_lastXpSampleTimestamp.Value).TotalSeconds;
+                _lastXpSampleTimestamp = Stopwatch.GetTimestamp();
 
                 var playbackDelta = _lastMeasuredTime >= 0 ? current - _lastMeasuredTime : 0;
                 var positivePlaybackRate = Math.Clamp(playbackRate, 0.1, 4.0);
@@ -190,6 +197,8 @@ namespace JokerDBDTracker
                     var effectsMultiplier = 1.0 + GetActiveEffectsCount() * 0.05;
                     var activeViewerMultiplier = IsActiveViewer(nowUtc) ? 1.08 : 1.0;
                     _watchXpBuffer += creditedSeconds * 1.05 * effectsMultiplier * activeViewerMultiplier;
+                    CreditWatchTime(_utcNow(), creditedSeconds);
+                    if (GetActiveEffectsCount() == 15 && _lastMeasuredTime >= 0) _allEffectsCoverage.Add(_lastMeasuredTime, current);
                     _eligibleWatchSeconds += creditedSeconds;
                     EligibleWatchSeconds = (int)Math.Floor(_eligibleWatchSeconds);
                     UpdateEffectSessionStats();
@@ -216,13 +225,14 @@ namespace JokerDBDTracker
                 }
 
                 _ = PersistPlaybackPositionAsync(force: false);
+                await SyncChatReplayAsync(current, paused);
                 UpdateCursedAchievementState(current, duration);
-                SendWtPeriodicSync(current, paused);
             }
-            catch
+            catch (Exception ex)
             {
-                // Ignore transient script errors.
+                DiagnosticsService.LogException("Player.PlaybackTick", ex);
             }
+            finally { _positionTickRunning = false; }
         }
 
         private void UpdateCursedAchievementState(double current, double duration)
@@ -233,7 +243,7 @@ namespace JokerDBDTracker
             }
 
             var fullyWatched = current >= duration * 0.98;
-            if (fullyWatched && GetActiveEffectsCount() == 15)
+            if (_isOnJokerVideo && fullyWatched && _allEffectsCoverage.Seconds >= duration * 0.98 && GetActiveEffectsCount() == 15)
             {
                 CursedMasterUnlocked = true;
             }
@@ -266,47 +276,7 @@ namespace JokerDBDTracker
             return IsActive && (nowUtc - _lastUserInteractionUtc).TotalSeconds <= 20;
         }
 
-        private async Task PersistPlaybackPositionAsync(bool force)
-        {
-            if (_isPersistingPlayback)
-            {
-                return;
-            }
 
-            var playbackSeconds = Math.Max(0, LastPlaybackSeconds);
-            if (!force &&
-                playbackSeconds == _lastPersistedPlaybackSeconds &&
-                (DateTime.UtcNow - _lastPlaybackPersistUtc).TotalSeconds < PlaybackPersistIntervalSeconds)
-            {
-                return;
-            }
-
-            _isPersistingPlayback = true;
-            try
-            {
-                await PlaybackPersistLock.WaitAsync();
-                try
-                {
-                    var history = await _watchHistoryPersistService.LoadAsync();
-                    history.LastPlaybackSecondsByVideoId[_video.VideoId] = playbackSeconds;
-                    await _watchHistoryPersistService.SaveAsync(history);
-                    _lastPersistedPlaybackSeconds = playbackSeconds;
-                    _lastPlaybackPersistUtc = DateTime.UtcNow;
-                }
-                finally
-                {
-                    PlaybackPersistLock.Release();
-                }
-            }
-            catch
-            {
-                // Best-effort persistence.
-            }
-            finally
-            {
-                _isPersistingPlayback = false;
-            }
-        }
 
 
     }

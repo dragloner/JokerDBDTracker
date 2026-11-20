@@ -197,7 +197,7 @@ namespace JokerDBDTracker
                         $"Подготовка обновления {targetVersionText}...",
                         $"Preparing update {targetVersionText}..."),
                     isIndeterminate: true);
-                StartPortableSelfUpdate(downloadedArchivePath);
+                await StartPortableSelfUpdateAsync(downloadedArchivePath);
 
                 HideLoadingOverlay();
                 Application.Current.Shutdown();

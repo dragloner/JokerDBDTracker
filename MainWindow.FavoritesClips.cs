@@ -125,10 +125,8 @@ namespace JokerDBDTracker
         {
             try
             {
-                var all = await _timecodeService.LoadAsync();
-                all.RemoveAll(t => string.Equals(t.Id, id, StringComparison.OrdinalIgnoreCase));
-                await _timecodeService.SaveAsync(all);
-                _timecodes = all;
+                await _timecodeService.UpdateAsync(all => all.RemoveAll(t => string.Equals(t.Id, id, StringComparison.OrdinalIgnoreCase)));
+                _timecodes = await _timecodeService.LoadAsync();
             }
             catch (Exception ex)
             {

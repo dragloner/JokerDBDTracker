@@ -368,7 +368,7 @@ namespace JokerDBDTracker
                 return;
             }
 
-            var message = e.TryGetWebMessageAsString();
+            if (!TryReadTrustedWebMessage(e, out var message)) return;
             if (string.IsNullOrWhiteSpace(message) ||
                 !message.StartsWith("jdbd:community-dock-state:", StringComparison.Ordinal))
             {
@@ -376,12 +376,12 @@ namespace JokerDBDTracker
             }
 
             var parts = message.Split(':');
-            if (parts.Length < 5)
+            if (parts.Length != 4)
             {
                 return;
             }
 
-            var stateKind = string.Equals(parts[3], "chat", StringComparison.OrdinalIgnoreCase)
+            var stateKind = string.Equals(parts[2], "chat", StringComparison.OrdinalIgnoreCase)
                 ? PlayerCommunityDockKind.Chat
                 : PlayerCommunityDockKind.Comments;
             if (stateKind != kind.Value)
@@ -389,7 +389,7 @@ namespace JokerDBDTracker
                 return;
             }
 
-            var hasContent = string.Equals(parts[4], "1", StringComparison.Ordinal);
+            var hasContent = string.Equals(parts[3], "1", StringComparison.Ordinal);
             if (kind == PlayerCommunityDockKind.Chat)
             {
                 _isCommunityChatStateInitialized = true;
@@ -444,13 +444,10 @@ namespace JokerDBDTracker
 
             if (_isCommunityChatOpen)
             {
-                _ = OpenCommunityDockAsync(PlayerCommunityDockKind.Chat, forceReload: true);
+                _ = SyncChatReplayAsync(LastPlaybackSeconds, paused: false);
             }
 
-            if (_isCommunityCommentsOpen)
-            {
-                _ = OpenCommunityDockAsync(PlayerCommunityDockKind.Comments, forceReload: true);
-            }
+
         }
 
         private void ApplyCommunityDockLayout(bool animate = false)

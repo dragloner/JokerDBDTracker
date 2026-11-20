@@ -38,6 +38,7 @@ namespace JokerDBDTracker.Services
 
                     return response.Headers.Date.Value.UtcDateTime;
                 }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { return null; }
                 catch
                 {
                     // Try next endpoint.

@@ -1,8 +1,13 @@
-﻿namespace JokerDBDTracker
+using System.Diagnostics;
+using JokerDBDTracker.Services;
+
+namespace JokerDBDTracker
 {
     public partial class MainWindow
     {
-        private static readonly TimeZoneInfo MoscowTimeZone = ResolveMoscowTimeZone();
+        private static readonly TimeZoneInfo MoscowTimeZone = ProfileClock.TimeZone;
+        private long _clockTimestamp = Stopwatch.GetTimestamp();
+        private DateTime _clockBaseUtc = DateTime.UtcNow;
 
         private async Task InitializeNetworkClockAsync()
         {
@@ -18,26 +23,21 @@
 
         private async Task SyncNetworkClockAsync()
         {
-            var networkUtc = await _networkTimeService.GetUtcNowAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(4));
+            var networkUtc = await _networkTimeService.GetUtcNowAsync(timeout.Token);
             if (networkUtc is null)
             {
                 return;
             }
 
             _internetUtcAtSync = DateTime.SpecifyKind(networkUtc.Value, DateTimeKind.Utc);
-            _localUtcAtSync = DateTime.UtcNow;
-            _hasInternetTime = true;
+            _clockBaseUtc = _internetUtcAtSync;
+            _clockTimestamp = Stopwatch.GetTimestamp();
         }
 
         private DateTime GetTrustedUtcNow()
         {
-            if (!_hasInternetTime)
-            {
-                return DateTime.UtcNow;
-            }
-
-            var elapsed = DateTime.UtcNow - _localUtcAtSync;
-            return _internetUtcAtSync + elapsed;
+            return _clockBaseUtc + Stopwatch.GetElapsedTime(_clockTimestamp);
         }
 
         private DateTime GetTrustedLocalNow()
@@ -99,21 +99,6 @@
             }
         }
 
-        private static TimeZoneInfo ResolveMoscowTimeZone()
-        {
-            foreach (var id in new[] { "Russian Standard Time", "Europe/Moscow" })
-            {
-                try
-                {
-                    return TimeZoneInfo.FindSystemTimeZoneById(id);
-                }
-                catch
-                {
-                    // continue probing.
-                }
-            }
 
-            return TimeZoneInfo.CreateCustomTimeZone("MoscowFallback", TimeSpan.FromHours(3), "Moscow", "Moscow");
-        }
     }
 }

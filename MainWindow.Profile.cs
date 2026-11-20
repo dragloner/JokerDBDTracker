@@ -1,4 +1,4 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -41,7 +41,9 @@ namespace JokerDBDTracker
                 return 0;
             }
 
-            var allDays = _watchedDays.OrderByDescending(d => d).ToList();
+            var today = GetTrustedToday();
+            var allDays = _watchedDays.Where(d => d <= today).OrderByDescending(d => d).ToList();
+            if (allDays.Count == 0 || allDays[0] < today.AddDays(-1)) return 0;
             var latest = allDays[0];
             var streak = 1;
             for (var i = 1; i < allDays.Count; i++)
@@ -72,7 +74,7 @@ namespace JokerDBDTracker
             RecentStreamsList.ItemsSource = recent;
 
             var prestigeXpCap = TotalXpForLevel(MaxLevel);
-            _prestigeXp = Math.Clamp(_prestigeXp, 0, prestigeXpCap);
+            _prestigeXp = Math.Max(0, _prestigeXp);
             if (TryAutoPrestige(prestigeXpCap))
             {
                 _ = SaveHistoryAsync();
@@ -109,7 +111,7 @@ namespace JokerDBDTracker
         {
             var totalWatchedSeconds = Math.Max(0, _watchedSecondsByDay.Values.Sum(v => Math.Max(0, v)));
             var totalWatchedHours = totalWatchedSeconds / 3600.0;
-            var claimedQuestsCount = _rewardedQuestKeys.Count;
+            var claimedQuestsCount = _claimedQuestCount;
 
             return
             [
@@ -251,7 +253,7 @@ namespace JokerDBDTracker
 
             var totalWatchedSeconds = Math.Max(0, _watchedSecondsByDay.Values.Sum(v => Math.Max(0, v)));
             var totalHours = totalWatchedSeconds / 3600.0;
-            StatsTotalHoursText.Text = $"{totalHours:0.0} ч";
+            StatsTotalHoursText.Text = T($"{totalHours:0.0} ч", $"{totalHours:0.0} h");
 
             var totalCount = _allVideos.Count;
             StatsStreamCountText.Text = totalCount.ToString();
@@ -455,9 +457,9 @@ namespace JokerDBDTracker
                 return;
             }
 
-            _totalXp += amount;
+            _totalXp = (int)Math.Min(int.MaxValue, (long)_totalXp + amount);
             var prestigeXpCap = TotalXpForLevel(MaxLevel);
-            _prestigeXp = Math.Min(prestigeXpCap, _prestigeXp + amount);
+            _prestigeXp = (int)Math.Min(int.MaxValue, (long)_prestigeXp + amount);
             TryAutoPrestige(prestigeXpCap);
         }
 
@@ -474,8 +476,12 @@ namespace JokerDBDTracker
                 return false;
             }
 
-            _prestige = Math.Min(MaxPrestige, _prestige + 1);
-            _prestigeXp = 0;
+            while (_prestige < MaxPrestige && _prestigeXp >= prestigeXpCap)
+            {
+                _prestige++;
+                _prestigeXp -= prestigeXpCap;
+            }
+            if (_prestige == MaxPrestige) _prestigeXp = Math.Min(_prestigeXp, prestigeXpCap);
             return true;
         }
     }

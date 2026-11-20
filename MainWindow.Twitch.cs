@@ -59,6 +59,8 @@ namespace JokerDBDTracker
                     await AnimateWindowOpacityAsync(1.0, 260);
                 }
 
+                await LoadAndApplySettingsAsync();
+
                 // Twitch: no XP, no watch history, no achievement tracking.
             }
             catch (Exception ex)

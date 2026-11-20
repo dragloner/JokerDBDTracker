@@ -256,6 +256,8 @@ namespace JokerDBDTracker
 
         private async Task ShowTimecodePopupAsync()
         {
+            UpdateJokerVideoState();
+            if (!_isOnJokerVideo || !CanProcessPlayerCommands()) return;
             _editingTimecodeId = null;
             var seconds = await GetBestCurrentPlaybackSecondsAsync();
             OpenTimecodePopup(seconds, PT($"Таймкод {TimeSpan.FromSeconds(seconds):hh\\:mm\\:ss}", $"Timecode {TimeSpan.FromSeconds(seconds):hh\\:mm\\:ss}"), isEditing: false);
@@ -425,8 +427,8 @@ namespace JokerDBDTracker
 
             try
             {
-                var all = await _playerTimecodeService.LoadAsync();
-
+                await _playerTimecodeService.UpdateAsync(all =>
+                {
                 if (!string.IsNullOrWhiteSpace(editingId))
                 {
                     var existing = all.FirstOrDefault(t => string.Equals(t.Id, editingId, StringComparison.OrdinalIgnoreCase));
@@ -448,12 +450,13 @@ namespace JokerDBDTracker
                     });
                 }
 
-                await _playerTimecodeService.SaveAsync(all);
-                ApplyLoadedTimecodes(all);
+                });
+                ApplyLoadedTimecodes(await _playerTimecodeService.LoadAsync());
             }
-            catch
+            catch (Exception ex)
             {
-                // Best-effort persistence.
+                JokerDBDTracker.Services.DiagnosticsService.LogException("Timecodes.Save", ex);
+                MessageBox.Show(ex.Message, "Timecodes", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
@@ -598,14 +601,13 @@ namespace JokerDBDTracker
         {
             try
             {
-                var all = await _playerTimecodeService.LoadAsync();
-                all.RemoveAll(t => string.Equals(t.Id, id, StringComparison.OrdinalIgnoreCase));
-                await _playerTimecodeService.SaveAsync(all);
-                ApplyLoadedTimecodes(all);
+                await _playerTimecodeService.UpdateAsync(all => all.RemoveAll(t => string.Equals(t.Id, id, StringComparison.OrdinalIgnoreCase)));
+                ApplyLoadedTimecodes(await _playerTimecodeService.LoadAsync());
             }
-            catch
+            catch (Exception ex)
             {
-                // Best-effort persistence.
+                JokerDBDTracker.Services.DiagnosticsService.LogException("Timecodes.Save", ex);
+                MessageBox.Show(ex.Message, "Timecodes", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
     }

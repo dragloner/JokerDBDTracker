@@ -2,66 +2,56 @@ using System.IO;
 using System.Text.Json;
 using JokerDBDTracker.Models;
 
-namespace JokerDBDTracker.Services
+namespace JokerDBDTracker.Services;
+
+public sealed class TimecodeService
 {
-    public sealed class TimecodeService
+    private readonly string _path;
+    private readonly SemaphoreSlim _gate;
+    public TimecodeService(string? directory = null)
     {
-        private static readonly SemaphoreSlim FileAccessLock = new(1, 1);
-        private readonly string _timecodesPath;
-
-        public TimecodeService()
+        _path = Path.Combine(directory ?? AppStoragePaths.GetCurrentAppDataDirectory(), "timecodes.json");
+        _gate = AtomicFile.Gate(_path);
+    }
+    public async Task<List<Timecode>> LoadAsync(CancellationToken cancellationToken = default)
+    {
+        await _gate.WaitAsync(cancellationToken);
+        try { return await LoadCoreAsync(cancellationToken); }
+        finally { _gate.Release(); }
+    }
+    private async Task<List<Timecode>> LoadCoreAsync(CancellationToken cancellationToken)
+    {
+        Exception? failure = null;
+        foreach (var path in new[] { _path, _path + ".bak" })
         {
-            var appFolder = AppStoragePaths.GetCurrentAppDataDirectory();
-            Directory.CreateDirectory(appFolder);
-            _timecodesPath = Path.Combine(appFolder, "timecodes.json");
-        }
-
-        public async Task<List<Timecode>> LoadAsync(CancellationToken cancellationToken = default)
-        {
-            await FileAccessLock.WaitAsync(cancellationToken);
+            if (!File.Exists(path)) continue;
             try
             {
-                if (!File.Exists(_timecodesPath))
-                {
-                    return [];
-                }
-
-                var json = await File.ReadAllTextAsync(_timecodesPath, cancellationToken);
-                if (string.IsNullOrWhiteSpace(json))
-                {
-                    return [];
-                }
-
-                return JsonSerializer.Deserialize<List<Timecode>>(json) ?? [];
+                var list = JsonSerializer.Deserialize<List<Timecode>>(await File.ReadAllTextAsync(path, cancellationToken)) ?? throw new InvalidDataException("Timecodes are empty.");
+                if (list.Any(t => t is null || string.IsNullOrWhiteSpace(t.VideoId) || t.Seconds < 0)) throw new InvalidDataException("Invalid timecode entry.");
+                return list;
             }
-            catch
-            {
-                return [];
-            }
-            finally
-            {
-                FileAccessLock.Release();
-            }
+            catch (Exception ex) when (ex is JsonException or IOException or InvalidDataException)
+            { failure = ex; DiagnosticsService.LogException("Timecodes.Load", ex); }
         }
-
-        public async Task SaveAsync(List<Timecode> timecodes, CancellationToken cancellationToken = default)
+        if (failure is not null) throw new InvalidDataException("Timecodes could not be recovered. Original files were preserved.", failure);
+        return [];
+    }
+    public async Task UpdateAsync(Action<List<Timecode>> update, CancellationToken cancellationToken = default)
+    {
+        await _gate.WaitAsync(cancellationToken);
+        try
         {
-            await FileAccessLock.WaitAsync(cancellationToken);
-            try
-            {
-                var tempPath = $"{_timecodesPath}.tmp";
-                var json = JsonSerializer.Serialize(timecodes, new JsonSerializerOptions { WriteIndented = false });
-                await File.WriteAllTextAsync(tempPath, json, cancellationToken);
-                File.Move(tempPath, _timecodesPath, overwrite: true);
-            }
-            catch
-            {
-                // Best-effort persistence.
-            }
-            finally
-            {
-                FileAccessLock.Release();
-            }
+            var list = await LoadCoreAsync(cancellationToken);
+            update(list);
+            await AtomicFile.WriteAsync(_path, JsonSerializer.SerializeToUtf8Bytes(list), cancellationToken);
         }
+        finally { _gate.Release(); }
+    }
+    public async Task SaveAsync(List<Timecode> timecodes, CancellationToken cancellationToken = default)
+    {
+        await _gate.WaitAsync(cancellationToken);
+        try { await AtomicFile.WriteAsync(_path, JsonSerializer.SerializeToUtf8Bytes(timecodes), cancellationToken); }
+        finally { _gate.Release(); }
     }
 }

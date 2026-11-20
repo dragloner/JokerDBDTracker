@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Web;
@@ -79,8 +79,11 @@ namespace JokerDBDTracker
                 _playerHostCornerRadiusBeforeFullscreen = PlayerHostBorder.CornerRadius;
                 ApplyPlayerFullscreenChrome(isFullscreen: true);
                 ResizeMode = ResizeMode.NoResize;
-                WindowState = WindowState.Normal;
-                ApplyFullMonitorBounds();
+                if (_appSettings.FullscreenBehavior != "windowed")
+                {
+                    WindowState = WindowState.Normal;
+                    ApplyFullMonitorBounds();
+                }
                 Activate();
                 PulseTopmost();
                 RequestApplyEffects(immediate: false);
@@ -432,8 +435,24 @@ namespace JokerDBDTracker
             return false;
         }
 
-        private void PlayerWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
+        private async void PlayerWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
         {
+            if (!_closingAfterCheckpoint)
+            {
+                e.Cancel = true;
+                if (_isPlayerClosing) return;
+                _isPlayerClosing = true;
+                _positionTimer.Stop();
+                try { await PersistPlaybackPositionAsync(force: true); }
+                catch (Exception ex)
+                {
+                    DiagnosticsService.LogException("Player.CloseCheckpoint", ex);
+                    MessageBox.Show(PT("Не удалось сохранить прогресс: ", "Could not save progress: ") + ex.Message);
+                }
+                _closingAfterCheckpoint = true;
+                _ = Dispatcher.BeginInvoke(new Action(Close));
+                return;
+            }
             try
             {
                 _isPlayerClosing = true;
@@ -449,14 +468,12 @@ namespace JokerDBDTracker
                 _effectsApplyDebounceTimer.Tick -= EffectsApplyDebounceTimer_Tick;
                 _resizeSettleDebounceTimer.Tick -= ResizeSettleDebounceTimer_Tick;
                 StopAllSoundEffects();
-                CleanupWatchTogetherSync();
                 SystemEvents.DisplaySettingsChanged -= SystemEvents_DisplaySettingsChanged;
                 UnregisterGlobalHotkeys();
                 _hotkeySource?.RemoveHook(HotkeyWndProc);
                 _hotkeySource = null;
                 Loaded -= PlayerWindow_Loaded;
                 Closing -= PlayerWindow_Closing;
-                Closed -= PlayerWindow_Closed;
                 Activated -= PlayerWindow_Activated;
                 Deactivated -= PlayerWindow_Deactivated;
                 StateChanged -= PlayerWindow_StateChanged;
@@ -472,6 +489,7 @@ namespace JokerDBDTracker
                     Player.CoreWebView2.NewWindowRequested -= CoreWebView2_NewWindowRequested;
                     Player.CoreWebView2.NavigationCompleted -= CoreWebView2_NavigationCompleted;
                     Player.CoreWebView2.WebMessageReceived -= CoreWebView2_WebMessageReceived;
+                    Player.CoreWebView2.SourceChanged -= CoreWebView2_SourceChanged;
                     Player.CoreWebView2.Stop();
                     Player.CoreWebView2.Navigate("about:blank");
                 }
@@ -594,7 +612,10 @@ namespace JokerDBDTracker
             try
             {
                 CancelPendingRestoreDrag();
+                Closed -= PlayerWindow_Closed;
                 Player.Dispose();
+                CommunityChatBrowser?.Dispose();
+                CommunityCommentsBrowser?.Dispose();
             }
             catch
             {

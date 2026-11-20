@@ -75,6 +75,7 @@ namespace JokerDBDTracker.Services
 
         private static void WriteEntry(LogLevel level, string source, string message)
         {
+            message = SanitizeLogMessage(message);
             var timestamp = DateTime.UtcNow;
             var entry = new LogEntry(timestamp, level, source, message);
 

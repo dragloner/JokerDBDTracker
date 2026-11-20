@@ -11,6 +11,7 @@ namespace JokerDBDTracker
         {
             InitializeComponent();
             WindowBoundsHelper.Attach(this);
+            WindowMaterial.Attach(this);
             InitializeSettingsUi();
             VideoList.ItemsSource = _videos;
             UpdateTopNavButtonsVisualState();
@@ -75,15 +76,15 @@ namespace JokerDBDTracker
 
             try
             {
-                await InitializeNetworkClockAsync();
+                _ = InitializeNetworkClockAsync();
                 await LoadAndApplySettingsAsync();
                 InitializeLogViewer();
                 DiagnosticsService.LogInfo("App", $"Started, v{GetCurrentAppVersion()}, lang={_appSettings.Language}, scale={_appSettings.UiScale:0.00}");
                 var loadVideosTask = LoadVideosAsync();
-                var updateCheckTask = _appSettings.AutoCheckUpdates
+                _ = _appSettings.AutoCheckUpdates
                     ? CheckForUpdatesDuringStartupAsync()
                     : SkipUpdateCheckAsync();
-                await Task.WhenAll(loadVideosTask, updateCheckTask);
+                await loadVideosTask;
                 StartQuestRolloverMonitoring();
                 _questUiRefreshTimer.Start();
             }

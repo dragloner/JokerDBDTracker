@@ -1,10 +1,15 @@
-﻿using System.Windows.Controls;
+using System.Windows.Controls;
 using JokerDBDTracker.Models;
 
 namespace JokerDBDTracker
 {
     public partial class MainWindow
     {
+        private async void ReloadCatalogButton_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            await LoadVideosAsync();
+        }
+
         private void SearchDebounceTimer_Tick(object? sender, EventArgs e)
         {
             _searchDebounceTimer.Stop();

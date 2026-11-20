@@ -1,4 +1,5 @@
-﻿using System.Net.Http;
+using System.IO;
+using System.Net.Http;
 using System.Net.Http.Json;
 using System.Net;
 using System.Net.Http.Headers;
@@ -109,18 +110,31 @@ namespace JokerDBDTracker.Services
 
         public async Task<List<YouTubeVideo>> GetAllStreamsAsync(string streamsUrl, CancellationToken cancellationToken = default)
         {
+            var cache = Path.Combine(AppStoragePaths.GetCurrentLocalAppDataDirectory(), "catalog.json");
             try
             {
-                return await GetAllStreamsCoreAsync(SharedHttpClient.Value, streamsUrl, cancellationToken);
+                List<YouTubeVideo> videos;
+                try { videos = await GetAllStreamsCoreAsync(SharedHttpClient.Value, streamsUrl, cancellationToken); }
+                catch (HttpRequestException) when (!cancellationToken.IsCancellationRequested)
+                {
+                    using var fresh = CreateHttpClient(forceFreshSockets: true);
+                    videos = await GetAllStreamsCoreAsync(fresh, streamsUrl, cancellationToken);
+                }
+                if (videos.Count > 0)
+                {
+                    try { await AtomicFile.WriteAsync(cache, JsonSerializer.SerializeToUtf8Bytes(videos), CancellationToken.None); }
+                    catch (IOException ex) { DiagnosticsService.LogException("Catalog.CacheWrite", ex); }
+                    catch (UnauthorizedAccessException ex) { DiagnosticsService.LogException("Catalog.CacheWrite", ex); }
+                }
+                return videos;
             }
-            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or InvalidOperationException or JsonException)
+            catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException or InvalidOperationException or JsonException)
             {
-                DiagnosticsService.LogInfo(
-                    "YouTubeStreamsService",
-                    $"Shared client failed, retrying with fresh sockets. Reason: {ex.GetType().Name}");
-
-                using var freshHttpClient = CreateHttpClient(forceFreshSockets: true);
-                return await GetAllStreamsCoreAsync(freshHttpClient, streamsUrl, cancellationToken);
+                DiagnosticsService.LogException("Catalog.Load", ex);
+                if (!File.Exists(cache)) throw;
+                var cached = JsonSerializer.Deserialize<List<YouTubeVideo>>(await File.ReadAllTextAsync(cache)) ?? [];
+                DiagnosticsService.LogInfo("Catalog", "Using the last saved stream catalog while the network is unavailable.");
+                return cached;
             }
         }
 
@@ -144,7 +158,7 @@ namespace JokerDBDTracker.Services
                 throw new InvalidOperationException("Failed to parse streams page data.");
             }
 
-            var videosById = new Dictionary<string, YouTubeVideo>(StringComparer.OrdinalIgnoreCase);
+            var videosById = new Dictionary<string, YouTubeVideo>(StringComparer.Ordinal);
             var orderCounter = 0;
             string? continuationToken;
             var seenContinuationTokens = new HashSet<string>(StringComparer.Ordinal);
@@ -158,7 +172,7 @@ namespace JokerDBDTracker.Services
             var apiKey = ExtractConfigValueFromHtml(html, "INNERTUBE_API_KEY");
             var clientVersion = ExtractConfigValueFromHtml(html, "INNERTUBE_CLIENT_VERSION");
             var continuationRequestCount = 0;
-            while (!string.IsNullOrWhiteSpace(continuationToken))
+            while (!string.IsNullOrWhiteSpace(continuationToken) && !cancellationToken.IsCancellationRequested)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
@@ -185,6 +199,8 @@ namespace JokerDBDTracker.Services
                     break;
                 }
 
+                try
+                {
                 using var continuationResponse = await LoadContinuationAsync(
                     httpClient,
                     apiKey,
@@ -194,6 +210,12 @@ namespace JokerDBDTracker.Services
 
                 ExtractVideosFromJson(continuationResponse.RootElement, videosById, ref orderCounter);
                 continuationToken = ExtractContinuationToken(continuationResponse.RootElement, seenContinuationTokens);
+                }
+                catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException or JsonException)
+                {
+                    DiagnosticsService.LogException("Catalog.Continuation", ex);
+                    break; // Already loaded pages remain available instead of becoming an empty catalog.
+                }
             }
 
             return videosById.Values.OrderBy(v => v.OriginalOrder).ToList();
@@ -606,12 +628,12 @@ namespace JokerDBDTracker.Services
 
             if (element.ValueKind == JsonValueKind.Object)
             {
-                if (element.TryGetProperty("simpleText", out var simpleText))
+                if (element.TryGetProperty("simpleText", out var simpleText) && simpleText.ValueKind == JsonValueKind.String)
                 {
                     return simpleText.GetString() ?? string.Empty;
                 }
 
-                if (element.TryGetProperty("content", out var content))
+                if (element.TryGetProperty("content", out var content) && content.ValueKind == JsonValueKind.String)
                 {
                     return content.GetString() ?? string.Empty;
                 }
@@ -634,24 +656,26 @@ namespace JokerDBDTracker.Services
             return string.Empty;
         }
 
+
+
         private static string ReadLockupMetadataText(JsonElement lockupViewModel)
         {
-            if (!lockupViewModel.TryGetProperty("metadata", out var metadataRoot))
+            if (!lockupViewModel.TryGetProperty("metadata", out var metadata)) return string.Empty;
+            var labels = new List<string>();
+            foreach (var element in EnumerateObjects(metadata))
             {
-                return string.Empty;
-            }
-
-            foreach (var objectElement in EnumerateObjects(metadataRoot))
-            {
-                var text = ReadTextElement(objectElement);
-                if (!string.IsNullOrWhiteSpace(text) &&
-                    !string.Equals(text, ReadTextAtPath(lockupViewModel, "metadata", "lockupMetadataViewModel", "title"), StringComparison.Ordinal))
+                if (!element.TryGetProperty("metadataRows", out var rows) || rows.ValueKind != JsonValueKind.Array) continue;
+                foreach (var row in rows.EnumerateArray())
                 {
-                    return text;
+                    if (!row.TryGetProperty("metadataParts", out var parts) || parts.ValueKind != JsonValueKind.Array) continue;
+                    foreach (var part in parts.EnumerateArray())
+                    {
+                        var text = ReadText(part, "text");
+                        if (!string.IsNullOrWhiteSpace(text)) labels.Add(text);
+                    }
                 }
             }
-
-            return string.Empty;
+            return string.Join(" · ", labels.Distinct(StringComparer.Ordinal));
         }
 
         private static string? ExtractContinuationToken(JsonElement root, ISet<string> seenTokens)

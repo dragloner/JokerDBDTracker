@@ -91,7 +91,8 @@ namespace JokerDBDTracker.Services
                     }
 
                     var (assetName, assetUrl, assetSizeBytes, checksumUrl) = SelectBestAsset(root);
-                    var assetSha256 = await TryResolveSha256Async(checksumUrl, assetName, cancellationToken);
+                    var assetSha256 = ReadAssetDigest(root, assetName);
+                    if (string.IsNullOrEmpty(assetSha256)) assetSha256 = await TryResolveSha256Async(checksumUrl, assetName, cancellationToken);
                     return new GitHubUpdateInfo
                     {
                         IsCheckSuccessful = true,
@@ -360,15 +361,11 @@ namespace JokerDBDTracker.Services
 
             if (expectedSizeBytes > 0 && fileInfo.Length != expectedSizeBytes)
             {
-                DiagnosticsService.LogInfo(
-                    nameof(GitHubUpdateService),
-                    $"Downloaded file size mismatch ignored. Expected {expectedSizeBytes}, got {fileInfo.Length}.");
+                throw new InvalidDataException($"Update size mismatch: expected {expectedSizeBytes}, received {fileInfo.Length}.");
             }
 
-            if (string.IsNullOrWhiteSpace(expectedSha256))
-            {
-                return;
-            }
+            if (string.IsNullOrWhiteSpace(expectedSha256) || !Regex.IsMatch(expectedSha256, "^[A-Fa-f0-9]{64}$"))
+                throw new InvalidDataException("Update SHA-256 is missing or invalid. Please download a verified release manually.");
 
             var actualSha256 = await ComputeFileSha256Async(path, cancellationToken);
             if (!string.Equals(actualSha256, expectedSha256, StringComparison.OrdinalIgnoreCase))
@@ -390,11 +387,11 @@ namespace JokerDBDTracker.Services
                     File.Move(tempPath, destinationPath, overwrite: true);
                     return destinationPath;
                 }
-                catch (IOException) when (attempt < 6)
+                catch (IOException)
                 {
                     await Task.Delay(220, cancellationToken);
                 }
-                catch (UnauthorizedAccessException) when (attempt < 6)
+                catch (UnauthorizedAccessException)
                 {
                     await Task.Delay(220, cancellationToken);
                 }
@@ -530,6 +527,18 @@ namespace JokerDBDTracker.Services
             return (selected.name, selected.url, selected.size, checksumUrl);
         }
 
+        private static string ReadAssetDigest(JsonElement root, string name)
+        {
+            if (!root.TryGetProperty("assets", out var assets) || assets.ValueKind != JsonValueKind.Array) return string.Empty;
+            foreach (var asset in assets.EnumerateArray())
+            {
+                if (TryGetString(asset, "name") != name) continue;
+                var digest = TryGetString(asset, "digest");
+                return digest.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase) ? ExtractHexSha256(digest[7..]) : string.Empty;
+            }
+            return string.Empty;
+        }
+
         private static int GetPortableAssetPriority(string assetName, string extension)
         {
             if (extension != ".zip")
@@ -538,6 +547,7 @@ namespace JokerDBDTracker.Services
             }
 
             var lower = assetName.ToLowerInvariant();
+            if (!lower.Contains("win-x64") || lower.Contains("symbols") || lower.Contains("debug")) return 0;
             var priority = 100;
 
             if (lower.Contains("win-x64"))
@@ -611,7 +621,7 @@ namespace JokerDBDTracker.Services
                     }
                 }
 
-                return ExtractHexSha256(lines[0]);
+                return lines.Length == 1 ? ExtractHexSha256(lines[0]) : string.Empty;
             }
             catch
             {

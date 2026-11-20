@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http;
 using System.Windows;
 using JokerDBDTracker.Services;
@@ -7,7 +7,17 @@ namespace JokerDBDTracker
 {
     public partial class MainWindow
     {
+        private bool _isCatalogLoading;
         private async Task LoadVideosAsync()
+        {
+            if (_isCatalogLoading || _isOpeningVideo) return;
+            _isCatalogLoading = true;
+            ReloadCatalogButton.IsEnabled = false;
+            try { await LoadVideosCoreAsync(); }
+            finally { _isCatalogLoading = false; ReloadCatalogButton.IsEnabled = true; }
+        }
+
+        private async Task LoadVideosCoreAsync()
         {
             // Load timecodes alongside history — both are lightweight local files.
             try
@@ -63,6 +73,9 @@ namespace JokerDBDTracker
                     _firstViewRewardedVideoIds.Add(videoId);
                 }
 
+                _watchedVideoIdsByDay.Clear();
+                foreach (var pair in history.WatchedVideoIdsByDay) _watchedVideoIdsByDay[pair.Key] = pair.Value;
+                _claimedQuestCount = history.ClaimedQuestCount;
                 _totalXp = history.TotalXp;
                 _prestige = Math.Clamp(history.Prestige, 0, MaxPrestige);
                 _prestigeXp = Math.Max(0, history.PrestigeXp);
@@ -146,6 +159,7 @@ namespace JokerDBDTracker
                 PurgeExpiredRewardedQuestKeys(GetTrustedToday());
                 EnsureQuestRotationSchedule(GetTrustedToday());
                 _isHistoryLoadedSuccessfully = true;
+                HideLoadingOverlay();
             }
             catch (Exception ex)
             {
@@ -160,16 +174,14 @@ namespace JokerDBDTracker
 
             try
             {
-                using var streamsLoadCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                using var streamsLoadCts = new CancellationTokenSource(TimeSpan.FromSeconds(35));
                 videos = await _streamsService.GetAllStreamsAsync(StreamsUrl, streamsLoadCts.Token);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(
-                    BuildStreamsLoadErrorMessage(ex),
-                    T("Ошибка", "Error"),
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
+                DiagnosticsService.LogException("Catalog", ex);
+                StatusText.Text = T("Каталог недоступен. Проверьте подключение и нажмите «Обновить каталог».", "Catalog unavailable. Check your connection and refresh the catalog.");
+                StatusText.Visibility = Visibility.Visible;
                 videos = [];
             }
 
@@ -180,6 +192,7 @@ namespace JokerDBDTracker
                     .GroupBy(t => t.VideoId, StringComparer.OrdinalIgnoreCase)
                     .ToDictionary(g => g.Key, g => g.Count(), StringComparer.OrdinalIgnoreCase);
 
+                if (videos.Count > 0) StatusText.Visibility = Visibility.Collapsed;
                 _allVideos.Clear();
                 foreach (var video in videos)
                 {
@@ -270,28 +283,8 @@ namespace JokerDBDTracker
                    T("Проверьте интернет-соединение и попробуйте снова.", "Check internet connection and try again.");
         }
 
-        private Task SaveTimecodesAsync() => _timecodeService.SaveAsync(_timecodes);
 
-        private async Task MarkAsWatchedAsync(Models.YouTubeVideo video)
-        {
-            var nowUtc = GetTrustedUtcNow();
-            video.LastViewedAtUtc = nowUtc;
-            _watchHistory[video.VideoId] = nowUtc;
-            var today = DateOnly.FromDateTime(GetTrustedLocalNow().Date);
-            _watchedDays.Add(today);
-            await SaveHistoryAsync();
 
-            UpdateStreakText();
-
-            if (CurrentSortMode() is "watched_recent" or "watched_oldest")
-            {
-                RefreshVisibleVideos();
-            }
-            else
-            {
-                VideoList.Items.Refresh();
-            }
-        }
 
         private async Task SaveHistoryAsync()
         {
@@ -332,6 +325,8 @@ namespace JokerDBDTracker
                 payload.FirstViewRewardedVideoIds.Add(videoId);
             }
 
+            foreach (var pair in _watchedVideoIdsByDay) payload.WatchedVideoIdsByDay[pair.Key] = new HashSet<string>(pair.Value, StringComparer.Ordinal);
+            payload.ClaimedQuestCount = _claimedQuestCount;
             payload.TotalXp = _totalXp;
             payload.Prestige = _prestige;
             payload.PrestigeXp = _prestigeXp;

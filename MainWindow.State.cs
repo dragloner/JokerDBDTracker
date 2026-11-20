@@ -24,6 +24,7 @@ namespace JokerDBDTracker
         // Progression counters.
         private bool _isHistoryLoadedSuccessfully;
         private int _totalXp;
+        private int _claimedQuestCount;
         private int _prestige;
         private int _prestigeXp;
         private int _effectSessionsAny;
@@ -67,8 +68,6 @@ namespace JokerDBDTracker
 
         // Trusted time and quest scheduling.
         private DateTime _internetUtcAtSync;
-        private DateTime _localUtcAtSync;
-        private bool _hasInternetTime;
         private DateOnly _lastQuestRefreshDay;
         private string _lastQuestRefreshWeekKey = string.Empty;
         private DateOnly? _activeDailyQuestDate;
@@ -83,11 +82,11 @@ namespace JokerDBDTracker
         private readonly DispatcherTimer _questUiRefreshTimer = new();
 
         // Shared UI brushes.
-        private static readonly Brush TopNavSelectedBackground = BrushFromHex("#223A4D");
-        private static readonly Brush TopNavSelectedForeground = BrushFromHex("#F3FBFF");
-        private static readonly Brush TopNavSelectedBorder = BrushFromHex("#7BC8F4");
-        private static readonly Brush TopNavDefaultBackground = BrushFromHex("#1A3143");
-        private static readonly Brush TopNavDefaultForeground = BrushFromHex("#EAF6FF");
-        private static readonly Brush TopNavDefaultBorder = BrushFromHex("#5C86A2");
+        private static readonly Brush TopNavSelectedBackground = BrushFromHex("#604C3D76");
+        private static readonly Brush TopNavSelectedForeground = BrushFromHex("#FFFFFF");
+        private static readonly Brush TopNavSelectedBorder = BrushFromHex("#BBA6FF");
+        private static readonly Brush TopNavDefaultBackground = BrushFromHex("#302B2944");
+        private static readonly Brush TopNavDefaultForeground = BrushFromHex("#BAB6CE");
+        private static readonly Brush TopNavDefaultBorder = BrushFromHex("#20D6CEFF");
     }
 }

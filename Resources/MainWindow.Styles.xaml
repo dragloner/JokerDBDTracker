@@ -2,9 +2,9 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:ui="clr-namespace:JokerDBDTracker">
         <LinearGradientBrush x:Key="AppBackground" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#0C121A" Offset="0"/>
-            <GradientStop Color="#101926" Offset="0.45"/>
-            <GradientStop Color="#162738" Offset="1"/>
+            <GradientStop Color="#101020" Offset="0"/>
+            <GradientStop Color="#101226" Offset="0.45"/>
+            <GradientStop Color="#18152D" Offset="1"/>
         </LinearGradientBrush>
 
         <SolidColorBrush x:Key="{x:Static SystemColors.WindowBrushKey}" Color="#E4EEF6"/>
@@ -13,21 +13,21 @@
         <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="#112233"/>
 
         <Style TargetType="Button">
-            <Setter Property="Foreground" Value="#F1FAFF"/>
+            <Setter Property="Foreground" Value="#F4F3FF"/>
             <Setter Property="Background">
                 <Setter.Value>
                     <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                        <GradientStop Color="#CC183042" Offset="0"/>
-                        <GradientStop Color="#CC224960" Offset="1"/>
+                        <GradientStop Color="#802A2844" Offset="0"/>
+                        <GradientStop Color="#80403A62" Offset="1"/>
                     </LinearGradientBrush>
                 </Setter.Value>
             </Setter>
-            <Setter Property="BorderBrush" Value="#5E87A4"/>
+            <Setter Property="BorderBrush" Value="#40C3B5FF"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="18,10"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="15"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="TextBlock.TextWrapping" Value="NoWrap"/>
@@ -43,7 +43,7 @@
                                     Background="{TemplateBinding Background}"
                                     BorderBrush="{TemplateBinding BorderBrush}"
                                     BorderThickness="{TemplateBinding BorderThickness}"
-                                    CornerRadius="22"
+                                    CornerRadius="14"
                                     SnapsToDevicePixels="True"
                                     RenderTransformOrigin="0.5,0.5">
                                 <Border.RenderTransform>
@@ -63,7 +63,7 @@
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="HoverPlate" Property="BorderBrush" Value="#88CFFF"/>
+                                <Setter TargetName="HoverPlate" Property="BorderBrush" Value="#C1B2FF"/>
                             </Trigger>
                             <MultiTrigger>
                                 <MultiTrigger.Conditions>
@@ -79,7 +79,7 @@
                                     <Setter.Value>
                                         <DropShadowEffect BlurRadius="20"
                                                           ShadowDepth="0"
-                                                          Color="#67C8FF"
+                                                          Color="#A38AFF"
                                                           Opacity="0.24"/>
                                     </Setter.Value>
                                 </Setter>
@@ -135,8 +135,8 @@
             <Setter Property="Padding" Value="10,6"/>
             <Setter Property="Height" Value="44"/>
             <Setter Property="MinHeight" Value="40"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="15"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="ScrollViewer.CanContentScroll" Value="True"/>
@@ -156,8 +156,8 @@
                                         MinWidth="{Binding ActualWidth, ElementName=ComboRoot}"
                                         MaxHeight="{TemplateBinding MaxDropDownHeight}"
                                         Margin="0,6,0,0"
-                                        Background="#EA172534"
-                                        BorderBrush="#5D86A4"
+                                        Background="#F0221D33"
+                                        BorderBrush="#736285"
                                         BorderThickness="1"
                                         CornerRadius="12"
                                         SnapsToDevicePixels="True">
@@ -168,7 +168,7 @@
                                                           Opacity="0.38"/>
                                     </Border.Effect>
                                     <Border Margin="3"
-                                            Background="#1B2B39"
+                                            Background="#241E35"
                                             CornerRadius="9">
                                         <ScrollViewer x:Name="DropDownScrollViewer"
                                                       Margin="1"
@@ -259,14 +259,14 @@
                                 <Setter TargetName="PopupRoot" Property="MinHeight" Value="0"/>
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ComboRoot" Property="BorderBrush" Value="#82BEE5"/>
+                                <Setter TargetName="ComboRoot" Property="BorderBrush" Value="#BBA5DE"/>
                             </Trigger>
                             <Trigger Property="IsKeyboardFocusWithin" Value="True">
-                                <Setter TargetName="ComboRoot" Property="BorderBrush" Value="#9CD7FF"/>
+                                <Setter TargetName="ComboRoot" Property="BorderBrush" Value="#D7C4FF"/>
                                 <Setter TargetName="ArrowHost" Property="BorderBrush" Value="#4F83A6"/>
                             </Trigger>
                             <Trigger Property="IsDropDownOpen" Value="True">
-                                <Setter TargetName="ComboRoot" Property="BorderBrush" Value="#9CD7FF"/>
+                                <Setter TargetName="ComboRoot" Property="BorderBrush" Value="#D7C4FF"/>
                                 <Setter TargetName="ArrowHost" Property="Background" Value="#22384A"/>
                                 <Setter TargetName="ArrowHost" Property="BorderBrush" Value="#5D8FB0"/>
                             </Trigger>
@@ -279,10 +279,10 @@
             </Setter>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="BorderBrush" Value="#82BEE5"/>
+                    <Setter Property="BorderBrush" Value="#BBA5DE"/>
                 </Trigger>
                 <Trigger Property="IsKeyboardFocusWithin" Value="True">
-                    <Setter Property="BorderBrush" Value="#9CD7FF"/>
+                    <Setter Property="BorderBrush" Value="#D7C4FF"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
@@ -290,7 +290,7 @@
         <Style TargetType="ComboBoxItem">
             <Setter Property="Foreground" Value="#EAF7FF"/>
             <Setter Property="Background" Value="#1D2A36"/>
-            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="Padding" Value="10,8"/>
             <Setter Property="Template">
@@ -332,29 +332,57 @@
             <Setter Property="BorderBrush" Value="#577A92"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="10,6"/>
-            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Height" Value="44"/>
-            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontSize" Value="15"/>
             <Setter Property="TextAlignment" Value="Center"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="BorderBrush" Value="#82BEE5"/>
+                    <Setter Property="BorderBrush" Value="#BBA5DE"/>
                 </Trigger>
                 <Trigger Property="IsKeyboardFocusWithin" Value="True">
-                    <Setter Property="BorderBrush" Value="#9CD7FF"/>
+                    <Setter Property="BorderBrush" Value="#D7C4FF"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
 
         <Style TargetType="CheckBox">
-            <Setter Property="Foreground" Value="#D8EAF8"/>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Foreground" Value="#EAF6FF"/>
-                </Trigger>
-            </Style.Triggers>
+            <Setter Property="Foreground" Value="#DDD6ED"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="MinHeight" Value="24"/>
+            <Setter Property="Template"><Setter.Value>
+                <ControlTemplate TargetType="CheckBox">
+                    <Grid Background="Transparent">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="36"/><ColumnDefinition Width="8"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                        <Border x:Name="SwitchTrack" Width="36" Height="20" CornerRadius="10" Background="#342D47" BorderBrush="#615575" BorderThickness="1" VerticalAlignment="Center">
+                            <Ellipse x:Name="SwitchThumb" Width="12" Height="12" Margin="3,0,0,0" HorizontalAlignment="Left" Fill="#A79CB9"/>
+                        </Border>
+                        <ContentPresenter Grid.Column="2" VerticalAlignment="Center" RecognizesAccessKey="True"/>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True"><Setter TargetName="SwitchTrack" Property="Background" Value="#AB91E6"/><Setter TargetName="SwitchTrack" Property="BorderBrush" Value="#D5BFFF"/><Setter TargetName="SwitchThumb" Property="Fill" Value="#FFFFFF"/><Setter TargetName="SwitchThumb" Property="Margin" Value="17,0,0,0"/></Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="SwitchTrack" Property="BorderBrush" Value="#F4E8FF"/></Trigger>
+                        <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45"/></Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value></Setter>
+        </Style>
+
+        <Style TargetType="Slider">
+            <Setter Property="MinHeight" Value="26"/>
+            <Setter Property="Template"><Setter.Value>
+                <ControlTemplate TargetType="Slider">
+                    <Grid Margin="7,0" Background="Transparent">
+                        <Track x:Name="PART_Track" Minimum="{TemplateBinding Minimum}" Maximum="{TemplateBinding Maximum}" Value="{Binding Value, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}" Orientation="{TemplateBinding Orientation}">
+                            <Track.DecreaseRepeatButton><RepeatButton Command="Slider.DecreaseLarge"><RepeatButton.Template><ControlTemplate TargetType="RepeatButton"><Border Height="4" CornerRadius="2" Background="#BCA2F0"/></ControlTemplate></RepeatButton.Template></RepeatButton></Track.DecreaseRepeatButton>
+                            <Track.Thumb><Thumb Width="14" Height="14" Cursor="Hand"><Thumb.Template><ControlTemplate TargetType="Thumb"><Ellipse Fill="#E6D6FF" Stroke="#A68ACB" StrokeThickness="1"/></ControlTemplate></Thumb.Template></Thumb></Track.Thumb>
+                            <Track.IncreaseRepeatButton><RepeatButton Command="Slider.IncreaseLarge"><RepeatButton.Template><ControlTemplate TargetType="RepeatButton"><Border Height="4" CornerRadius="2" Background="#494057"/></ControlTemplate></RepeatButton.Template></RepeatButton></Track.IncreaseRepeatButton>
+                        </Track>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value></Setter>
         </Style>
 
         <Style TargetType="ListBox">
@@ -391,7 +419,7 @@
         <Style TargetType="TabItem">
             <Setter Property="Foreground" Value="#E6F2FA"/>
             <Setter Property="Background" Value="#CC1B3346"/>
-            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="FontSize" Value="15"/>
             <Setter Property="Padding" Value="18,8"/>
             <Setter Property="Margin" Value="0,0,8,0"/>
@@ -432,8 +460,8 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="ListBoxItem">
                         <Border x:Name="ItemRoot"
-                                Background="#D2172532"
-                                BorderBrush="#4E728B"
+                                Background="#98252238"
+                                BorderBrush="#36B3A3CD"
                                 BorderThickness="1"
                                 CornerRadius="14"
                                 Padding="10">
@@ -441,11 +469,11 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ItemRoot" Property="BorderBrush" Value="#7ABFE9"/>
+                                <Setter TargetName="ItemRoot" Property="BorderBrush" Value="#B9A0EF"/>
                             </Trigger>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="ItemRoot" Property="Background" Value="#E01D3141"/>
-                                <Setter TargetName="ItemRoot" Property="BorderBrush" Value="#91D1F7"/>
+                                <Setter TargetName="ItemRoot" Property="Background" Value="#B03B3156"/>
+                                <Setter TargetName="ItemRoot" Property="BorderBrush" Value="#D1BCFF"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -500,64 +528,24 @@
         </Style>
 
         <Style x:Key="TopNavButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-            <Setter Property="Height" Value="62"/>
-            <Setter Property="MinHeight" Value="62"/>
-            <Setter Property="MaxHeight" Value="62"/>
-            <Setter Property="FontSize" Value="30"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="Padding" Value="20,10"/>
-            <Setter Property="Background">
-                <Setter.Value>
-                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                        <GradientStop Color="#CC1A3143" Offset="0"/>
-                        <GradientStop Color="#CC21475C" Offset="1"/>
-                    </LinearGradientBrush>
-                </Setter.Value>
-            </Setter>
-            <Setter Property="Foreground" Value="#EAF6FF"/>
-            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-            <Setter Property="VerticalAlignment" Value="Stretch"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="#5E87A3"/>
+            <Setter Property="Height" Value="48"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="18,10"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Grid ClipToBounds="False">
-                            <Border x:Name="NavButtonRoot"
-                                    Background="{TemplateBinding Background}"
-                                    BorderBrush="{TemplateBinding BorderBrush}"
-                                    BorderThickness="{TemplateBinding BorderThickness}"
-                                    CornerRadius="24"
-                                    SnapsToDevicePixels="True"
-                                    RenderTransformOrigin="0.5,0.5">
-                                <Border.RenderTransform>
-                                    <ScaleTransform ScaleX="1" ScaleY="1"/>
-                                </Border.RenderTransform>
-                            </Border>
-                            <Border Padding="{TemplateBinding Padding}"
-                                    Background="Transparent">
-                                <ContentPresenter HorizontalAlignment="Center"
-                                                  VerticalAlignment="Center"/>
-                            </Border>
-                        </Grid>
+                        <Border x:Name="Plate" CornerRadius="13" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}">
+                            <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="26"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                <TextBlock Text="{TemplateBinding Tag}" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center"/>
+                                <ContentPresenter Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                            </Grid>
+                        </Border>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="NavButtonRoot" Property="BorderBrush" Value="#8CCEF7"/>
-                            </Trigger>
-                            <MultiTrigger>
-                                <MultiTrigger.Conditions>
-                                    <Condition Property="IsMouseOver" Value="True"/>
-                                    <Condition Property="ui:UiAnimation.IsEnabled" Value="True"/>
-                                </MultiTrigger.Conditions>
-                                <Setter TargetName="NavButtonRoot" Property="RenderTransform">
-                                    <Setter.Value>
-                                        <ScaleTransform ScaleX="1.015" ScaleY="1.015"/>
-                                    </Setter.Value>
-                                </Setter>
-                            </MultiTrigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="NavButtonRoot" Property="Background" Value="#E0182A38"/>
-                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Plate" Property="BorderBrush" Value="#BBA6FF"/></Trigger>
+                            <Trigger Property="IsPressed" Value="True"><Setter TargetName="Plate" Property="Opacity" Value="0.7"/></Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
@@ -686,7 +674,7 @@
             <Setter Property="Foreground" Value="#F4FFFB"/>
             <Setter Property="Padding" Value="12,4"/>
             <Setter Property="FontSize" Value="14"/>
-            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="BorderBrush" Value="#7AD8B8"/>
             <Style.Triggers>
@@ -716,8 +704,8 @@
 
         <Style TargetType="ScrollBar">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Width" Value="18"/>
-            <Setter Property="MinWidth" Value="18"/>
+            <Setter Property="Width" Value="15"/>
+            <Setter Property="MinWidth" Value="15"/>
             <Setter Property="Focusable" Value="False"/>
             <Setter Property="Opacity" Value="0.72"/>
             <Setter Property="IsHitTestVisible" Value="True"/>

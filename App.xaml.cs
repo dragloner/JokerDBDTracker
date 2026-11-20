@@ -9,26 +9,30 @@ namespace JokerDBDTracker;
 /// </summary>
 public partial class App : Application
 {
+    private Mutex? _instanceMutex;
+
+    protected override void OnStartup(StartupEventArgs e)
+    {
+        _instanceMutex = new Mutex(true, "Local\\JokerDBDTracker-1", out var created);
+        if (!created) { MessageBox.Show("JokerDBD Tracker уже запущен / is already running."); Shutdown(); return; }
+        base.OnStartup(e);
+    }
+
+    protected override void OnExit(ExitEventArgs e)
+    {
+        _instanceMutex?.Dispose();
+        base.OnExit(e);
+    }
+
     public App()
     {
-        InitializeDiagnosticsFromSettings();
+        DiagnosticsService.SetEnabled(true);
         DispatcherUnhandledException += App_DispatcherUnhandledException;
         AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
         TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
     }
 
-    private static void InitializeDiagnosticsFromSettings()
-    {
-        try
-        {
-            var settings = new AppSettingsService().LoadAsync().GetAwaiter().GetResult();
-            DiagnosticsService.SetEnabled(settings.LoggingEnabled);
-        }
-        catch
-        {
-            DiagnosticsService.SetEnabled(true);
-        }
-    }
+
 
     private void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {

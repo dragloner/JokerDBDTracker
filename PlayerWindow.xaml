@@ -13,9 +13,9 @@
         MinWidth="760"
         MinHeight="460"
         WindowStartupLocation="Manual"
-        Background="#131B22"
+        Background="#090B15"
         Icon="Assets/app.ico"
-        FontFamily="Bahnschrift SemiCondensed">
+        FontFamily="Segoe UI Variable Display, Segoe UI">
 
     <shell:WindowChrome.WindowChrome>
         <shell:WindowChrome CaptionHeight="0"
@@ -30,7 +30,7 @@
             <Setter Property="Foreground" Value="#F3FAFF"/>
             <Setter Property="Background" Value="#CC193344"/>
             <Setter Property="Padding" Value="16,9"/>
-            <Setter Property="BorderBrush" Value="#5C86A2"/>
+            <Setter Property="BorderBrush" Value="#40C3B5FF"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="FontWeight" Value="Bold"/>
@@ -64,7 +64,7 @@
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Root" Property="BorderBrush" Value="#88CFFF"/>
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#C1B2FF"/>
                             </Trigger>
                             <MultiTrigger>
                                 <MultiTrigger.Conditions>
@@ -136,7 +136,7 @@
         </Style>
 
         <Style TargetType="ComboBox">
-            <Setter Property="Foreground" Value="#EAF6FF"/>
+            <Setter Property="Foreground" Value="#E9E7FA"/>
             <Setter Property="Background" Value="#C9162533"/>
             <Setter Property="BorderBrush" Value="#5A85A1"/>
             <Setter Property="BorderThickness" Value="1"/>
@@ -147,7 +147,7 @@
             <Setter Property="HorizontalContentAlignment" Value="Left"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="ScrollViewer.CanContentScroll" Value="True"/>
-            <Setter Property="TextElement.Foreground" Value="#EAF6FF"/>
+            <Setter Property="TextElement.Foreground" Value="#E9E7FA"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ComboBox">
@@ -313,14 +313,14 @@
         </Style>
 
         <Style TargetType="TextBox">
-            <Setter Property="Foreground" Value="#EAF6FF"/>
+            <Setter Property="Foreground" Value="#E9E7FA"/>
             <Setter Property="Background" Value="#C9162533"/>
             <Setter Property="BorderBrush" Value="#5A85A1"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="10,6"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="CaretBrush" Value="#EAF6FF"/>
+            <Setter Property="CaretBrush" Value="#E9E7FA"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TextBox">
@@ -408,11 +408,11 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="TabRoot" Property="BorderBrush" Value="#88CFFF"/>
+                                <Setter TargetName="TabRoot" Property="BorderBrush" Value="#C1B2FF"/>
                             </Trigger>
                             <Trigger Property="IsSelected" Value="True">
                                 <Setter TargetName="TabRoot" Property="Background" Value="#E0223D50"/>
-                                <Setter TargetName="TabRoot" Property="BorderBrush" Value="#7BC8F4"/>
+                                <Setter TargetName="TabRoot" Property="BorderBrush" Value="#BAA5FF"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -966,8 +966,8 @@
                  Grid.Row="0"
                  Margin="0,4,0,8"
                  Padding="12,10"
-                 Background="#D2162330"
-                 BorderBrush="#4D728C"
+                 Background="#A51C1D31"
+                 BorderBrush="#35D6CEFF"
                  BorderThickness="1"
                  CornerRadius="14"
                  MouseLeftButtonDown="TopBarPanel_MouseLeftButtonDown">
@@ -1005,7 +1005,7 @@
                         Grid.Column="4"
                         Padding="14,8"
                         FontSize="14"
-                        Content="Р§Р°С‚ СЃР»РµРІР°"
+                        Content="Чат слева"
                         Style="{StaticResource EffectButtonStyle}"
                         Click="ToggleChatDockButton_Click"/>
 
@@ -1013,7 +1013,7 @@
                         Grid.Column="6"
                         Padding="14,8"
                         FontSize="14"
-                        Content="РљРѕРјРјРµРЅС‚Р°СЂРёРё СЃРЅРёР·Сѓ"
+                        Content="Комментарии снизу"
                         Style="{StaticResource EffectButtonStyle}"
                         Click="ToggleCommentsDockButton_Click"/>
 
@@ -1021,7 +1021,7 @@
                            Grid.Column="7"
                            Margin="12,0,0,0"
                            VerticalAlignment="Center"
-                           Foreground="#EDF7FF"
+                           Foreground="#F4F3FF"
                            FontWeight="Bold"
                            FontSize="28"
                            TextTrimming="CharacterEllipsis"/>
@@ -1051,7 +1051,7 @@
                 <ColumnDefinition x:Name="EffectsColumn" Width="420"/>
             </Grid.ColumnDefinitions>
 
-            <Border x:Name="PlayerHostBorder" Grid.Column="0" Background="#D010171E" CornerRadius="10" Margin="0,8,0,8">
+            <Border x:Name="PlayerHostBorder" Grid.Column="0" Background="#D010101B" CornerRadius="10" Margin="0,8,0,8">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition x:Name="CommunityChatColumn" Width="0"/>
@@ -1067,8 +1067,8 @@
                             Grid.Column="0"
                             Margin="8,8,8,8"
                             Padding="12"
-                            Background="#DE172635"
-                            BorderBrush="#547A97AE"
+                            Background="#DE1A172C"
+                            BorderBrush="#42B7A4CF"
                             BorderThickness="1"
                             CornerRadius="12"
                             Visibility="Collapsed"
@@ -1090,8 +1090,8 @@
                                 </Grid.ColumnDefinitions>
                                 <TextBlock x:Name="CommunityChatHeaderText"
                                            Grid.Column="0"
-                                           Text="Р§Р°С‚ СЃС‚СЂРёРјР°"
-                                           Foreground="#EDF7FF"
+                                           Text="Чат стрима"
+                                           Foreground="#F4F3FF"
                                            FontSize="16"
                                            FontWeight="Bold"
                                            VerticalAlignment="Center"/>
@@ -1100,14 +1100,14 @@
                                         Style="{StaticResource PanelModeButtonStyle}"
                                         Padding="10,5"
                                         FontSize="12"
-                                        Content="РћР±РЅРѕРІРёС‚СЊ"
+                                        Content="Обновить"
                                         Click="CommunityChatReloadButton_Click"/>
                                 <Button x:Name="CommunityChatCloseButton"
                                         Grid.Column="4"
                                         Style="{StaticResource PanelModeButtonStyle}"
                                         Padding="10,5"
                                         FontSize="12"
-                                        Content="Р—Р°РєСЂС‹С‚СЊ"
+                                        Content="Закрыть"
                                         Click="CommunityChatCloseButton_Click"/>
                             </Grid>
                             <Border Grid.Row="2"
@@ -1127,14 +1127,14 @@
                                                     VerticalAlignment="Center"
                                                     MaxWidth="260">
                                             <TextBlock x:Name="CommunityChatOverlayHeaderText"
-                                                       Text="РџРѕРґРіРѕС‚РѕРІРєР° С‡Р°С‚Р°"
-                                                       Foreground="#EDF7FF"
+                                                       Text="Подготовка чата"
+                                                       Foreground="#F4F3FF"
                                                        FontSize="16"
                                                        FontWeight="Bold"
                                                        TextAlignment="Center"/>
                                             <TextBlock x:Name="CommunityChatOverlayText"
                                                        Margin="0,8,0,0"
-                                                       Text="Р—Р°РіСЂСѓР¶Р°СЋ live chat РёР»Рё chat replay..."
+                                                       Text="Загружаю live chat или chat replay..."
                                                        Foreground="#BFDCEC"
                                                        FontSize="12"
                                                        TextAlignment="Center"
@@ -1185,7 +1185,7 @@
                                 <StackPanel>
                                     <TextBlock x:Name="PlayerLoadingHeaderText"
                                                Text="Загрузка плеера"
-                                               Foreground="#EDF7FF"
+                                               Foreground="#F4F3FF"
                                                FontSize="30"
                                                FontWeight="Bold"
                                                HorizontalAlignment="Center"/>
@@ -1196,9 +1196,10 @@
                                                FontSize="16"
                                                TextAlignment="Center"
                                                TextWrapping="Wrap"/>
-                                    <ProgressBar Margin="0,14,0,0"
+                                    <ProgressBar x:Name="PlayerLoadingProgress" Margin="0,14,0,0"
                                                  Height="14"
                                                  IsIndeterminate="True"/>
+                                                                    <Button x:Name="RetryPlayerButton" Content="Повторить загрузку / Retry" Margin="0,14,0,0" Padding="14,8" Visibility="Collapsed" Click="RetryPlayerButton_Click"/>
                                 </StackPanel>
                             </Border>
                         </Border>
@@ -1244,7 +1245,7 @@
                             IsHitTestVisible="False">
                         <TextBlock x:Name="BlockedNavToastText"
                                    Text="🔒 Только видео YouTube"
-                                   Foreground="#EDF7FF"
+                                   Foreground="#F4F3FF"
                                    FontSize="18"
                                    FontWeight="Bold"
                                    TextAlignment="Center"/>
@@ -1271,7 +1272,7 @@
                         <StackPanel>
                             <TextBlock x:Name="TimecodePopupHeaderText"
                                        Text="💾 Сохранить клип"
-                                       Foreground="#EDF7FF"
+                                       Foreground="#F4F3FF"
                                        FontSize="20"
                                        FontWeight="Bold"
                                        Margin="0,0,0,4"/>
@@ -1299,8 +1300,8 @@
                                      Background="#D4172635"
                                      BorderBrush="#5A85A1"
                                      BorderThickness="1"
-                                     Foreground="#EDF7FF"
-                                     CaretBrush="#EDF7FF"
+                                     Foreground="#F4F3FF"
+                                     CaretBrush="#F4F3FF"
                                      SelectionBrush="#5A9FD2"
                                      SelectionOpacity="0.35"
                                      VerticalContentAlignment="Center"
@@ -1336,8 +1337,8 @@
                             Grid.ColumnSpan="2"
                             Margin="8,0,8,8"
                             Padding="12"
-                            Background="#DE172635"
-                            BorderBrush="#547A97AE"
+                            Background="#DE1A172C"
+                            BorderBrush="#42B7A4CF"
                             BorderThickness="1"
                             CornerRadius="12"
                             Visibility="Collapsed"
@@ -1359,8 +1360,8 @@
                                 </Grid.ColumnDefinitions>
                                 <TextBlock x:Name="CommunityCommentsHeaderText"
                                            Grid.Column="0"
-                                           Text="РљРѕРјРјРµРЅС‚Р°СЂРёРё"
-                                           Foreground="#EDF7FF"
+                                           Text="Комментарии"
+                                           Foreground="#F4F3FF"
                                            FontSize="16"
                                            FontWeight="Bold"
                                            VerticalAlignment="Center"/>
@@ -1369,14 +1370,14 @@
                                         Style="{StaticResource PanelModeButtonStyle}"
                                         Padding="10,5"
                                         FontSize="12"
-                                        Content="РћР±РЅРѕРІРёС‚СЊ"
+                                        Content="Обновить"
                                         Click="CommunityCommentsReloadButton_Click"/>
                                 <Button x:Name="CommunityCommentsCloseButton"
                                         Grid.Column="4"
                                         Style="{StaticResource PanelModeButtonStyle}"
                                         Padding="10,5"
                                         FontSize="12"
-                                        Content="Р—Р°РєСЂС‹С‚СЊ"
+                                        Content="Закрыть"
                                         Click="CommunityCommentsCloseButton_Click"/>
                             </Grid>
                             <Border Grid.Row="2"
@@ -1396,14 +1397,14 @@
                                                     VerticalAlignment="Center"
                                                     MaxWidth="320">
                                             <TextBlock x:Name="CommunityCommentsOverlayHeaderText"
-                                                       Text="РџРѕРґРіРѕС‚РѕРІРєР° РєРѕРјРјРµРЅС‚Р°СЂРёРµРІ"
-                                                       Foreground="#EDF7FF"
+                                                       Text="Подготовка комментариев"
+                                                       Foreground="#F4F3FF"
                                                        FontSize="16"
                                                        FontWeight="Bold"
                                                        TextAlignment="Center"/>
                                             <TextBlock x:Name="CommunityCommentsOverlayText"
                                                        Margin="0,8,0,0"
-                                                       Text="Р—Р°РіСЂСѓР¶Р°СЋ Р»РµРЅС‚Сѓ РєРѕРјРјРµРЅС‚Р°СЂРёРµРІ СЌС‚РѕРіРѕ РІРёРґРµРѕ..."
+                                                       Text="Загружаю ленту комментариев этого видео..."
                                                        Foreground="#BFDCEC"
                                                        FontSize="12"
                                                        TextAlignment="Center"
@@ -1427,8 +1428,8 @@
                     Grid.Column="2"
                     Margin="0,8,8,8"
                     Padding="12"
-                    Background="#D3172431"
-                    BorderBrush="#4D728C"
+                    Background="#A51C1D31"
+                    BorderBrush="#35D6CEFF"
                     BorderThickness="1"
                     CornerRadius="16">
                 <!-- BitmapCache: freezes panel as a GPU texture so WPF doesn't re-rasterize
@@ -1449,7 +1450,7 @@
                     <TextBlock x:Name="EffectsHeaderText"
                                Grid.Row="0"
                                Text="Эффекты плеера"
-                               Foreground="#EDF7FF"
+                               Foreground="#F4F3FF"
                                FontWeight="Bold"
                                FontSize="30"/>
 
@@ -1594,7 +1595,7 @@
                                 <StackPanel VerticalAlignment="Center">
                                     <TextBlock x:Name="PlayerSfxSpamHeaderText"
                                                Text="Режим спама звуков"
-                                               Foreground="#C8E2F5"
+                                               Foreground="#DDD6ED"
                                                FontSize="12"
                                                FontWeight="SemiBold"/>
                                     <TextBlock x:Name="PlayerSfxSpamDescText"
@@ -1608,7 +1609,7 @@
                                           Grid.Column="1"
                                           Margin="10,0,0,0"
                                           VerticalAlignment="Center"
-                                          Foreground="#C8E2F5"
+                                          Foreground="#DDD6ED"
                                           FontSize="12"
                                           Checked="PlayerSfxSpamToggle_Changed"
                                           Unchecked="PlayerSfxSpamToggle_Changed"/>
@@ -1824,13 +1825,13 @@
                             <Border Margin="0,12,0,0"
                                     Padding="12"
                                     Background="#B21A2733"
-                                    BorderBrush="#547A97AE"
+                                    BorderBrush="#42B7A4CF"
                                     BorderThickness="1"
                                     CornerRadius="12">
                                 <StackPanel>
                                     <TextBlock x:Name="AudioFxHeaderText"
                                                Text="Audio FX"
-                                               Foreground="#EDF7FF"
+                                               Foreground="#F4F3FF"
                                                FontSize="20"
                                                FontWeight="Bold"/>
                                     <TextBlock x:Name="AudioFxHintText"
@@ -1975,13 +1976,13 @@
 
                                     <Border Padding="12"
                                             Background="#B21A2733"
-                                            BorderBrush="#547A97AE"
+                                            BorderBrush="#42B7A4CF"
                                             BorderThickness="1"
                                             CornerRadius="12">
                                         <StackPanel>
                                             <TextBlock x:Name="PresetBuiltInHeaderText"
                                                        Text="Built-in presets"
-                                                       Foreground="#EDF7FF"
+                                                       Foreground="#F4F3FF"
                                                        FontSize="18"
                                                        FontWeight="Bold"/>
                                             <TextBlock x:Name="PresetBuiltInHintText"
@@ -2011,13 +2012,13 @@
                                     <Border Margin="0,12,0,0"
                                             Padding="12"
                                             Background="#B21A2733"
-                                            BorderBrush="#547A97AE"
+                                            BorderBrush="#42B7A4CF"
                                             BorderThickness="1"
                                             CornerRadius="12">
                                         <StackPanel>
                                             <TextBlock x:Name="CustomPresetHeaderText"
                                                        Text="Custom presets (up to 20)"
-                                                       Foreground="#EDF7FF"
+                                                       Foreground="#F4F3FF"
                                                        FontSize="18"
                                                        FontWeight="Bold"/>
                                             <TextBlock x:Name="CustomPresetHintText"
@@ -2120,7 +2121,7 @@
                                         <TextBlock x:Name="TimecodesPanelHeaderText"
                                                    Grid.Column="0"
                                                    Text="Сохранённые клипы"
-                                                   Foreground="#EDF7FF"
+                                                   Foreground="#F4F3FF"
                                                    FontSize="16"
                                                    FontWeight="Bold"
                                                    VerticalAlignment="Center"
@@ -2156,7 +2157,7 @@
                                                      FontSize="13"
                                                      Background="#C9162533"
                                                      BorderBrush="#5A85A1"
-                                                     Foreground="#EAF6FF"
+                                                     Foreground="#E9E7FA"
                                                      TextChanged="TimecodesSearchBox_TextChanged"
                                                      GotFocus="TimecodesSearchBox_GotFocus"
                                                      LostFocus="TimecodesSearchBox_LostFocus"/>
@@ -2282,7 +2283,7 @@
                                                                 <!-- Clip label -->
                                                                 <TextBlock Grid.Row="1"
                                                                            Text="{Binding Label}"
-                                                                           Foreground="#EDF7FF"
+                                                                           Foreground="#F4F3FF"
                                                                            FontSize="13"
                                                                            FontWeight="SemiBold"
                                                                            TextTrimming="CharacterEllipsis"/>
@@ -2351,7 +2352,7 @@
                                 <TextBlock x:Name="CommunityPanelHeaderText"
                                            Grid.Row="0"
                                            Text="Комментарии и чат"
-                                           Foreground="#EDF7FF"
+                                           Foreground="#F4F3FF"
                                            FontSize="18"
                                            FontWeight="Bold"/>
 
@@ -2394,7 +2395,7 @@
 
                                 <Border Grid.Row="5"
                                         Background="#B0142233"
-                                        BorderBrush="#547A97AE"
+                                        BorderBrush="#42B7A4CF"
                                         BorderThickness="1"
                                         CornerRadius="12"
                                         ClipToBounds="True">
@@ -2411,7 +2412,7 @@
                                                         MaxWidth="300">
                                                 <TextBlock x:Name="CommunityBrowserOverlayHeaderText"
                                                            Text="Подготовка обсуждения"
-                                                           Foreground="#EDF7FF"
+                                                           Foreground="#F4F3FF"
                                                            FontSize="18"
                                                            FontWeight="Bold"
                                                            TextAlignment="Center"/>

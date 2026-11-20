@@ -5,15 +5,15 @@ namespace JokerDBDTracker
 {
     public partial class PlayerWindow
     {
-        public PlayerWindow(YouTubeVideo video, int startSeconds, WatchTogetherService? watchTogetherService = null)
+        public PlayerWindow(YouTubeVideo video, int startSeconds, Func<DateTime>? utcNow = null)
         {
             InitializeComponent();
             WindowBoundsHelper.Attach(this);
+            WindowMaterial.Attach(this);
             _video = video;
+            _utcNow = utcNow ?? (() => DateTime.UtcNow);
             _startSeconds = Math.Max(startSeconds, 0);
-            _watchTogetherService = watchTogetherService;
             LastPlaybackSeconds = _startSeconds;
-            _lastPersistedPlaybackSeconds = _startSeconds;
             _effectDetails =
             [
                 (Fx4, Fx4Details),

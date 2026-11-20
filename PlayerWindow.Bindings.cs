@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.IO;
 using System.Text.Json;
 using System.Windows.Media;
@@ -330,7 +330,7 @@ namespace JokerDBDTracker
         private static Key ReadConfiguredKey(string configuredValue, Key fallback)
         {
             if (!string.IsNullOrWhiteSpace(configuredValue) &&
-                Enum.TryParse<Key>(configuredValue.Trim(), ignoreCase: true, out var parsed))
+                Enum.TryParse<Key>(configuredValue.Trim(), ignoreCase: true, out var parsed) && KeyBindingRules.IsAllowed(parsed))
             {
                 return parsed;
             }
@@ -354,7 +354,6 @@ namespace JokerDBDTracker
 
                     var sfxParams = BuildCurrentSoundEffectAudioParams();
                     _ = PlaySoundEffectViaWebViewAsync(kind, audioResourceUri, spamMode, sfxParams);
-                    NotifyWtSoundEffect(kind.ToString());
                     return;
                 }
 
@@ -384,7 +383,6 @@ namespace JokerDBDTracker
                 }
 
                 PlayAudioFile(kind, uri, spamMode);
-                NotifyWtSoundEffect(kind.ToString());
             }
             catch (Exception ex)
             {

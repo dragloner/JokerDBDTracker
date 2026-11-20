@@ -361,7 +361,7 @@ namespace JokerDBDTracker
                 }
                 catch (Exception ex)
                 {
-                    UpdatePresetStatusText(PT($"РћС€РёР±РєР° СЃРѕС…СЂР°РЅРµРЅРёСЏ РїСЂРµСЃРµС‚Р°: {ex.Message}", $"Failed to save preset: {ex.Message}"));
+                    UpdatePresetStatusText(PT($"Ошибка сохранения пресета: {ex.Message}", $"Failed to save preset: {ex.Message}"));
                 }
 
                 return;
@@ -522,14 +522,7 @@ namespace JokerDBDTracker
                 return;
             }
 
-            try
-            {
-                return;
-            }
-            catch (Exception ex)
-            {
-                UpdatePresetStatusText(PT($"Ошибка сохранения пресета: {ex.Message}", $"Failed to save preset: {ex.Message}"));
-            }
+
         }
 
         private async void PresetsSaveCurrentButton_Click(object sender, RoutedEventArgs e)
@@ -542,7 +535,7 @@ namespace JokerDBDTracker
             }
             catch (Exception ex)
             {
-                UpdatePresetStatusText(PT($"РћС€РёР±РєР° СЃРѕС…СЂР°РЅРµРЅРёСЏ РїСЂРµСЃРµС‚Р°: {ex.Message}", $"Failed to save preset: {ex.Message}"));
+                UpdatePresetStatusText(PT($"Ошибка сохранения пресета: {ex.Message}", $"Failed to save preset: {ex.Message}"));
             }
         }
 
@@ -624,7 +617,6 @@ namespace JokerDBDTracker
             }
 
             RequestApplyEffects(immediate: true, force: true);
-            SendWtEffectsSync();
         }
 
         private void SyncCustomPresetSlotsBackToSettings()

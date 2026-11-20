@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
@@ -53,13 +54,11 @@ namespace JokerDBDTracker
         private double _lastMeasuredTime = -1;
         private double _watchXpBuffer;
         private double _eligibleWatchSeconds;
-        private DateTime? _lastXpSampleUtc;
+        private long? _lastXpSampleTimestamp;
         private bool _halfHourBonusGranted;
         private bool _hourBonusGranted;
         private bool _ninetyMinuteBonusGranted;
-        private int _lastPersistedPlaybackSeconds;
-        private DateTime _lastPlaybackPersistUtc = DateTime.MinValue;
-        private bool _isPersistingPlayback;
+        private long _lastPlaybackPersistTimestamp;
 
         // Resize/drag interaction state.
         private bool _isResizeInteractionInProgress;
@@ -115,7 +114,6 @@ namespace JokerDBDTracker
         private string? _editingTimecodeId;
 
         // Services/configuration.
-        private readonly WatchHistoryService _watchHistoryPersistService = new();
         private readonly AppSettingsService _settingsService = new();
         private AppSettingsData _appSettings = new();
 
@@ -123,7 +121,6 @@ namespace JokerDBDTracker
         private const string DesktopChromeUserAgent =
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
             "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
-        private static readonly SemaphoreSlim PlaybackPersistLock = new(1, 1);
         private const int PlaybackPersistIntervalSeconds = 10;
         private const int EffectRefreshTickInterval = 3;
         private const int ResizeSettleDelayMilliseconds = 180;
