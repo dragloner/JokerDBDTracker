@@ -147,7 +147,12 @@ function Write-Log([string]$message) {{
     Add-Content -LiteralPath $logFile -Value ('[' + (Get-Date -Format o) + '] ' + $message)
 }}
 function Copy-Tree([string]$from, [string]$to) {{
-    & robocopy $from $to /E /IS /IT /XJ /R:3 /W:1 /NFL /NDL /NJH /NJS /NP /XD Logs YouTube_Profile WebView_Profile /XF update_apply.log | Out-Null
+    # Windows PowerShell's native argument quoting treats a trailing backslash
+    # before a closing quote as an escaped quote. A final path component avoids
+    # that ambiguity, including when copying to a drive root.
+    $fromArgument = Join-Path $from '.'
+    $toArgument = Join-Path $to '.'
+    & robocopy $fromArgument $toArgument /E /IS /IT /XJ /R:3 /W:1 /NFL /NDL /NJH /NJS /NP /XD Logs YouTube_Profile WebView_Profile /XF update_apply.log | Out-Null
     if ($LASTEXITCODE -ge 8) {{ throw ('File copy failed: ' + $LASTEXITCODE) }}
 }}
 try {{

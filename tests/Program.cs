@@ -246,6 +246,18 @@ await Test("Updater applies files using literal paths containing special charact
     Check(await File.ReadAllTextAsync(Path.Combine(target, "app.dll")) == "new");
     Check(Directory.GetDirectories(dir, "rollback_*").Length == 1);
 });
+await Test("Updater handles spaced directories ending in a separator in Windows PowerShell", async () =>
+{
+    var dir = Fixture("updater trailing separator");
+    var source = Path.Combine(dir, "stage folder") + Path.DirectorySeparatorChar;
+    var target = Path.Combine(dir, "app folder") + Path.DirectorySeparatorChar;
+    Directory.CreateDirectory(source); Directory.CreateDirectory(target);
+    await File.WriteAllTextAsync(Path.Combine(source, "app.dll"), "new");
+    await File.WriteAllTextAsync(Path.Combine(target, "app.dll"), "old");
+    await RunUpdater(source, target);
+    Check(await File.ReadAllTextAsync(Path.Combine(target, "app.dll")) == "new");
+    Check((await File.ReadAllTextAsync(Path.Combine(target, "update_apply.log"))).Contains("Update completed successfully."));
+});
 await Test("Updater restores the old version after a failed copy", async () =>
 {
     var dir = Fixture("updater-rollback");
