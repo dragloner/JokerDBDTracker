@@ -250,6 +250,10 @@ namespace JokerDBDTracker
             {
                 Player.ZoomFactor = 1.0;
 
+                // A successful navigation can be a consent/login document, not a video.
+                // Let the user interact with it before installing player-only behavior.
+                if (!await WaitForPlayerDocumentAsync(navigationVersion)) return;
+
                 SetPlayerLoadingOverlay(visible: true, PT("Загрузка видео...", "Loading video..."));
                 var bootstrapResult = await ExecuteWebScriptWithTimeoutAsync(
                     BuildKioskModeScript(
@@ -486,6 +490,8 @@ namespace JokerDBDTracker
             {
                 WindowSizeButton.IsEnabled = canEnable;
             }
+
+            UpdateGlobalHotkeysForTypingFocusState();
         }
 
         private bool CanProcessPlayerCommands()
@@ -872,6 +878,7 @@ namespace JokerDBDTracker
             var reservedCodeJson = JsonSerializer.Serialize(reservedCodeVariants);
             return $$"""
                 (() => {
+                    if (!{{BuildPlayerDocumentPredicate(videoId)}}) return false;
                     const expectedVideoId = '{{safeVideoId}}';
                     const panelToggleKeys = new Set({{panelToggleKeyJson}});
                     const panelToggleCodes = new Set({{panelToggleCodeJson}});
@@ -2394,8 +2401,9 @@ namespace JokerDBDTracker
                     window.__jdbdEarlyWatchGuardInstalled = true;
 
                     const ensureEarlyImmersiveStyle = () => {
+                        if (!{{BuildPlayerDocumentPredicate(videoId)}}) return false;
                         if (document.getElementById('jdbd-early-immersive-style')) {
-                            return;
+                            return true;
                         }
 
                         const style = document.createElement('style');
@@ -2468,9 +2476,16 @@ namespace JokerDBDTracker
 
                         `;
                         (document.head || document.documentElement).appendChild(style);
+                        return true;
                     };
 
-                    ensureEarlyImmersiveStyle();
+                    // Consent may be dismissed without a full navigation. Defer all
+                    // layout changes until this document is actually the watch page.
+                    if (!ensureEarlyImmersiveStyle()) {
+                        const interval = setInterval(() => {
+                            if (ensureEarlyImmersiveStyle()) clearInterval(interval);
+                        }, 250);
+                    }
                 })();
                 """;
         }

@@ -309,6 +309,11 @@ namespace JokerDBDTracker
 
         private bool ShouldBypassPlayerKeyHandling()
         {
+            if (!CanProcessPlayerCommands())
+            {
+                return true;
+            }
+
             if (_timecodePopupVisible)
             {
                 return true;

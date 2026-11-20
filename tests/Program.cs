@@ -29,6 +29,23 @@ object? Invoke(Type type, string method, params object?[] args) => type.GetMetho
 string Fixture(string name) { var path = Path.Combine(root, name); Directory.CreateDirectory(path); return path; }
 Task Validate(string path, long size, string sha) => (Task)Invoke(typeof(GitHubUpdateService), "EnsureDownloadedAssetValidAsync", path, size, sha, CancellationToken.None)!;
 
+await Test("Consent pages remain interactive and player resumes after dismissal", async () =>
+{
+    var fixture = Path.Combine(root, "web-scripts.json");
+    await File.WriteAllTextAsync(fixture, JsonSerializer.Serialize(new
+    {
+        predicate = (string)Invoke(typeof(PlayerWindow), "BuildPlayerDocumentPredicate", "abcdefghijk")!,
+        kiosk = (string)Invoke(typeof(PlayerWindow), "BuildKioskModeScript", "abcdefghijk", Key.H, Array.Empty<Key>())!,
+        early = (string)Invoke(typeof(PlayerWindow), "BuildEarlyKioskBootstrapScript", "abcdefghijk")!
+    }));
+    var start = new System.Diagnostics.ProcessStartInfo("node") { UseShellExecute = false };
+    start.ArgumentList.Add(Path.Combine(AppContext.BaseDirectory, "player-document-policy.test.cjs"));
+    start.ArgumentList.Add(fixture);
+    using var process = System.Diagnostics.Process.Start(start)!;
+    await process.WaitForExitAsync();
+    Check(process.ExitCode == 0, "Player document JavaScript regression failed");
+});
+
 await Test("Encrypted profile round trip and daily membership", async () =>
 {
     var history = new WatchHistoryService(Fixture("profile-roundtrip"));
