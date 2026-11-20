@@ -462,10 +462,10 @@ namespace JokerDBDTracker
                 SetPlayerInteractionsEnabled(false);
                 Topmost = false;
                 _positionTimer.Stop();
-                _effectsApplyDebounceTimer.Stop();
+                _effectsApplyTimer.Stop();
                 _resizeSettleDebounceTimer.Stop();
                 _positionTimer.Tick -= PositionTimer_Tick;
-                _effectsApplyDebounceTimer.Tick -= EffectsApplyDebounceTimer_Tick;
+                _effectsApplyTimer.Tick -= EffectsApplyTimer_Tick;
                 _resizeSettleDebounceTimer.Tick -= ResizeSettleDebounceTimer_Tick;
                 StopAllSoundEffects();
                 SystemEvents.DisplaySettingsChanged -= SystemEvents_DisplaySettingsChanged;
@@ -490,6 +490,7 @@ namespace JokerDBDTracker
                     Player.CoreWebView2.NavigationCompleted -= CoreWebView2_NavigationCompleted;
                     Player.CoreWebView2.WebMessageReceived -= CoreWebView2_WebMessageReceived;
                     Player.CoreWebView2.SourceChanged -= CoreWebView2_SourceChanged;
+                    Player.CoreWebView2.WebResourceResponseReceived -= CoreWebView2_WebResourceResponseReceived;
                     Player.CoreWebView2.Stop();
                     Player.CoreWebView2.Navigate("about:blank");
                 }

@@ -1,4 +1,4 @@
-# JokerDBD Tracker 1.4.6
+# JokerDBD Tracker 1.4.7
 
 Windows-приложение с библиотекой стримов JokerDBD, встроенным YouTube/Twitch-плеером, эффектами и личным прогрессом.
 
@@ -6,7 +6,7 @@ Windows-приложение с библиотекой стримов JokerDBD, 
 
 [Последний релиз Windows x64](https://github.com/dragloner/JokerDBDTracker/releases/latest)
 
-Скачайте `JokerDBDTracker-v1.4.6-win-x64.zip`, распакуйте в отдельную доступную для записи папку и запустите `JokerDBDTracker.exe`. .NET включён в архив; нужен [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/).
+Скачайте `JokerDBDTracker-v1.4.7-win-x64.zip`, распакуйте в отдельную доступную для записи папку и запустите `JokerDBDTracker.exe`. .NET включён в архив; нужен [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/).
 
 Обновление доступно через кнопку в приложении или замену файлов после закрытия программы. Профиль хранится отдельно от папки программы.
 

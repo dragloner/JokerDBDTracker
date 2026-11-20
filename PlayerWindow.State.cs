@@ -17,7 +17,7 @@ namespace JokerDBDTracker
 
         // Timers.
         private readonly DispatcherTimer _positionTimer = new();
-        private readonly DispatcherTimer _effectsApplyDebounceTimer = new();
+        private readonly DispatcherTimer _effectsApplyTimer = new();
         private readonly DispatcherTimer _resizeSettleDebounceTimer = new();
         private Microsoft.Web.WebView2.Core.CoreWebView2Environment? _webViewEnvironment;
 
@@ -118,9 +118,7 @@ namespace JokerDBDTracker
         private AppSettingsData _appSettings = new();
 
         // Shared constants.
-        private const string DesktopChromeUserAgent =
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
-            "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+        private const int EffectsUpdateIntervalMilliseconds = 33;
         private const int PlaybackPersistIntervalSeconds = 10;
         private const int EffectRefreshTickInterval = 3;
         private const int ResizeSettleDelayMilliseconds = 180;

@@ -38,8 +38,8 @@ namespace JokerDBDTracker
 
             _positionTimer.Interval = TimeSpan.FromSeconds(2);
             _positionTimer.Tick += PositionTimer_Tick;
-            _effectsApplyDebounceTimer.Interval = TimeSpan.FromMilliseconds(90);
-            _effectsApplyDebounceTimer.Tick += EffectsApplyDebounceTimer_Tick;
+            _effectsApplyTimer.Interval = TimeSpan.FromMilliseconds(EffectsUpdateIntervalMilliseconds);
+            _effectsApplyTimer.Tick += EffectsApplyTimer_Tick;
             _resizeSettleDebounceTimer.Interval = TimeSpan.FromMilliseconds(ResizeSettleDelayMilliseconds);
             _resizeSettleDebounceTimer.Tick += ResizeSettleDebounceTimer_Tick;
             PreviewMouseMove += PlayerWindow_PreviewMouseMove;

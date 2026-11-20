@@ -217,9 +217,9 @@ namespace JokerDBDTracker
             Canvas.SetTop(marker, top);
         }
 
-        private async void EffectsApplyDebounceTimer_Tick(object? sender, EventArgs e)
+        private async void EffectsApplyTimer_Tick(object? sender, EventArgs e)
         {
-            _effectsApplyDebounceTimer.Stop();
+            _effectsApplyTimer.Stop();
             await ApplyEffectsSafelyAsync();
         }
 
@@ -230,20 +230,19 @@ namespace JokerDBDTracker
             {
                 _pendingEffectsApply = true;
                 _pendingEffectsApplyForce |= force;
-                _effectsApplyDebounceTimer.Stop();
+                _effectsApplyTimer.Stop();
                 return;
             }
 
             if (immediate)
             {
-                _effectsApplyDebounceTimer.Stop();
+                _effectsApplyTimer.Stop();
                 _ = ApplyEffectsSafelyAsync(force);
                 return;
             }
 
             _pendingEffectsApplyForce |= force;
-            _effectsApplyDebounceTimer.Stop();
-            _effectsApplyDebounceTimer.Start();
+            if (!_effectsApplyTimer.IsEnabled) _effectsApplyTimer.Start();
         }
 
         private async Task ApplyEffectsSafelyAsync(bool force = false)

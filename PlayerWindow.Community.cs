@@ -197,7 +197,6 @@ namespace JokerDBDTracker
                 browser.CoreWebView2.Settings.IsStatusBarEnabled = false;
                 browser.CoreWebView2.Settings.AreDevToolsEnabled = false;
                 browser.CoreWebView2.Settings.IsZoomControlEnabled = false;
-                browser.CoreWebView2.Settings.UserAgent = DesktopChromeUserAgent;
                 browser.ZoomFactor = 1.0;
                 await browser.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(
                     BuildCommunityWorkspaceScript(kind));

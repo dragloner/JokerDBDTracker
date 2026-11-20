@@ -36,7 +36,8 @@ await Test("Consent pages remain interactive and player resumes after dismissal"
     {
         predicate = (string)Invoke(typeof(PlayerWindow), "BuildPlayerDocumentPredicate", "abcdefghijk")!,
         kiosk = (string)Invoke(typeof(PlayerWindow), "BuildKioskModeScript", "abcdefghijk", Key.H, Array.Empty<Key>())!,
-        early = (string)Invoke(typeof(PlayerWindow), "BuildEarlyKioskBootstrapScript", "abcdefghijk")!
+        early = (string)Invoke(typeof(PlayerWindow), "BuildEarlyKioskBootstrapScript", "abcdefghijk")!,
+        media = (string)Invoke(typeof(PlayerWindow), "BuildMediaDiagnosticsScript")!
     }));
     var start = new System.Diagnostics.ProcessStartInfo("node") { UseShellExecute = false };
     start.ArgumentList.Add(Path.Combine(AppContext.BaseDirectory, "player-document-policy.test.cjs"));
