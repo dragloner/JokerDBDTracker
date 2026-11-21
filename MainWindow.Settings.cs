@@ -53,7 +53,7 @@ namespace JokerDBDTracker
         {
             JokerDBDTracker.Models.Timecode.UseEnglish = _appSettings.Language == "en";
             ApplyUiScale(_appSettings.UiScale);
-            UiAnimation.SetIsEnabled(this, _appSettings.AnimationsEnabled);
+            UiAnimation.SetIsEnabled(this, _appSettings.AnimationsEnabled && SystemParameters.ClientAreaAnimation);
             DiagnosticsService.SetEnabled(_appSettings.LoggingEnabled);
             EnsureAutoStartState(_appSettings.AutoStartEnabled);
         }
@@ -254,7 +254,7 @@ namespace JokerDBDTracker
             }
 
             _appSettings.AnimationsEnabled = AnimationsEnabledCheckBox.IsChecked == true;
-            UiAnimation.SetIsEnabled(this, _appSettings.AnimationsEnabled);
+            UiAnimation.SetIsEnabled(this, _appSettings.AnimationsEnabled && SystemParameters.ClientAreaAnimation);
             DiagnosticsService.LogInfo("Settings", $"Animations → {_appSettings.AnimationsEnabled}");
             await SaveSettingsAsync();
         }

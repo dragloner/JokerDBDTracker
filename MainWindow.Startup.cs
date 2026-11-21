@@ -31,7 +31,6 @@ namespace JokerDBDTracker
             _questUiRefreshTimer.Interval = TimeSpan.FromSeconds(1);
             _questUiRefreshTimer.Tick += QuestUiRefreshTimer_Tick;
             UpdateVersionText();
-            InitializeLoadingBackgroundImage();
         }
 
         private void UpdateVersionText()

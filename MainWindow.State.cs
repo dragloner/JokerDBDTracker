@@ -82,11 +82,11 @@ namespace JokerDBDTracker
         private readonly DispatcherTimer _questUiRefreshTimer = new();
 
         // Shared UI brushes.
-        private static readonly Brush TopNavSelectedBackground = BrushFromHex("#604C3D76");
+        private static readonly Brush TopNavSelectedBackground = BrushFromHex("#605E6053");
         private static readonly Brush TopNavSelectedForeground = BrushFromHex("#FFFFFF");
-        private static readonly Brush TopNavSelectedBorder = BrushFromHex("#BBA6FF");
-        private static readonly Brush TopNavDefaultBackground = BrushFromHex("#302B2944");
-        private static readonly Brush TopNavDefaultForeground = BrushFromHex("#BAB6CE");
-        private static readonly Brush TopNavDefaultBorder = BrushFromHex("#20D6CEFF");
+        private static readonly Brush TopNavSelectedBorder = BrushFromHex("#D8D5CD");
+        private static readonly Brush TopNavDefaultBackground = BrushFromHex("#30393A33");
+        private static readonly Brush TopNavDefaultForeground = BrushFromHex("#CAC5BA");
+        private static readonly Brush TopNavDefaultBorder = BrushFromHex("#20EAE8E3");
     }
 }

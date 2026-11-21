@@ -29,6 +29,17 @@ object? Invoke(Type type, string method, params object?[] args) => type.GetMetho
 string Fixture(string name) { var path = Path.Combine(root, name); Directory.CreateDirectory(path); return path; }
 Task Validate(string path, long size, string sha) => (Task)Invoke(typeof(GitHubUpdateService), "EnsureDownloadedAssetValidAsync", path, size, sha, CancellationToken.None)!;
 
+await Test("Start respects the filtered catalogue and resumes the most recent saved position", () =>
+{
+    var first = new YouTubeVideo { VideoId = "first" };
+    var old = new YouTubeVideo { VideoId = "old", LastPlaybackSeconds = 120, LastViewedAtUtc = DateTime.UtcNow.AddDays(-2) };
+    var recent = new YouTubeVideo { VideoId = "recent", LastPlaybackSeconds = 240, LastViewedAtUtc = DateTime.UtcNow };
+    Check(ReferenceEquals(Invoke(typeof(MainWindow), "SelectStartVideo", new List<YouTubeVideo> { first, old, recent }), recent));
+    Check(ReferenceEquals(Invoke(typeof(MainWindow), "SelectStartVideo", new List<YouTubeVideo> { first }), first));
+    Check(Invoke(typeof(MainWindow), "SelectStartVideo", new List<YouTubeVideo>()) is null);
+    return Task.CompletedTask;
+});
+
 await Test("Consent pages remain interactive and player resumes after dismissal", async () =>
 {
     var fixture = Path.Combine(root, "web-scripts.json");

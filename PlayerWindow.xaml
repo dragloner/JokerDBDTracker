@@ -13,7 +13,7 @@
         MinWidth="760"
         MinHeight="460"
         WindowStartupLocation="Manual"
-        Background="#090B15"
+        Background="#10100E"
         Icon="Assets/app.ico"
         FontFamily="Segoe UI Variable Display, Segoe UI">
 
@@ -26,102 +26,32 @@
     </shell:WindowChrome.WindowChrome>
 
     <Window.Resources>
-        <Style TargetType="Button">
-            <Setter Property="Foreground" Value="#F3FAFF"/>
-            <Setter Property="Background" Value="#CC193344"/>
-            <Setter Property="Padding" Value="16,9"/>
-            <Setter Property="BorderBrush" Value="#40C3B5FF"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="FontSize" Value="18"/>
-            <Setter Property="TextBlock.TextWrapping" Value="NoWrap"/>
-            <Setter Property="TextBlock.TextTrimming" Value="CharacterEllipsis"/>
-            <Setter Property="TextBlock.TextAlignment" Value="Center"/>
-            <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
-            <Setter Property="TextOptions.TextRenderingMode" Value="ClearType"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Grid ClipToBounds="False">
-                            <Border x:Name="Root"
-                                    Background="{TemplateBinding Background}"
-                                    BorderBrush="{TemplateBinding BorderBrush}"
-                                    BorderThickness="{TemplateBinding BorderThickness}"
-                                    CornerRadius="18"
-                                    RenderTransformOrigin="0.5,0.5">
-                                <Border.RenderTransform>
-                                    <ScaleTransform ScaleX="1" ScaleY="1"/>
-                                </Border.RenderTransform>
-                            </Border>
-                            <Border Background="Transparent"
-                                    ClipToBounds="True"
-                                    Padding="{TemplateBinding Padding}">
-                                <ContentPresenter HorizontalAlignment="Center"
-                                                  VerticalAlignment="Center"
-                                                  RecognizesAccessKey="True"/>
-                            </Border>
-                        </Grid>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Root" Property="BorderBrush" Value="#C1B2FF"/>
-                            </Trigger>
-                            <MultiTrigger>
-                                <MultiTrigger.Conditions>
-                                    <Condition Property="IsMouseOver" Value="True"/>
-                                    <Condition Property="ui:UiAnimation.IsEnabled" Value="True"/>
-                                </MultiTrigger.Conditions>
-                                <Setter TargetName="Root" Property="RenderTransform">
-                                    <Setter.Value>
-                                        <ScaleTransform ScaleX="1.02" ScaleY="1.02"/>
-                                    </Setter.Value>
-                                </Setter>
-                            </MultiTrigger>
-                            <MultiTrigger>
-                                <MultiTrigger.Conditions>
-                                    <Condition Property="IsPressed" Value="True"/>
-                                    <Condition Property="ui:UiAnimation.IsEnabled" Value="True"/>
-                                </MultiTrigger.Conditions>
-                                <Setter TargetName="Root" Property="RenderTransform">
-                                    <Setter.Value>
-                                        <ScaleTransform ScaleX="0.985" ScaleY="0.985"/>
-                                    </Setter.Value>
-                                </Setter>
-                            </MultiTrigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Root" Property="Opacity" Value="0.94"/>
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="Root" Property="Opacity" Value="0.55"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+      <ResourceDictionary>
+        <ResourceDictionary.MergedDictionaries><ResourceDictionary Source="Resources/Brand.xaml"/></ResourceDictionary.MergedDictionaries>
+        <Style TargetType="Button" BasedOn="{StaticResource Brand.Button}"/>
 
         <Style x:Key="BackButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="FontSize" Value="21"/>
             <Setter Property="Padding" Value="24,10"/>
-            <Setter Property="Background" Value="#CC214C65"/>
+            <Setter Property="Background" Value="#CC46483E"/>
         </Style>
 
         <Style x:Key="EffectButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="Padding" Value="12,8"/>
-            <Setter Property="Background" Value="#CC1C4055"/>
+            <Setter Property="Background" Value="#CC3B3C35"/>
         </Style>
 
         <Style x:Key="PanelModeButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="Padding" Value="10,6"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="MinHeight" Value="34"/>
-            <Setter Property="Background" Value="#C71B3548"/>
+            <Setter Property="Background" Value="#C734352E"/>
             <Style.Triggers>
                 <Trigger Property="Tag" Value="active">
-                    <Setter Property="Background" Value="#244D50"/>
-                    <Setter Property="BorderBrush" Value="#76D9C9"/>
-                    <Setter Property="Foreground" Value="#D8FFF6"/>
+                    <Setter Property="Background" Value="#3D3E36"/>
+                    <Setter Property="BorderBrush" Value="#E7BD72"/>
+                    <Setter Property="Foreground" Value="#F7E0AF"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
@@ -133,8 +63,8 @@
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="FontWeight" Value="Normal"/>
             <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
-            <Setter Property="Background" Value="#CC183548"/>
-            <Setter Property="BorderBrush" Value="#5E88A5"/>
+            <Setter Property="Background" Value="#CC32332D"/>
+            <Setter Property="BorderBrush" Value="#928871"/>
         </Style>
 
         <Style x:Key="WindowCloseButtonStyle" TargetType="Button" BasedOn="{StaticResource WindowControlButtonStyle}">
@@ -143,9 +73,9 @@
         </Style>
 
         <Style TargetType="ComboBox">
-            <Setter Property="Foreground" Value="#E9E7FA"/>
-            <Setter Property="Background" Value="#C9162533"/>
-            <Setter Property="BorderBrush" Value="#5A85A1"/>
+            <Setter Property="Foreground" Value="#F2F1EF"/>
+            <Setter Property="Background" Value="#C9262722"/>
+            <Setter Property="BorderBrush" Value="#8E846D"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="10,6"/>
             <Setter Property="Height" Value="40"/>
@@ -154,7 +84,7 @@
             <Setter Property="HorizontalContentAlignment" Value="Left"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="ScrollViewer.CanContentScroll" Value="True"/>
-            <Setter Property="TextElement.Foreground" Value="#E9E7FA"/>
+            <Setter Property="TextElement.Foreground" Value="#F2F1EF"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ComboBox">
@@ -170,18 +100,18 @@
                                         MinWidth="{Binding ActualWidth, ElementName=ComboRoot}"
                                         MaxHeight="{TemplateBinding MaxDropDownHeight}"
                                         Margin="0,6,0,0"
-                                        Background="#EF11202D"
-                                        BorderBrush="#4F7894"
+                                        Background="#EF21211D"
+                                        BorderBrush="#807763"
                                         BorderThickness="1"
                                         CornerRadius="12">
                                     <Border.Effect>
                                         <DropShadowEffect BlurRadius="14"
                                                           ShadowDepth="0"
-                                                          Color="#05090D"
+                                                          Color="#090A08"
                                                           Opacity="0.42"/>
                                     </Border.Effect>
                                     <Border Margin="3"
-                                            Background="#152736"
+                                            Background="#272823"
                                             CornerRadius="9">
                                         <ScrollViewer Margin="1"
                                                       Background="Transparent"
@@ -243,15 +173,15 @@
                                     <Border x:Name="ArrowHost"
                                             Grid.Column="1"
                                             CornerRadius="0,12,12,0"
-                                            Background="#182C3D"
-                                            BorderBrush="#345A72"
+                                            Background="#2D2D28"
+                                            BorderBrush="#57594D"
                                             BorderThickness="1,0,0,0"
                                             IsHitTestVisible="False">
                                         <Path Width="10"
                                               Height="6"
                                               HorizontalAlignment="Center"
                                               VerticalAlignment="Center"
-                                              Fill="#C9E8FB"
+                                              Fill="#E6E3DE"
                                               Data="M 0 0 L 10 0 L 5 6 Z"/>
                                     </Border>
                                 </Grid>
@@ -265,14 +195,14 @@
                                 <Setter TargetName="DropDownToggle" Property="Grid.ColumnSpan" Value="1"/>
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ComboRoot" Property="BorderBrush" Value="#86C6EC"/>
+                                <Setter TargetName="ComboRoot" Property="BorderBrush" Value="#C2BCB0"/>
                             </Trigger>
                             <Trigger Property="IsKeyboardFocusWithin" Value="True">
-                                <Setter TargetName="ComboRoot" Property="BorderBrush" Value="#9AD5FB"/>
+                                <Setter TargetName="ComboRoot" Property="BorderBrush" Value="#D1CDC4"/>
                             </Trigger>
                             <Trigger Property="IsDropDownOpen" Value="True">
-                                <Setter TargetName="ComboRoot" Property="BorderBrush" Value="#9AD5FB"/>
-                                <Setter TargetName="ArrowHost" Property="Background" Value="#203A4F"/>
+                                <Setter TargetName="ComboRoot" Property="BorderBrush" Value="#D1CDC4"/>
+                                <Setter TargetName="ArrowHost" Property="Background" Value="#3A3B34"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter TargetName="ComboRoot" Property="Opacity" Value="0.55"/>
@@ -284,7 +214,7 @@
         </Style>
 
         <Style TargetType="ComboBoxItem">
-            <Setter Property="Foreground" Value="#EAF7FF"/>
+            <Setter Property="Foreground" Value="#F6F5F3"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="HorizontalContentAlignment" Value="Left"/>
             <Setter Property="Padding" Value="10,8"/>
@@ -303,12 +233,12 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsHighlighted" Value="True">
-                                <Setter TargetName="ItemRoot" Property="Background" Value="#203646"/>
-                                <Setter TargetName="ItemRoot" Property="BorderBrush" Value="#6EAED6"/>
+                                <Setter TargetName="ItemRoot" Property="Background" Value="#36372F"/>
+                                <Setter TargetName="ItemRoot" Property="BorderBrush" Value="#AEA796"/>
                             </Trigger>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="ItemRoot" Property="Background" Value="#1B4D71"/>
-                                <Setter TargetName="ItemRoot" Property="BorderBrush" Value="#84C8F1"/>
+                                <Setter TargetName="ItemRoot" Property="Background" Value="#4A4B41"/>
+                                <Setter TargetName="ItemRoot" Property="BorderBrush" Value="#C3BEB2"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter TargetName="ItemRoot" Property="Opacity" Value="0.5"/>
@@ -320,14 +250,14 @@
         </Style>
 
         <Style TargetType="TextBox">
-            <Setter Property="Foreground" Value="#E9E7FA"/>
-            <Setter Property="Background" Value="#C9162533"/>
-            <Setter Property="BorderBrush" Value="#5A85A1"/>
+            <Setter Property="Foreground" Value="#F2F1EF"/>
+            <Setter Property="Background" Value="#C9262722"/>
+            <Setter Property="BorderBrush" Value="#8E846D"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="10,6"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="CaretBrush" Value="#E9E7FA"/>
+            <Setter Property="CaretBrush" Value="#F2F1EF"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TextBox">
@@ -346,10 +276,10 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="TextBoxRoot" Property="BorderBrush" Value="#86C6EC"/>
+                                <Setter TargetName="TextBoxRoot" Property="BorderBrush" Value="#C2BCB0"/>
                             </Trigger>
                             <Trigger Property="IsKeyboardFocusWithin" Value="True">
-                                <Setter TargetName="TextBoxRoot" Property="BorderBrush" Value="#9AD5FB"/>
+                                <Setter TargetName="TextBoxRoot" Property="BorderBrush" Value="#D1CDC4"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter TargetName="TextBoxRoot" Property="Opacity" Value="0.55"/>
@@ -381,8 +311,8 @@
                     <ControlTemplate TargetType="TabControl">
                         <Grid>
                             <Border
-                                    Background="#96121B25"
-                                    BorderBrush="#34546B"
+                                    Background="#961D1D1A"
+                                    BorderBrush="#54554A"
                                     BorderThickness="1"
                                     CornerRadius="12"
                                     Padding="8">
@@ -395,9 +325,9 @@
         </Style>
 
         <Style x:Key="PlayerPanelTabItemStyle" TargetType="TabItem">
-            <Setter Property="Foreground" Value="#E9F6FF"/>
-            <Setter Property="Background" Value="#C9182E3F"/>
-            <Setter Property="BorderBrush" Value="#4C738E"/>
+            <Setter Property="Foreground" Value="#F5F5F3"/>
+            <Setter Property="Background" Value="#C92E2F28"/>
+            <Setter Property="BorderBrush" Value="#7B725F"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="14,7"/>
             <Setter Property="Margin" Value="0,0,8,0"/>
@@ -415,11 +345,11 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="TabRoot" Property="BorderBrush" Value="#C1B2FF"/>
+                                <Setter TargetName="TabRoot" Property="BorderBrush" Value="#DEDAD3"/>
                             </Trigger>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="TabRoot" Property="Background" Value="#E0223D50"/>
-                                <Setter TargetName="TabRoot" Property="BorderBrush" Value="#BAA5FF"/>
+                                <Setter TargetName="TabRoot" Property="Background" Value="#E03C3D35"/>
+                                <Setter TargetName="TabRoot" Property="BorderBrush" Value="#D8D4CC"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -428,7 +358,7 @@
         </Style>
 
         <Style x:Key="EffectCheckBoxStyle" TargetType="CheckBox">
-            <Setter Property="Foreground" Value="#E7EDF7"/>
+            <Setter Property="Foreground" Value="#F1F0ED"/>
             <Setter Property="FontSize" Value="15"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Margin" Value="0,0,0,6"/>
@@ -439,8 +369,8 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="CheckBox">
                         <Border x:Name="Root"
-                                Background="#C01B2533"
-                                BorderBrush="#3B4A60"
+                                Background="#C0292A24"
+                                BorderBrush="#515348"
                                 BorderThickness="1"
                                 CornerRadius="12"
                                 Padding="{TemplateBinding Padding}">
@@ -454,8 +384,8 @@
                                         Width="24"
                                         Height="24"
                                         CornerRadius="12"
-                                        Background="#1B2A36"
-                                        BorderBrush="#7B9BB2"
+                                        Background="#2B2B26"
+                                        BorderBrush="#A49C89"
                                         BorderThickness="1">
                                     <TextBlock x:Name="MarkGlyph"
                                                Text=""
@@ -471,11 +401,11 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Root" Property="BorderBrush" Value="#97BFD9"/>
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#C1BCAF"/>
                             </Trigger>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="Root" Property="Background" Value="#D7334B60"/>
-                                <Setter TargetName="Root" Property="BorderBrush" Value="#8CB8D4"/>
+                                <Setter TargetName="Root" Property="Background" Value="#D74D4F44"/>
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#BAB4A6"/>
                                 <Setter TargetName="Mark" Property="Background" Value="#2FA27E"/>
                                 <Setter TargetName="Mark" Property="BorderBrush" Value="#95E7C9"/>
                                 <Setter TargetName="MarkGlyph" Property="Text" Value="&#x2714;"/>
@@ -507,7 +437,7 @@
                             <Ellipse x:Name="Glow"
                                      Width="24"
                                      Height="24"
-                                     Fill="#249FDEFF"
+                                     Fill="#24D5D1C9"
                                      HorizontalAlignment="Center"
                                      VerticalAlignment="Center"
                                      Opacity="0"
@@ -518,13 +448,13 @@
                                      HorizontalAlignment="Center"
                                      VerticalAlignment="Center"
                                      StrokeThickness="1"
-                                     Stroke="#B4E8FFFF">
+                                     Stroke="#B4F5F4F2">
                                 <Ellipse.Fill>
                                     <RadialGradientBrush Center="0.35,0.28" GradientOrigin="0.35,0.28" RadiusX="0.82" RadiusY="0.82">
                                         <GradientStop Color="#FFFFFFFF" Offset="0"/>
-                                        <GradientStop Color="#EBF7FEFF" Offset="0.45"/>
-                                        <GradientStop Color="#C7DEEEFF" Offset="0.82"/>
-                                        <GradientStop Color="#A9C5D9EF" Offset="1"/>
+                                        <GradientStop Color="#EBFCFBFA" Offset="0.45"/>
+                                        <GradientStop Color="#C7F1EFEC" Offset="0.82"/>
+                                        <GradientStop Color="#A9DFDCD5" Offset="1"/>
                                     </RadialGradientBrush>
                                 </Ellipse.Fill>
                             </Ellipse>
@@ -533,8 +463,8 @@
                                      Height="10"
                                      HorizontalAlignment="Center"
                                      VerticalAlignment="Center"
-                                     Fill="#F6FCFF"
-                                     Stroke="#7CB7DB"
+                                     Fill="#FBFBFA"
+                                     Stroke="#B6B0A1"
                                      StrokeThickness="0.9"/>
                             <Ellipse x:Name="Specular"
                                      Width="8"
@@ -549,13 +479,13 @@
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="Glow" Property="Opacity" Value="0.55"/>
                                 <Setter TargetName="Outer" Property="Stroke" Value="#E8FFFFFF"/>
-                                <Setter TargetName="Inner" Property="Stroke" Value="#8CCAF0"/>
+                                <Setter TargetName="Inner" Property="Stroke" Value="#C6C1B6"/>
                             </Trigger>
                             <Trigger Property="IsDragging" Value="True">
                                 <Setter TargetName="Glow" Property="Opacity" Value="0.8"/>
                                 <Setter TargetName="Outer" Property="Stroke" Value="#FFFFFFFF"/>
                                 <Setter TargetName="Inner" Property="Fill" Value="#FFFFFF"/>
-                                <Setter TargetName="Inner" Property="Stroke" Value="#A6DCF9"/>
+                                <Setter TargetName="Inner" Property="Stroke" Value="#D6D2C9"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter TargetName="Glow" Property="Opacity" Value="0"/>
@@ -586,12 +516,12 @@
                                     VerticalAlignment="Center"
                                     CornerRadius="5,0,0,5"
                                     BorderThickness="1"
-                                    BorderBrush="#48B5DFFF">
+                                    BorderBrush="#48DFDCD5">
                                 <Border.Background>
                                     <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                        <GradientStop Color="#273B4D5D" Offset="0"/>
-                                        <GradientStop Color="#3C5E7890" Offset="0.45"/>
-                                        <GradientStop Color="#5EA6D6F2" Offset="1"/>
+                                        <GradientStop Color="#27505147" Offset="0"/>
+                                        <GradientStop Color="#3C867D68" Offset="0.45"/>
+                                        <GradientStop Color="#5ED3CFC5" Offset="1"/>
                                     </LinearGradientBrush>
                                 </Border.Background>
                             </Border>
@@ -607,14 +537,14 @@
                                     VerticalAlignment="Center"
                                     CornerRadius="5,0,0,5"
                                     BorderThickness="1"
-                                    BorderBrush="#48B5DFFF"
+                                    BorderBrush="#48DFDCD5"
                                     Background="Transparent"
                                     IsHitTestVisible="False"/>
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="FillGloss" Property="Opacity" Value="0.12"/>
-                                <Setter TargetName="FillEdge" Property="BorderBrush" Value="#7FD8F9FF"/>
+                                <Setter TargetName="FillEdge" Property="BorderBrush" Value="#7FEEECE9"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter TargetName="FillBar" Property="Opacity" Value="0.35"/>
@@ -644,12 +574,12 @@
                                     VerticalAlignment="Center"
                                     CornerRadius="0,5,5,0"
                                     BorderThickness="1"
-                                    BorderBrush="#4E9BB7CC">
+                                    BorderBrush="#4EBDB7AA">
                                 <Border.Background>
                                     <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                        <GradientStop Color="#6B889DB0" Offset="0"/>
-                                        <GradientStop Color="#809CB0C1" Offset="0.55"/>
-                                        <GradientStop Color="#96B0C1CF" Offset="1"/>
+                                        <GradientStop Color="#6BA9A18F" Offset="0"/>
+                                        <GradientStop Color="#80B9B2A4" Offset="0.55"/>
+                                        <GradientStop Color="#96C8C3B7" Offset="1"/>
                                     </LinearGradientBrush>
                                 </Border.Background>
                             </Border>
@@ -665,14 +595,14 @@
                                     VerticalAlignment="Center"
                                     CornerRadius="0,5,5,0"
                                     BorderThickness="1"
-                                    BorderBrush="#4E9BB7CC"
+                                    BorderBrush="#4EBDB7AA"
                                     Background="Transparent"
                                     IsHitTestVisible="False"/>
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="RemainGloss" Property="Opacity" Value="0.08"/>
-                                <Setter TargetName="RemainEdge" Property="BorderBrush" Value="#75BED9EC"/>
+                                <Setter TargetName="RemainEdge" Property="BorderBrush" Value="#75DAD7D0"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter TargetName="RemainBar" Property="Opacity" Value="0.35"/>
@@ -710,7 +640,7 @@
                                     Height="12"
                                     VerticalAlignment="Center"
                                     CornerRadius="6"
-                                    Background="#320A1118"
+                                    Background="#32121210"
                                     BorderBrush="#12000000"
                                     BorderThickness="1"/>
                             <Border x:Name="RailBody"
@@ -718,12 +648,12 @@
                                     VerticalAlignment="Center"
                                     CornerRadius="6"
                                     BorderThickness="1"
-                                    BorderBrush="#4E86A4B8">
+                                    BorderBrush="#4EABA493">
                                 <Border.Background>
                                     <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                        <GradientStop Color="#CE263748" Offset="0"/>
-                                        <GradientStop Color="#D11D2E3D" Offset="0.5"/>
-                                        <GradientStop Color="#DB172531" Offset="1"/>
+                                        <GradientStop Color="#CE3A3B33" Offset="0"/>
+                                        <GradientStop Color="#D12F302A" Offset="0.5"/>
+                                        <GradientStop Color="#DB262721" Offset="1"/>
                                     </LinearGradientBrush>
                                 </Border.Background>
                             </Border>
@@ -764,12 +694,12 @@
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="RailBody" Property="BorderBrush" Value="#7AAFD1EA"/>
+                                <Setter TargetName="RailBody" Property="BorderBrush" Value="#7AD3CFC6"/>
                                 <Setter TargetName="RailGlass" Property="BorderBrush" Value="#28FFFFFF"/>
                                 <Setter TargetName="RailSpecular" Property="Opacity" Value="0.95"/>
                             </Trigger>
                             <Trigger Property="IsKeyboardFocusWithin" Value="True">
-                                <Setter TargetName="RailBody" Property="BorderBrush" Value="#91C3E1F4"/>
+                                <Setter TargetName="RailBody" Property="BorderBrush" Value="#91E0DDD7"/>
                                 <Setter TargetName="RailGlass" Property="BorderBrush" Value="#32FFFFFF"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
@@ -802,18 +732,18 @@
                             <Border x:Name="ThumbGlow"
                                     Margin="-1"
                                     CornerRadius="6"
-                                    Background="#2EBEEBFF"
+                                    Background="#2EE3E0DA"
                                     Opacity="0"
                                     IsHitTestVisible="False"/>
                             <Border x:Name="ThumbBody"
                                     CornerRadius="5"
                                     BorderThickness="1"
-                                    BorderBrush="#92EFFFFF">
+                                    BorderBrush="#92F8F7F6">
                                 <Border.Background>
                                     <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                        <GradientStop Color="#E9FCFFFF" Offset="0"/>
-                                        <GradientStop Color="#C8F0FCFF" Offset="0.45"/>
-                                        <GradientStop Color="#A5DCF3FF" Offset="1"/>
+                                        <GradientStop Color="#E9FEFEFD" Offset="0"/>
+                                        <GradientStop Color="#C8F8F8F7" Offset="0.45"/>
+                                        <GradientStop Color="#A5F0EEEB" Offset="1"/>
                                     </LinearGradientBrush>
                                 </Border.Background>
                             </Border>
@@ -828,7 +758,7 @@
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="ThumbGlow" Property="Opacity" Value="0.6"/>
-                                <Setter TargetName="ThumbBody" Property="BorderBrush" Value="#CBFAFFFF"/>
+                                <Setter TargetName="ThumbBody" Property="BorderBrush" Value="#CBFDFDFC"/>
                             </Trigger>
                             <Trigger Property="IsDragging" Value="True">
                                 <Setter TargetName="ThumbGlow" Property="Opacity" Value="0.85"/>
@@ -879,15 +809,15 @@
                             <Border x:Name="ScrollShell"
                                     Margin="1"
                                     CornerRadius="8"
-                                    Background="#08121920"
+                                    Background="#081A1B17"
                                     BorderThickness="1"
                                     BorderBrush="#1EFFFFFF"/>
                             <Border x:Name="ScrollRail"
                                     Margin="3,2,3,2"
                                     CornerRadius="6"
-                                    Background="#3B101A23"
+                                    Background="#3B1B1B18"
                                     BorderThickness="1"
-                                    BorderBrush="#267EB0C8"/>
+                                    BorderBrush="#26AFA897"/>
                             <Border x:Name="ScrollRailGlass"
                                     Margin="4,3,4,3"
                                     CornerRadius="5"
@@ -897,7 +827,7 @@
                             <Border x:Name="ScrollRailGlow"
                                     Margin="2,1,2,1"
                                     CornerRadius="7"
-                                    Background="#10BCEEFF"
+                                    Background="#10E2DFD9"
                                     Opacity="0"
                                     IsHitTestVisible="False"/>
                             <Track x:Name="PART_Track"
@@ -924,14 +854,14 @@
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ScrollShell" Property="BorderBrush" Value="#36E6FAFF"/>
-                                <Setter TargetName="ScrollRail" Property="BorderBrush" Value="#4AAEE0F3"/>
+                                <Setter TargetName="ScrollShell" Property="BorderBrush" Value="#36F4F3F1"/>
+                                <Setter TargetName="ScrollRail" Property="BorderBrush" Value="#4AD7D3CA"/>
                                 <Setter TargetName="ScrollRailGlass" Property="Opacity" Value="1"/>
                                 <Setter TargetName="ScrollRailGlow" Property="Opacity" Value="0.55"/>
                             </Trigger>
                             <Trigger Property="IsMouseCaptureWithin" Value="True">
-                                <Setter TargetName="ScrollShell" Property="BorderBrush" Value="#5AF0FFFF"/>
-                                <Setter TargetName="ScrollRail" Property="BorderBrush" Value="#6CD2EEFF"/>
+                                <Setter TargetName="ScrollShell" Property="BorderBrush" Value="#5AF8F8F7"/>
+                                <Setter TargetName="ScrollRail" Property="BorderBrush" Value="#6CEBEAE6"/>
                                 <Setter TargetName="ScrollRailGlow" Property="Opacity" Value="0.8"/>
                             </Trigger>
                             <Trigger Property="Orientation" Value="Horizontal">
@@ -961,6 +891,7 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
+          </ResourceDictionary>
     </Window.Resources>
 
     <Grid x:Name="MainRootGrid" Margin="8" MouseLeftButtonDown="MainRootGrid_MouseLeftButtonDown">
@@ -973,8 +904,8 @@
                  Grid.Row="0"
                  Margin="0,4,0,8"
                  Padding="12,10"
-                 Background="#A51C1D31"
-                 BorderBrush="#35D6CEFF"
+                 Background="#A5282924"
+                 BorderBrush="#35EAE8E3"
                  BorderThickness="1"
                  CornerRadius="14"
                  MouseLeftButtonDown="TopBarPanel_MouseLeftButtonDown">
@@ -1028,7 +959,7 @@
                            Grid.Column="7"
                            Margin="12,0,0,0"
                            VerticalAlignment="Center"
-                           Foreground="#F4F3FF"
+                           Foreground="#FAF9F8"
                            FontWeight="SemiBold"
                            FontSize="28"
                            TextTrimming="CharacterEllipsis"/>
@@ -1058,7 +989,7 @@
                 <ColumnDefinition x:Name="EffectsColumn" Width="390"/>
             </Grid.ColumnDefinitions>
 
-            <Border x:Name="PlayerHostBorder" Grid.Column="0" Background="#D010101B" CornerRadius="10" Margin="0,8,0,8">
+            <Border x:Name="PlayerHostBorder" Grid.Column="0" Background="#D0171714" CornerRadius="10" Margin="0,8,0,8">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition x:Name="CommunityChatColumn" Width="0"/>
@@ -1074,8 +1005,8 @@
                             Grid.Column="0"
                             Margin="8,8,8,8"
                             Padding="12"
-                            Background="#DE1A172C"
-                            BorderBrush="#42B7A4CF"
+                            Background="#DE23241F"
+                            BorderBrush="#42C3BDB0"
                             BorderThickness="1"
                             CornerRadius="12"
                             Visibility="Collapsed"
@@ -1098,7 +1029,7 @@
                                 <TextBlock x:Name="CommunityChatHeaderText"
                                            Grid.Column="0"
                                            Text="Чат стрима"
-                                           Foreground="#F4F3FF"
+                                           Foreground="#FAF9F8"
                                            FontSize="16"
                                            FontWeight="Bold"
                                            VerticalAlignment="Center"/>
@@ -1118,8 +1049,8 @@
                                         Click="CommunityChatCloseButton_Click"/>
                             </Grid>
                             <Border Grid.Row="2"
-                                    Background="#B0142233"
-                                    BorderBrush="#3B617A91"
+                                    Background="#B0252621"
+                                    BorderBrush="#3B897F69"
                                     BorderThickness="1"
                                     CornerRadius="10"
                                     ClipToBounds="True">
@@ -1127,7 +1058,7 @@
                                     <wv2:WebView2 x:Name="CommunityChatBrowser"
                                                   Visibility="Collapsed"/>
                                     <Border x:Name="CommunityChatOverlay"
-                                            Background="#E4172432"
+                                            Background="#E4262722"
                                             Visibility="Visible"
                                             IsHitTestVisible="False">
                                         <StackPanel HorizontalAlignment="Center"
@@ -1135,14 +1066,14 @@
                                                     MaxWidth="260">
                                             <TextBlock x:Name="CommunityChatOverlayHeaderText"
                                                        Text="Подготовка чата"
-                                                       Foreground="#F4F3FF"
+                                                       Foreground="#FAF9F8"
                                                        FontSize="16"
                                                        FontWeight="Bold"
                                                        TextAlignment="Center"/>
                                             <TextBlock x:Name="CommunityChatOverlayText"
                                                        Margin="0,8,0,0"
                                                        Text="Загружаю live chat или chat replay..."
-                                                       Foreground="#BFDCEC"
+                                                       Foreground="#DBD8D0"
                                                        FontSize="12"
                                                        TextAlignment="Center"
                                                        TextWrapping="Wrap"/>
@@ -1170,7 +1101,7 @@
                             Grid.Row="0"
                             Grid.Column="1"
                             Panel.ZIndex="20"
-                            Background="#D50B1118"
+                            Background="#D5121310"
                             Visibility="Visible"
                             IsHitTestVisible="True">
                         <Border Width="460"
@@ -1180,31 +1111,34 @@
                                 VerticalAlignment="Center">
                             <Border.Background>
                                 <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                    <GradientStop Color="#86A7CEE6" Offset="0"/>
-                                    <GradientStop Color="#5D6E93A8" Offset="1"/>
+                                    <GradientStop Color="#86CEC9BF" Offset="0"/>
+                                    <GradientStop Color="#5D9A917C" Offset="1"/>
                                 </LinearGradientBrush>
                             </Border.Background>
                             <Border Padding="24"
                                     CornerRadius="16"
-                                    Background="#D81E2D3B"
-                                    BorderBrush="#5A8FB0C9"
+                                    Background="#D82F3029"
+                                    BorderBrush="#5AB7B0A1"
                                     BorderThickness="1">
                                 <StackPanel>
+                                    <Border Width="84" Height="84" CornerRadius="42" BorderThickness="2" BorderBrush="#E7BD72" HorizontalAlignment="Center" Margin="0,0,0,20">
+                                        <Border.Background><ImageBrush ImageSource="{StaticResource Brand.Smile}" Stretch="UniformToFill"/></Border.Background>
+                                    </Border>
                                     <TextBlock x:Name="PlayerLoadingHeaderText"
                                                Text="Загрузка плеера"
-                                               Foreground="#F4F3FF"
+                                               Foreground="#FAF9F8"
                                                FontSize="22"
                                                FontWeight="Bold"
                                                HorizontalAlignment="Center"/>
                                     <TextBlock x:Name="PlayerLoadingText"
                                                Margin="0,10,0,0"
                                                Text="Подготовка YouTube..."
-                                               Foreground="#ADB8CA"
+                                               Foreground="#C4BFB3"
                                                FontSize="16"
                                                TextAlignment="Center"
                                                TextWrapping="Wrap"/>
-                                    <ProgressBar x:Name="PlayerLoadingProgress" Margin="0,14,0,0"
-                                                 Height="14"
+                                    <ProgressBar Style="{StaticResource Brand.Progress}" x:Name="PlayerLoadingProgress" Margin="0,14,0,0"
+                                                 Height="4"
                                                  IsIndeterminate="True"/>
                                                                     <Button x:Name="RetryPlayerButton" Content="Повторить загрузку / Retry" Margin="0,14,0,0" Padding="14,8" Visibility="Collapsed" Click="RetryPlayerButton_Click"/>
                                 </StackPanel>
@@ -1219,8 +1153,8 @@
                             Panel.ZIndex="25"
                             HorizontalAlignment="Stretch"
                             VerticalAlignment="Top"
-                            Background="#D0101820"
-                            BorderBrush="#33557788"
+                            Background="#D0191A16"
+                            BorderBrush="#337D7460"
                             BorderThickness="0,0,0,1"
                             Padding="12,7"
                             Visibility="Collapsed"
@@ -1244,15 +1178,15 @@
                             VerticalAlignment="Bottom"
                             Margin="0,0,0,48"
                             Padding="20,12"
-                            Background="#E0152030"
-                            BorderBrush="#7AAED4"
+                            Background="#E0242520"
+                            BorderBrush="#B2AB9C"
                             BorderThickness="1"
                             CornerRadius="12"
                             Visibility="Collapsed"
                             IsHitTestVisible="False">
                         <TextBlock x:Name="BlockedNavToastText"
                                    Text="🔒 Только видео YouTube"
-                                   Foreground="#F4F3FF"
+                                   Foreground="#FAF9F8"
                                    FontSize="18"
                                    FontWeight="Bold"
                                    TextAlignment="Center"/>
@@ -1269,17 +1203,17 @@
                         <Border MinWidth="560"
                                 MaxWidth="640"
                                 Padding="20,18"
-                                Background="#EF0F1D2B"
-                                BorderBrush="#6BAFD5"
+                                Background="#EF1E1F1B"
+                                BorderBrush="#ACA594"
                                 BorderThickness="1"
                                 CornerRadius="14">
                         <Border.Effect>
-                            <DropShadowEffect BlurRadius="18" ShadowDepth="0" Color="#05090D" Opacity="0.55"/>
+                            <DropShadowEffect BlurRadius="18" ShadowDepth="0" Color="#090A08" Opacity="0.55"/>
                         </Border.Effect>
                         <StackPanel>
                             <TextBlock x:Name="TimecodePopupHeaderText"
                                        Text="💾 Сохранить клип"
-                                       Foreground="#F4F3FF"
+                                       Foreground="#FAF9F8"
                                        FontSize="20"
                                        FontWeight="Bold"
                                        Margin="0,0,0,4"/>
@@ -1291,25 +1225,25 @@
                                        Margin="0,0,0,10"/>
                             <TextBlock x:Name="TimecodePopupTimeText"
                                        Text="00:00:00"
-                                       Foreground="#9CD0EE"
+                                       Foreground="#CDC8BD"
                                        FontSize="13"
                                        FontWeight="SemiBold"
                                        Margin="0,0,0,12"/>
                             <TextBlock x:Name="TimecodePopupLabelCaptionText"
                                        Text="Название таймкода"
-                                       Foreground="#B4C4D8"
+                                       Foreground="#CDC9BF"
                                        FontSize="12"
                                        FontWeight="SemiBold"
                                        Margin="0,0,0,6"/>
                             <TextBox x:Name="TimecodePopupLabelBox"
                                      Style="{StaticResource TimecodePopupTextBoxStyle}"
                                      MaxLength="80"
-                                     Background="#D4172635"
-                                     BorderBrush="#5A85A1"
+                                     Background="#D4282923"
+                                     BorderBrush="#8E846D"
                                      BorderThickness="1"
-                                     Foreground="#F4F3FF"
-                                     CaretBrush="#F4F3FF"
-                                     SelectionBrush="#5A9FD2"
+                                     Foreground="#FAF9F8"
+                                     CaretBrush="#FAF9F8"
+                                     SelectionBrush="#A49B88"
                                      SelectionOpacity="0.35"
                                      VerticalContentAlignment="Center"
                                      KeyDown="TimecodePopupLabelBox_KeyDown"
@@ -1344,8 +1278,8 @@
                             Grid.ColumnSpan="2"
                             Margin="8,0,8,8"
                             Padding="12"
-                            Background="#DE1A172C"
-                            BorderBrush="#42B7A4CF"
+                            Background="#DE23241F"
+                            BorderBrush="#42C3BDB0"
                             BorderThickness="1"
                             CornerRadius="12"
                             Visibility="Collapsed"
@@ -1368,7 +1302,7 @@
                                 <TextBlock x:Name="CommunityCommentsHeaderText"
                                            Grid.Column="0"
                                            Text="Комментарии"
-                                           Foreground="#F4F3FF"
+                                           Foreground="#FAF9F8"
                                            FontSize="16"
                                            FontWeight="Bold"
                                            VerticalAlignment="Center"/>
@@ -1388,8 +1322,8 @@
                                         Click="CommunityCommentsCloseButton_Click"/>
                             </Grid>
                             <Border Grid.Row="2"
-                                    Background="#B0142233"
-                                    BorderBrush="#3B617A91"
+                                    Background="#B0252621"
+                                    BorderBrush="#3B897F69"
                                     BorderThickness="1"
                                     CornerRadius="10"
                                     ClipToBounds="True">
@@ -1397,7 +1331,7 @@
                                     <wv2:WebView2 x:Name="CommunityCommentsBrowser"
                                                   Visibility="Collapsed"/>
                                     <Border x:Name="CommunityCommentsOverlay"
-                                            Background="#E4172432"
+                                            Background="#E4262722"
                                             Visibility="Visible"
                                             IsHitTestVisible="False">
                                         <StackPanel HorizontalAlignment="Center"
@@ -1405,14 +1339,14 @@
                                                     MaxWidth="320">
                                             <TextBlock x:Name="CommunityCommentsOverlayHeaderText"
                                                        Text="Подготовка комментариев"
-                                                       Foreground="#F4F3FF"
+                                                       Foreground="#FAF9F8"
                                                        FontSize="16"
                                                        FontWeight="Bold"
                                                        TextAlignment="Center"/>
                                             <TextBlock x:Name="CommunityCommentsOverlayText"
                                                        Margin="0,8,0,0"
                                                        Text="Загружаю ленту комментариев этого видео..."
-                                                       Foreground="#BFDCEC"
+                                                       Foreground="#DBD8D0"
                                                        FontSize="12"
                                                        TextAlignment="Center"
                                                        TextWrapping="Wrap"/>
@@ -1435,8 +1369,8 @@
                     Grid.Column="2"
                     Margin="0,8,8,8"
                     Padding="12"
-                    Background="#A51C1D31"
-                    BorderBrush="#35D6CEFF"
+                    Background="#A5282924"
+                    BorderBrush="#35EAE8E3"
                     BorderThickness="1"
                     CornerRadius="16">
                 <!-- BitmapCache: freezes panel as a GPU texture so WPF doesn't re-rasterize
@@ -1457,7 +1391,7 @@
                     <TextBlock x:Name="EffectsHeaderText"
                                Grid.Row="0"
                                Text="Эффекты плеера"
-                               Foreground="#F4F3FF"
+                               Foreground="#FAF9F8"
                                FontWeight="Bold"
                                FontSize="22"/>
 
@@ -1465,7 +1399,7 @@
                         <TextBlock x:Name="EffectsHintText" Visibility="Collapsed"
                                    Text="Включайте эффекты и настраивайте силу прямо под каждым эффектом."
                                    TextWrapping="Wrap"
-                                   Foreground="#ADB8CA"
+                                   Foreground="#C4BFB3"
                                    FontSize="18"/>
                         <TextBlock x:Name="BindsHintText" Visibility="Collapsed"
                                    Margin="0,4,0,0"
@@ -1583,8 +1517,8 @@
                                 Grid.ColumnSpan="2"
                                 Margin="0,8,0,0"
                                 Padding="10,7"
-                                Background="#991B3048"
-                                BorderBrush="#33607A8A"
+                                Background="#9934352E"
+                                BorderBrush="#33847B66"
                                 BorderThickness="1"
                                 CornerRadius="10">
                             <Grid>
@@ -1595,13 +1529,13 @@
                                 <StackPanel VerticalAlignment="Center">
                                     <TextBlock x:Name="PlayerSfxSpamHeaderText"
                                                Text="Режим спама звуков"
-                                               Foreground="#DDD6ED"
+                                               Foreground="#E5E3DE"
                                                FontSize="12"
                                                FontWeight="SemiBold"/>
                                     <TextBlock x:Name="PlayerSfxSpamDescText" Visibility="Collapsed"
                                                Margin="0,2,0,0"
                                                Text="Вкл: спам до 8 звуков. Выкл: стоп при повторном нажатии."
-                                               Foreground="#486A80"
+                                               Foreground="#696B5D"
                                                FontSize="10"
                                                TextWrapping="Wrap"/>
                                 </StackPanel>
@@ -1609,7 +1543,7 @@
                                           Grid.Column="1"
                                           Margin="10,0,0,0"
                                           VerticalAlignment="Center"
-                                          Foreground="#DDD6ED"
+                                          Foreground="#E5E3DE"
                                           FontSize="12"
                                           Checked="PlayerSfxSpamToggle_Changed"
                                           Unchecked="PlayerSfxSpamToggle_Changed"/>
@@ -1641,7 +1575,7 @@
                                         <ColumnDefinition Width="64"/>
                                     </Grid.ColumnDefinitions>
                                     <Slider x:Name="ContrastStrengthSlider" Style="{StaticResource EffectStrengthSliderStyle}" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
-                                    <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#B4C4D8" FontSize="14" Text="{Binding ElementName=ContrastStrengthSlider, Path=Value, StringFormat={}{0:+0.00;-0.00;0.00}}"/>
+                                    <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CDC9BF" FontSize="14" Text="{Binding ElementName=ContrastStrengthSlider, Path=Value, StringFormat={}{0:+0.00;-0.00;0.00}}"/>
                                 </Grid>
                             </Border>
 
@@ -1653,7 +1587,7 @@
                                         <ColumnDefinition Width="64"/>
                                     </Grid.ColumnDefinitions>
                                     <Slider x:Name="DarknessStrengthSlider" Style="{StaticResource EffectStrengthSliderStyle}" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
-                                    <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#B4C4D8" FontSize="14" Text="{Binding ElementName=DarknessStrengthSlider, Path=Value, StringFormat={}{0:+0.00;-0.00;0.00}}"/>
+                                    <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CDC9BF" FontSize="14" Text="{Binding ElementName=DarknessStrengthSlider, Path=Value, StringFormat={}{0:+0.00;-0.00;0.00}}"/>
                                 </Grid>
                             </Border>
 
@@ -1665,7 +1599,7 @@
                                         <ColumnDefinition Width="64"/>
                                     </Grid.ColumnDefinitions>
                                     <Slider x:Name="SaturationStrengthSlider" Style="{StaticResource EffectStrengthSliderStyle}" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
-                                    <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#B4C4D8" FontSize="14" Text="{Binding ElementName=SaturationStrengthSlider, Path=Value, StringFormat={}{0:+0.00;-0.00;0.00}}"/>
+                                    <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CDC9BF" FontSize="14" Text="{Binding ElementName=SaturationStrengthSlider, Path=Value, StringFormat={}{0:+0.00;-0.00;0.00}}"/>
                                 </Grid>
                             </Border>
 
@@ -1677,7 +1611,7 @@
                                         <ColumnDefinition Width="64"/>
                                     </Grid.ColumnDefinitions>
                                     <Slider x:Name="HueShiftStrengthSlider" Style="{StaticResource EffectStrengthSliderStyle}" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
-                                    <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#B4C4D8" FontSize="14" Text="{Binding ElementName=HueShiftStrengthSlider, Path=Value, StringFormat={}{0:+0.00;-0.00;0.00}}"/>
+                                    <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CDC9BF" FontSize="14" Text="{Binding ElementName=HueShiftStrengthSlider, Path=Value, StringFormat={}{0:+0.00;-0.00;0.00}}"/>
                                 </Grid>
                             </Border>
 
@@ -1689,7 +1623,7 @@
                                         <ColumnDefinition Width="64"/>
                                     </Grid.ColumnDefinitions>
                                     <Slider x:Name="BlurStrengthSlider" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="0" Maximum="1" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
-                                    <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#B4C4D8" FontSize="14" Text="{Binding ElementName=BlurStrengthSlider, Path=Value, StringFormat={}{0:0.00}}"/>
+                                    <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CDC9BF" FontSize="14" Text="{Binding ElementName=BlurStrengthSlider, Path=Value, StringFormat={}{0:0.00}}"/>
                                 </Grid>
                             </Border>
 
@@ -1702,25 +1636,25 @@
                                             <ColumnDefinition Width="64"/>
                                         </Grid.ColumnDefinitions>
                                         <Slider x:Name="FisheyeStrengthSlider" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="-1" Maximum="1" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
-                                        <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#B4C4D8" FontSize="14" Text="{Binding ElementName=FisheyeStrengthSlider, Path=Value, StringFormat={}{0:+0.00;-0.00;0.00}}"/>
+                                        <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CDC9BF" FontSize="14" Text="{Binding ElementName=FisheyeStrengthSlider, Path=Value, StringFormat={}{0:+0.00;-0.00;0.00}}"/>
                                     </Grid>
 
                                     <Border x:Name="FisheyeCenterPadContainer"
                                             Margin="0,6,0,0"
                                             Padding="8"
-                                            Background="#A51B2A37"
-                                            BorderBrush="#5A7F9A"
+                                            Background="#A52B2C26"
+                                            BorderBrush="#8A806A"
                                             BorderThickness="1"
                                             CornerRadius="10">
                                         <StackPanel>
                                             <TextBlock x:Name="FisheyeCenterPadTitleText"
                                                        Text="Центр Фишая"
-                                                       Foreground="#DDEFFF"
+                                                       Foreground="#F0EFEC"
                                                        FontSize="12"
                                                        FontWeight="SemiBold"/>
                                             <TextBlock x:Name="FisheyeCenterCoordsText"
                                                        Margin="0,2,0,0"
-                                                       Foreground="#AFCFE4"
+                                                       Foreground="#D0CCC3"
                                                        FontSize="11"
                                                        Text="X: 0.50  Y: 0.50"/>
 
@@ -1728,8 +1662,8 @@
                                                     Width="112"
                                                     Height="112"
                                                     HorizontalAlignment="Center"
-                                                    Background="#12212C"
-                                                    BorderBrush="#7EA9C6"
+                                                    Background="#21211D"
+                                                    BorderBrush="#AEA796"
                                                     BorderThickness="1"
                                                     CornerRadius="8"
                                                     ClipToBounds="True"
@@ -1744,26 +1678,26 @@
                                                         MouseMove="FisheyeCenterPad_MouseMove"
                                                         MouseLeftButtonUp="FisheyeCenterPad_MouseLeftButtonUp"
                                                         LostMouseCapture="FisheyeCenterPad_LostMouseCapture">
-                                                    <Rectangle Width="112" Height="112" Fill="#182A37"/>
-                                                    <Line X1="56" Y1="0" X2="56" Y2="112" Stroke="#375469" StrokeThickness="1"/>
-                                                    <Line X1="0" Y1="56" X2="112" Y2="56" Stroke="#375469" StrokeThickness="1"/>
+                                                    <Rectangle Width="112" Height="112" Fill="#292A25"/>
+                                                    <Line X1="56" Y1="0" X2="56" Y2="112" Stroke="#54564A" StrokeThickness="1"/>
+                                                    <Line X1="0" Y1="56" X2="112" Y2="56" Stroke="#54564A" StrokeThickness="1"/>
                                                     <Rectangle Width="70" Height="70"
                                                                Canvas.Left="21"
                                                                Canvas.Top="21"
-                                                               Stroke="#2A4253"
+                                                               Stroke="#42433A"
                                                                StrokeThickness="1"
                                                                StrokeDashArray="2,2"/>
                                                     <Ellipse x:Name="FisheyeCenterHandleOuter"
                                                              Width="16"
                                                              Height="16"
-                                                             Fill="#D1355A7A"
-                                                             Stroke="#E6F8FF"
+                                                             Fill="#D15C5E51"
+                                                             Stroke="#F4F3F1"
                                                              StrokeThickness="1.2"
                                                              IsHitTestVisible="False"/>
                                                     <Ellipse x:Name="FisheyeCenterHandleInner"
                                                              Width="4"
                                                              Height="4"
-                                                             Fill="#F4FBFF"
+                                                             Fill="#FAFAF9"
                                                              IsHitTestVisible="False"/>
                                                 </Canvas>
                                             </Border>
@@ -1780,7 +1714,7 @@
                                         <ColumnDefinition Width="64"/>
                                     </Grid.ColumnDefinitions>
                                     <Slider x:Name="VhsStrengthSlider" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="0" Maximum="1" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
-                                    <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#B4C4D8" FontSize="14" Text="{Binding ElementName=VhsStrengthSlider, Path=Value, StringFormat={}{0:0.00}}"/>
+                                    <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CDC9BF" FontSize="14" Text="{Binding ElementName=VhsStrengthSlider, Path=Value, StringFormat={}{0:0.00}}"/>
                                 </Grid>
                             </Border>
 
@@ -1792,7 +1726,7 @@
                                         <ColumnDefinition Width="64"/>
                                     </Grid.ColumnDefinitions>
                                     <Slider x:Name="ShakeStrengthSlider" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="0" Maximum="1" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
-                                    <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#B4C4D8" FontSize="14" Text="{Binding ElementName=ShakeStrengthSlider, Path=Value, StringFormat={}{0:0.00}}"/>
+                                    <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CDC9BF" FontSize="14" Text="{Binding ElementName=ShakeStrengthSlider, Path=Value, StringFormat={}{0:0.00}}"/>
                                 </Grid>
                             </Border>
 
@@ -1805,7 +1739,7 @@
                                         <ColumnDefinition Width="64"/>
                                     </Grid.ColumnDefinitions>
                                     <Slider x:Name="JpegDamageStrengthSlider" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="0" Maximum="1" Value="0.4" ValueChanged="StrengthSlider_ValueChanged"/>
-                                    <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#B4C4D8" FontSize="14" Text="{Binding ElementName=JpegDamageStrengthSlider, Path=Value, StringFormat={}{0:0.00}}"/>
+                                    <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CDC9BF" FontSize="14" Text="{Binding ElementName=JpegDamageStrengthSlider, Path=Value, StringFormat={}{0:0.00}}"/>
                                 </Grid>
                             </Border>
 
@@ -1817,7 +1751,7 @@
                                         <ColumnDefinition Width="64"/>
                                     </Grid.ColumnDefinitions>
                                     <Slider x:Name="ColdToneStrengthSlider" Style="{StaticResource EffectStrengthSliderStyle}" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
-                                    <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#B4C4D8" FontSize="14" Text="{Binding ElementName=ColdToneStrengthSlider, Path=Value, StringFormat={}{0:+0.00;-0.00;0.00}}"/>
+                                    <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CDC9BF" FontSize="14" Text="{Binding ElementName=ColdToneStrengthSlider, Path=Value, StringFormat={}{0:+0.00;-0.00;0.00}}"/>
                                 </Grid>
                             </Border>
 
@@ -1830,21 +1764,21 @@
                         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,8,0">
 <Border Margin="0,12,0,0"
                                     Padding="12"
-                                    Background="#B21A2733"
-                                    BorderBrush="#42B7A4CF"
+                                    Background="#B2282924"
+                                    BorderBrush="#42C3BDB0"
                                     BorderThickness="1"
                                     CornerRadius="12">
                                 <StackPanel>
                                     <TextBlock x:Name="AudioFxHeaderText"
                                                Text="Audio FX"
-                                               Foreground="#F4F3FF"
+                                               Foreground="#FAF9F8"
                                                FontSize="20"
                                                FontWeight="Bold"/>
                                     <TextBlock x:Name="AudioFxHintText" Visibility="Collapsed"
                                                Margin="0,4,0,10"
                                                Text="EQ, pitch, reverb and basic sound effects for the current video."
                                                TextWrapping="Wrap"
-                                               Foreground="#9CAAC0"
+                                               Foreground="#B9B2A3"
                                                FontSize="13"/>
                                     <Button x:Name="ResetAudioFxButton"
                                             Margin="0,0,0,10"
@@ -1860,9 +1794,9 @@
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="48"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock x:Name="AudioFxVolumeLabelText" Text="Volume boost" VerticalAlignment="Center" Foreground="#DCE4EF" FontSize="14"/>
+                                        <TextBlock x:Name="AudioFxVolumeLabelText" Text="Volume boost" VerticalAlignment="Center" Foreground="#E9E7E2" FontSize="14"/>
                                         <Slider x:Name="AudioVolumeBoostSlider" Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="0" Maximum="3" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
-                                        <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#B4C4D8" FontSize="14" Text="{Binding ElementName=AudioVolumeBoostSlider, Path=Value, StringFormat={}{0:0.00}}"/>
+                                        <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CDC9BF" FontSize="14" Text="{Binding ElementName=AudioVolumeBoostSlider, Path=Value, StringFormat={}{0:0.00}}"/>
                                     </Grid>
 
                                     <Grid Margin="0,0,0,6">
@@ -1871,9 +1805,9 @@
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="48"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock x:Name="AudioFxEqLowLabelText" Text="EQ Low (dB)" VerticalAlignment="Center" Foreground="#DCE4EF" FontSize="14"/>
+                                        <TextBlock x:Name="AudioFxEqLowLabelText" Text="EQ Low (dB)" VerticalAlignment="Center" Foreground="#E9E7E2" FontSize="14"/>
                                         <Slider x:Name="AudioEqLowDbSlider" Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="-30" Maximum="30" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
-                                        <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#B4C4D8" FontSize="14" Text="{Binding ElementName=AudioEqLowDbSlider, Path=Value, StringFormat={}{0:+0.0;-0.0;0.0}}"/>
+                                        <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CDC9BF" FontSize="14" Text="{Binding ElementName=AudioEqLowDbSlider, Path=Value, StringFormat={}{0:+0.0;-0.0;0.0}}"/>
                                     </Grid>
 
                                     <Grid Margin="0,0,0,6">
@@ -1882,9 +1816,9 @@
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="48"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock x:Name="AudioFxEqMidLabelText" Text="EQ Mid (dB)" VerticalAlignment="Center" Foreground="#DCE4EF" FontSize="14"/>
+                                        <TextBlock x:Name="AudioFxEqMidLabelText" Text="EQ Mid (dB)" VerticalAlignment="Center" Foreground="#E9E7E2" FontSize="14"/>
                                         <Slider x:Name="AudioEqMidDbSlider" Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="-30" Maximum="30" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
-                                        <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#B4C4D8" FontSize="14" Text="{Binding ElementName=AudioEqMidDbSlider, Path=Value, StringFormat={}{0:+0.0;-0.0;0.0}}"/>
+                                        <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CDC9BF" FontSize="14" Text="{Binding ElementName=AudioEqMidDbSlider, Path=Value, StringFormat={}{0:+0.0;-0.0;0.0}}"/>
                                     </Grid>
 
                                     <Grid Margin="0,0,0,6">
@@ -1893,9 +1827,9 @@
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="48"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock x:Name="AudioFxEqHighLabelText" Text="EQ High (dB)" VerticalAlignment="Center" Foreground="#DCE4EF" FontSize="14"/>
+                                        <TextBlock x:Name="AudioFxEqHighLabelText" Text="EQ High (dB)" VerticalAlignment="Center" Foreground="#E9E7E2" FontSize="14"/>
                                         <Slider x:Name="AudioEqHighDbSlider" Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="-30" Maximum="30" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
-                                        <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#B4C4D8" FontSize="14" Text="{Binding ElementName=AudioEqHighDbSlider, Path=Value, StringFormat={}{0:+0.0;-0.0;0.0}}"/>
+                                        <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CDC9BF" FontSize="14" Text="{Binding ElementName=AudioEqHighDbSlider, Path=Value, StringFormat={}{0:+0.0;-0.0;0.0}}"/>
                                     </Grid>
 
                                     <Grid Margin="0,0,0,6">
@@ -1904,9 +1838,9 @@
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="48"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock x:Name="AudioFxPitchLabelText" Text="Pitch (semitones)" VerticalAlignment="Center" Foreground="#DCE4EF" FontSize="14"/>
+                                        <TextBlock x:Name="AudioFxPitchLabelText" Text="Pitch (semitones)" VerticalAlignment="Center" Foreground="#E9E7E2" FontSize="14"/>
                                         <Slider x:Name="AudioPitchSemitonesSlider" Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="-24" Maximum="24" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
-                                        <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#B4C4D8" FontSize="14" Text="{Binding ElementName=AudioPitchSemitonesSlider, Path=Value, StringFormat={}{0:+0.0;-0.0;0.0}}"/>
+                                        <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CDC9BF" FontSize="14" Text="{Binding ElementName=AudioPitchSemitonesSlider, Path=Value, StringFormat={}{0:+0.0;-0.0;0.0}}"/>
                                     </Grid>
 
                                     <Grid Margin="0,0,0,6">
@@ -1915,9 +1849,9 @@
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="48"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock x:Name="AudioFxReverbLabelText" Text="Reverb" VerticalAlignment="Center" Foreground="#DCE4EF" FontSize="14"/>
+                                        <TextBlock x:Name="AudioFxReverbLabelText" Text="Reverb" VerticalAlignment="Center" Foreground="#E9E7E2" FontSize="14"/>
                                         <Slider x:Name="AudioReverbStrengthSlider" Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="0" Maximum="2" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
-                                        <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#B4C4D8" FontSize="14" Text="{Binding ElementName=AudioReverbStrengthSlider, Path=Value, StringFormat={}{0:0.00}}"/>
+                                        <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CDC9BF" FontSize="14" Text="{Binding ElementName=AudioReverbStrengthSlider, Path=Value, StringFormat={}{0:0.00}}"/>
                                     </Grid>
 
                                     <Grid Margin="0,0,0,6">
@@ -1926,9 +1860,9 @@
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="48"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock x:Name="AudioFxEchoLabelText" Text="Echo" VerticalAlignment="Center" Foreground="#DCE4EF" FontSize="14"/>
+                                        <TextBlock x:Name="AudioFxEchoLabelText" Text="Echo" VerticalAlignment="Center" Foreground="#E9E7E2" FontSize="14"/>
                                         <Slider x:Name="AudioEchoStrengthSlider" Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="0" Maximum="2" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
-                                        <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#B4C4D8" FontSize="14" Text="{Binding ElementName=AudioEchoStrengthSlider, Path=Value, StringFormat={}{0:0.00}}"/>
+                                        <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CDC9BF" FontSize="14" Text="{Binding ElementName=AudioEchoStrengthSlider, Path=Value, StringFormat={}{0:0.00}}"/>
                                     </Grid>
 
                                     <Grid Margin="0,0,0,6">
@@ -1937,9 +1871,9 @@
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="48"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock x:Name="AudioFxDistortionLabelText" Text="Distortion" VerticalAlignment="Center" Foreground="#DCE4EF" FontSize="14"/>
+                                        <TextBlock x:Name="AudioFxDistortionLabelText" Text="Distortion" VerticalAlignment="Center" Foreground="#E9E7E2" FontSize="14"/>
                                         <Slider x:Name="AudioDistortionStrengthSlider" Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="0" Maximum="2" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
-                                        <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#B4C4D8" FontSize="14" Text="{Binding ElementName=AudioDistortionStrengthSlider, Path=Value, StringFormat={}{0:0.00}}"/>
+                                        <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CDC9BF" FontSize="14" Text="{Binding ElementName=AudioDistortionStrengthSlider, Path=Value, StringFormat={}{0:0.00}}"/>
                                     </Grid>
 
                                     <Grid>
@@ -1948,9 +1882,9 @@
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="48"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock x:Name="AudioFxWobbleLabelText" Text="Wobble" VerticalAlignment="Center" Foreground="#DCE4EF" FontSize="14"/>
+                                        <TextBlock x:Name="AudioFxWobbleLabelText" Text="Wobble" VerticalAlignment="Center" Foreground="#E9E7E2" FontSize="14"/>
                                         <Slider x:Name="AudioWobbleStrengthSlider" Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource EffectStrengthSliderStyle}" Minimum="0" Maximum="2" Value="0" ValueChanged="StrengthSlider_ValueChanged"/>
-                                        <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#B4C4D8" FontSize="14" Text="{Binding ElementName=AudioWobbleStrengthSlider, Path=Value, StringFormat={}{0:0.00}}"/>
+                                        <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#CDC9BF" FontSize="14" Text="{Binding ElementName=AudioWobbleStrengthSlider, Path=Value, StringFormat={}{0:0.00}}"/>
                                     </Grid>
                                 </StackPanel>
                             </Border>
@@ -1980,20 +1914,20 @@
                                     </Grid>
 
                                     <Border Padding="12"
-                                            Background="#B21A2733"
-                                            BorderBrush="#42B7A4CF"
+                                            Background="#B2282924"
+                                            BorderBrush="#42C3BDB0"
                                             BorderThickness="1"
                                             CornerRadius="12">
                                         <StackPanel>
                                             <TextBlock x:Name="PresetBuiltInHeaderText"
                                                        Text="Built-in presets"
-                                                       Foreground="#F4F3FF"
+                                                       Foreground="#FAF9F8"
                                                        FontSize="18"
                                                        FontWeight="Bold"/>
                                             <TextBlock x:Name="PresetBuiltInHintText"
                                                        Margin="0,4,0,10"
                                                        Text="Quick styles for visuals and audio. You can tweak them after applying."
-                                                       Foreground="#9CAAC0"
+                                                       Foreground="#B9B2A3"
                                                        TextWrapping="Wrap"
                                                        FontSize="13"/>
 
@@ -2016,20 +1950,20 @@
 
                                     <Border Margin="0,12,0,0"
                                             Padding="12"
-                                            Background="#B21A2733"
-                                            BorderBrush="#42B7A4CF"
+                                            Background="#B2282924"
+                                            BorderBrush="#42C3BDB0"
                                             BorderThickness="1"
                                             CornerRadius="12">
                                         <StackPanel>
                                             <TextBlock x:Name="CustomPresetHeaderText"
                                                        Text="Custom presets (up to 20)"
-                                                       Foreground="#F4F3FF"
+                                                       Foreground="#FAF9F8"
                                                        FontSize="18"
                                                        FontWeight="Bold"/>
                                             <TextBlock x:Name="CustomPresetHintText"
                                                        Margin="0,4,0,10"
                                                        Text="Choose a slot, name it, save current FX setup, and load it later."
-                                                       Foreground="#9CAAC0"
+                                                       Foreground="#B9B2A3"
                                                        TextWrapping="Wrap"
                                                        FontSize="13"/>
 
@@ -2092,7 +2026,7 @@
 
                                             <TextBlock x:Name="PresetStatusText"
                                                        Margin="0,10,0,0"
-                                                       Foreground="#9CD0EE"
+                                                       Foreground="#CDC8BD"
                                                        FontSize="12"
                                                        TextWrapping="Wrap"/>
                                         </StackPanel>
@@ -2126,7 +2060,7 @@
                                         <TextBlock x:Name="TimecodesPanelHeaderText"
                                                    Grid.Column="0"
                                                    Text="Сохранённые клипы"
-                                                   Foreground="#F4F3FF"
+                                                   Foreground="#FAF9F8"
                                                    FontSize="16"
                                                    FontWeight="Bold"
                                                    VerticalAlignment="Center"
@@ -2144,7 +2078,7 @@
                                                Grid.Row="1"
                                                Margin="0,4,0,0"
                                                Text="Нажми M или кнопку + Клип, чтобы сохранить позицию в видео."
-                                               Foreground="#486A80"
+                                               Foreground="#696B5D"
                                                FontSize="11"
                                                TextWrapping="Wrap"/>
                                     <StackPanel Grid.Row="2"
@@ -2160,16 +2094,16 @@
                                                      Height="34"
                                                      Padding="12,6"
                                                      FontSize="13"
-                                                     Background="#C9162533"
-                                                     BorderBrush="#5A85A1"
-                                                     Foreground="#E9E7FA"
+                                                     Background="#C9262722"
+                                                     BorderBrush="#8E846D"
+                                                     Foreground="#F2F1EF"
                                                      TextChanged="TimecodesSearchBox_TextChanged"
                                                      GotFocus="TimecodesSearchBox_GotFocus"
                                                      LostFocus="TimecodesSearchBox_LostFocus"/>
                                             <TextBlock x:Name="TimecodesSearchPlaceholderText"
                                                        Text="Поиск по названию, времени или видео..."
                                                        Margin="14,0,34,0"
-                                                       Foreground="#6E93AB"
+                                                       Foreground="#9B927E"
                                                        VerticalAlignment="Center"
                                                        IsHitTestVisible="False"/>
                                         </Grid>
@@ -2183,7 +2117,7 @@
                                     <StackPanel>
                                         <TextBlock x:Name="TimecodesPanelEmptyText"
                                                    Text="Нет сохранённых клипов. Нажми + Клип во время просмотра."
-                                                   Foreground="#8FAFC8"
+                                                   Foreground="#B6B0A1"
                                                    FontSize="13"
                                                    TextWrapping="Wrap"
                                                    Visibility="Visible"
@@ -2200,13 +2134,13 @@
                                                             PreviewMouseRightButtonUp="TimecodeItem_RightClick">
                                                         <Border.Style>
                                                             <Style TargetType="Border">
-                                                                <Setter Property="Background" Value="#B0142233"/>
-                                                                <Setter Property="BorderBrush" Value="#33607A8A"/>
+                                                                <Setter Property="Background" Value="#B0252621"/>
+                                                                <Setter Property="BorderBrush" Value="#33847B66"/>
                                                                 <Setter Property="BorderThickness" Value="1"/>
                                                                 <Style.Triggers>
                                                                     <DataTrigger Binding="{Binding IsCurrentVideo}" Value="True">
-                                                                        <Setter Property="BorderBrush" Value="#554E9DD4"/>
-                                                                        <Setter Property="Background" Value="#C0122740"/>
+                                                                        <Setter Property="BorderBrush" Value="#559F9683"/>
+                                                                        <Setter Property="Background" Value="#C02B2C26"/>
                                                                     </DataTrigger>
                                                                 </Style.Triggers>
                                                             </Style>
@@ -2221,7 +2155,7 @@
                                                             <!-- Thumbnail with time badge -->
                                                             <Grid Grid.Column="0"
                                                                   Width="92" Height="54"
-                                                                  Background="#0A1820">
+                                                                  Background="#161614">
                                                                 <Image Source="{Binding ThumbnailUrl}"
                                                                        Stretch="UniformToFill"
                                                                        HorizontalAlignment="Center"
@@ -2234,7 +2168,7 @@
                                                                         Background="#CC000000"
                                                                         CornerRadius="3">
                                                                     <TextBlock Text="{Binding TimeFormatted}"
-                                                                               Foreground="#F0FAFF"
+                                                                               Foreground="#F8F8F7"
                                                                                FontSize="10"
                                                                                FontWeight="Bold"/>
                                                                 </Border>
@@ -2246,7 +2180,7 @@
                                                                     <Ellipse.Style>
                                                                         <Style TargetType="Ellipse">
                                                                             <Setter Property="Visibility" Value="Collapsed"/>
-                                                                            <Setter Property="Fill" Value="#4EC5F0"/>
+                                                                            <Setter Property="Fill" Value="#ABA493"/>
                                                                             <Style.Triggers>
                                                                                 <DataTrigger Binding="{Binding IsCurrentVideo}" Value="True">
                                                                                     <Setter Property="Visibility" Value="Visible"/>
@@ -2270,7 +2204,7 @@
                                                                 <TextBlock Grid.Row="0"
                                                                            Text="{Binding VideoTitle}"
                                                                            FontSize="10"
-                                                                           Foreground="#5B92B2"
+                                                                           Foreground="#968C77"
                                                                            TextTrimming="CharacterEllipsis"
                                                                            Margin="0,0,0,1">
                                                                     <TextBlock.Style>
@@ -2288,7 +2222,7 @@
                                                                 <!-- Clip label -->
                                                                 <TextBlock Grid.Row="1"
                                                                            Text="{Binding Label}"
-                                                                           Foreground="#F4F3FF"
+                                                                           Foreground="#FAF9F8"
                                                                            FontSize="13"
                                                                            FontWeight="SemiBold"
                                                                            TextTrimming="CharacterEllipsis"/>
@@ -2296,7 +2230,7 @@
                                                                 <!-- Saved date -->
                                                                 <TextBlock Grid.Row="2"
                                                                            Text="{Binding SavedAtText}"
-                                                                           Foreground="#476A82"
+                                                                           Foreground="#6A6C5D"
                                                                            FontSize="10"
                                                                            Margin="0,2,0,0"
                                                                            VerticalAlignment="Bottom"/>
@@ -2357,7 +2291,7 @@
                                 <TextBlock x:Name="CommunityPanelHeaderText"
                                            Grid.Row="0"
                                            Text="Комментарии и чат"
-                                           Foreground="#F4F3FF"
+                                           Foreground="#FAF9F8"
                                            FontSize="18"
                                            FontWeight="Bold"/>
 
@@ -2399,8 +2333,8 @@
                                 </Grid>
 
                                 <Border Grid.Row="5"
-                                        Background="#B0142233"
-                                        BorderBrush="#42B7A4CF"
+                                        Background="#B0252621"
+                                        BorderBrush="#42C3BDB0"
                                         BorderThickness="1"
                                         CornerRadius="12"
                                         ClipToBounds="True">
@@ -2409,7 +2343,7 @@
                                                       Visibility="Collapsed"/>
 
                                         <Border x:Name="CommunityBrowserOverlay"
-                                                Background="#E4172432"
+                                                Background="#E4262722"
                                                 Visibility="Visible"
                                                 IsHitTestVisible="False">
                                             <StackPanel HorizontalAlignment="Center"
@@ -2417,14 +2351,14 @@
                                                         MaxWidth="300">
                                                 <TextBlock x:Name="CommunityBrowserOverlayHeaderText"
                                                            Text="Подготовка обсуждения"
-                                                           Foreground="#F4F3FF"
+                                                           Foreground="#FAF9F8"
                                                            FontSize="18"
                                                            FontWeight="Bold"
                                                            TextAlignment="Center"/>
                                                 <TextBlock x:Name="CommunityBrowserOverlayText"
                                                            Margin="0,8,0,0"
                                                            Text="Загружаю комментарии и чат этого видео..."
-                                                           Foreground="#BFDCEC"
+                                                           Foreground="#DBD8D0"
                                                            FontSize="12"
                                                            TextAlignment="Center"
                                                            TextWrapping="Wrap"/>

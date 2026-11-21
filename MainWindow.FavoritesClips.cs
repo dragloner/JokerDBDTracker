@@ -202,7 +202,7 @@ namespace JokerDBDTracker
             var resumeCount = favoriteVideos.Count(v => v.HasResumePosition);
             var streamsWithMoments = favoriteVideos.Count(v => v.HasTimecodes);
 
-            FavoritesOverviewHeaderText.Text = T("Избранное без шума", "Favorites without noise");
+            FavoritesOverviewHeaderText.Text = T("Избранное", "Favorites");
             FavoritesOverviewSubText.Text = string.IsNullOrWhiteSpace(_searchText)
                 ? T(
                     "Быстрый доступ к любимым стримам, сохранённым моментам и просмотру с продолжением.",
@@ -232,7 +232,7 @@ namespace JokerDBDTracker
                 FilterTimecodesButton.Content = T("# Таймкоды", "# Timecodes");
             }
 
-            ResumeFavoriteButton.Content = T("Продолжить лучшее", "Resume best match");
+            ResumeFavoriteButton.Content = T("Продолжить просмотр", "Continue watching");
             RandomFavoriteMomentButton.Content = T("Случайный момент", "Random moment");
             RandomFavoriteMomentButton.IsEnabled = favoriteClips.Count > 0;
             ResumeFavoriteButton.IsEnabled = _videos.Count > 0;

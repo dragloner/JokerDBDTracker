@@ -72,6 +72,7 @@ namespace JokerDBDTracker
             }
 
             UpdateStreamsCountLabel();
+            RefreshStartCard();
         }
 
         private void RefreshRecommendations()
@@ -247,8 +248,8 @@ namespace JokerDBDTracker
             {
                 if (btn is null) continue;
                 btn.Background = System.Windows.Media.Brushes.Transparent;
-                btn.BorderBrush = BrushFromHex("#2A4A62");
-                btn.Foreground = BrushFromHex("#8BB8D4");
+                btn.BorderBrush = BrushFromHex("#4A4B41");
+                btn.Foreground = BrushFromHex("#BAB3A5");
             }
 
             var activeBtn = _activeCategory switch
@@ -260,9 +261,9 @@ namespace JokerDBDTracker
 
             if (activeBtn is not null)
             {
-                activeBtn.Background    = BrushFromHex("#1E5060");
-                activeBtn.BorderBrush   = BrushFromHex("#4a8aaa");
-                activeBtn.Foreground    = BrushFromHex("#D4EEFF");
+                activeBtn.Background    = BrushFromHex("#42433B");
+                activeBtn.BorderBrush   = BrushFromHex("#8A806A");
+                activeBtn.Foreground    = BrushFromHex("#ECEBE7");
             }
         }
 

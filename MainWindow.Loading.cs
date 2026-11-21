@@ -1,71 +1,46 @@
 using System.Windows;
-using System.Windows.Media.Imaging;
+using System.Windows.Media.Animation;
 
-namespace JokerDBDTracker
+namespace JokerDBDTracker;
+
+public partial class MainWindow
 {
-    public partial class MainWindow
+    private const int LoadingRevealDurationMs = 320;
+    private int _loadingTransitionVersion;
+
+    private void ShowLoadingOverlay(string statusText, bool isIndeterminate)
     {
-        private void ShowLoadingOverlay(string statusText, bool isIndeterminate)
+        _loadingTransitionVersion++;
+        LoadingOverlay.BeginAnimation(OpacityProperty, null);
+        LoadingOverlay.Opacity = 1;
+        LoadingOverlay.Visibility = Visibility.Visible;
+        LoadingStatusText.Text = statusText;
+        LoadingProgressBar.IsIndeterminate = isIndeterminate;
+        LoadingProgressBar.Value = 0;
+        LoadingProgressText.Text = isIndeterminate ? string.Empty : T("Загрузка обновления: 0%", "Update download: 0%");
+    }
+
+    private void HideLoadingOverlay()
+    {
+        if (LoadingOverlay.Visibility != Visibility.Visible) return;
+        var transitionVersion = ++_loadingTransitionVersion;
+        if (!AreAnimationsEnabled)
         {
-            if (LoadingStatusText is not null)
-            {
-                LoadingStatusText.Text = statusText;
-            }
-
-            if (LoadingProgressBar is not null)
-            {
-                LoadingProgressBar.IsIndeterminate = isIndeterminate;
-                LoadingProgressBar.Value = 0;
-            }
-
-            if (LoadingProgressText is not null)
-            {
-                LoadingProgressText.Text = isIndeterminate ? string.Empty : T("Загрузка обновления: 0%", "Update download: 0%");
-            }
-
-            if (LoadingOverlay is not null)
-            {
-                LoadingOverlay.Visibility = Visibility.Visible;
-            }
+            LoadingOverlay.Visibility = Visibility.Collapsed;
+            return;
         }
 
-        private void HideLoadingOverlay()
+        var reveal = new DoubleAnimation(0, TimeSpan.FromMilliseconds(LoadingRevealDurationMs))
         {
-            if (LoadingOverlay is not null)
-            {
-                LoadingOverlay.Visibility = Visibility.Collapsed;
-            }
-        }
-
-        private void InitializeLoadingBackgroundImage()
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        reveal.Completed += (_, _) =>
         {
-            if (LoadingBackgroundImage is null)
-            {
-                return;
-            }
-
-            try
-            {
-                var resourceUri = new Uri("Assets/loading-screen.jpg", UriKind.Relative);
-                var streamInfo = Application.GetResourceStream(resourceUri);
-                if (streamInfo?.Stream is null)
-                {
-                    return;
-                }
-
-                using var resourceStream = streamInfo.Stream;
-                var image = new BitmapImage();
-                image.BeginInit();
-                image.CacheOption = BitmapCacheOption.OnLoad;
-                image.StreamSource = resourceStream;
-                image.EndInit();
-                image.Freeze();
-                LoadingBackgroundImage.Source = image;
-            }
-            catch
-            {
-                // Keep default dark background if custom image fails to load.
-            }
-        }
+            if (transitionVersion != _loadingTransitionVersion) return;
+            LoadingOverlay.Visibility = Visibility.Collapsed;
+            LoadingOverlay.BeginAnimation(OpacityProperty, null);
+            AnimatePanelEntrance(LibraryHero);
+        };
+        LoadingOverlay.BeginAnimation(OpacityProperty, reveal);
     }
 }

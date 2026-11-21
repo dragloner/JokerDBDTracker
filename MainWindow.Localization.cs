@@ -16,7 +16,8 @@ namespace JokerDBDTracker
                 return;
             }
 
-            LibraryHeroTitle.Text = T("Библиотека", "Library");
+            LibraryHeroTitle.Text = T("Библиотека стримов", "Stream library");
+            RefreshStartCard();
             HomeNavButton.Content = T("Главная", "Home");
             FavoritesNavButton.Content = T("Избранное", "Favorites");
             ProfileNavButton.Content = T("Профиль", "Profile");
@@ -37,7 +38,7 @@ namespace JokerDBDTracker
             // Category filter chips
             FilterAllButton.Content = T("Все", "All");
             FilterFavoritesButton.Content = T("★ Избранное", "★ Favorites");
-            RandomStreamButton.Content = T("🔀 Случайный", "🔀 Random");
+            RandomStreamButton.Content = T("Случайный", "Random");
 
             if (TopTabControl.Items.Count >= 5)
             {
@@ -182,7 +183,7 @@ namespace JokerDBDTracker
             QuestsWeeklyResetText.Text = T("Обновление через: --:--:--", "Resets in: --:--:--");
             BackToProfileButton.Content = T("Назад в профиль", "Back to profile");
 
-            LoadingTitleText.Text = T("Загрузка приложения", "Loading app");
+            LoadingTitleText.Text = T("Загрузка библиотеки", "Loading library");
 
             if (FavoritesClipsHeaderText is not null)
             {

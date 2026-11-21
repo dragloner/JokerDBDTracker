@@ -8,7 +8,7 @@ namespace JokerDBDTracker
     {
         private const int MainMinimizeAnimationDurationMs = 520;
         private const double MainMinimizeScaleTo = 0.968;
-        private bool AreAnimationsEnabled => _appSettings.AnimationsEnabled;
+        private bool AreAnimationsEnabled => _appSettings.AnimationsEnabled && SystemParameters.ClientAreaAnimation;
 
         private Task AnimateWindowOpacityAsync(double toOpacity, int durationMs)
         {
@@ -38,6 +38,16 @@ namespace JokerDBDTracker
                 return;
             }
 
+            var translation = element.RenderTransform as TranslateTransform;
+            if (translation is null)
+            {
+                translation = new TranslateTransform();
+                element.RenderTransform = translation;
+            }
+            translation.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(10, 0, TimeSpan.FromMilliseconds(320))
+            {
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            });
             element.Opacity = 0;
             var animation = new DoubleAnimation
             {

@@ -12,7 +12,7 @@
         WindowStyle="None"
         ResizeMode="CanResize"
         Icon="Assets/app.ico"
-        Background="#090B15"
+        Background="#10100E"
         FontFamily="Segoe UI Variable Display, Segoe UI"
         UseLayoutRounding="True"
         SnapsToDevicePixels="True">
@@ -33,45 +33,48 @@
         </ResourceDictionary>
     </Window.Resources>
 
-    <Border x:Name="MainRootBorder"
+    <Border x:Name="MainRootBorder" SizeChanged="BrandShell_SizeChanged"
             Margin="14"
-            Padding="22"
-            BorderBrush="#40D5C9FF" BorderThickness="1"
+            Padding="20"
+            BorderBrush="#383C31" BorderThickness="1"
             Background="{StaticResource AppBackground}"
             CornerRadius="26"
             MouseLeftButtonDown="MainRootBorder_MouseLeftButtonDown">
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="184"/>
-                <ColumnDefinition Width="22"/>
+                <ColumnDefinition Width="174"/>
+                <ColumnDefinition Width="20"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <Grid Grid.ColumnSpan="3" IsHitTestVisible="False" ClipToBounds="True">
                 <Ellipse Width="720" Height="620" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-280,-220,0">
-                    <Ellipse.Fill><RadialGradientBrush><GradientStop Color="#244AA7C8" Offset="0"/><GradientStop Color="#004AA7C8" Offset="1"/></RadialGradientBrush></Ellipse.Fill>
+                    <Ellipse.Fill><RadialGradientBrush><GradientStop Color="#24988F7A" Offset="0"/><GradientStop Color="#00988F7A" Offset="1"/></RadialGradientBrush></Ellipse.Fill>
                 </Ellipse>
                 <Ellipse Width="700" Height="760" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="-260,0,0,-300">
-                    <Ellipse.Fill><RadialGradientBrush><GradientStop Color="#305F3CB5" Offset="0"/><GradientStop Color="#005F3CB5" Offset="1"/></RadialGradientBrush></Ellipse.Fill>
+                    <Ellipse.Fill><RadialGradientBrush><GradientStop Color="#30887E69" Offset="0"/><GradientStop Color="#00887E69" Offset="1"/></RadialGradientBrush></Ellipse.Fill>
                 </Ellipse>
             </Grid>
-            <Border Grid.Column="0" CornerRadius="22" Background="#6423223B" BorderBrush="#28DDD4FF" BorderThickness="1" Padding="16,24">
+            <Border Grid.Column="0" CornerRadius="22" Background="#6431322B" BorderBrush="#28ECEBE7" BorderThickness="1" Padding="16,24">
                 <Grid>
                     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                     <StackPanel>
-                        <Border Width="48" Height="48" HorizontalAlignment="Left" CornerRadius="16" Background="#BFABFF">
-                            <TextBlock Text="J" FontSize="30" FontWeight="Bold" Foreground="#191327" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Border Width="66" Height="66" HorizontalAlignment="Left" CornerRadius="22" BorderBrush="#796344" BorderThickness="1">
+                            <Border.Background><ImageBrush ImageSource="{StaticResource Brand.Portrait}" Stretch="UniformToFill"/></Border.Background>
                         </Border>
-                        <TextBlock Text="JOKERDBD" Foreground="#F5F1FF" FontSize="19" FontWeight="Bold" Margin="0,18,0,0"/>
-                        <TextBlock Text="STREAM LIBRARY" Foreground="#958CA9" FontSize="10" Margin="0,5,0,36"/>
+                        <TextBlock Text="JOKERDBD" Foreground="#F4F0E7" FontSize="19" FontWeight="Bold" Margin="0,18,0,0"/>
+                        <TextBlock Text="Стримы и моменты" Foreground="#A9A99B" FontSize="11" Margin="0,5,0,30"/>
                         <Button x:Name="HomeNavButton" Tag="&#xE80F;" Style="{StaticResource TopNavButtonStyle}" Content="Главная" Click="HomeNavButton_Click"/>
                         <Button x:Name="FavoritesNavButton" Tag="&#xE734;" Style="{StaticResource TopNavButtonStyle}" Content="Избранное" Click="FavoritesNavButton_Click"/>
                         <Button x:Name="ProfileNavButton" Tag="&#xE77B;" Style="{StaticResource TopNavButtonStyle}" Content="Профиль" Click="ProfileNavButton_Click"/>
                         <Button x:Name="SettingsNavButton" Tag="&#xE713;" Style="{StaticResource TopNavButtonStyle}" Content="Настройки" Click="SettingsNavButton_Click"/>
                     </StackPanel>
                     <StackPanel Grid.Row="2">
-                        <Border Height="1" Background="#22D8D1FF" Margin="0,0,0,18"/>
+                        <Border x:Name="SidebarPhoto" Height="126" CornerRadius="12" Margin="0,0,0,18" BorderBrush="#383B32" BorderThickness="1">
+                            <Border.Background><ImageBrush ImageSource="{StaticResource Brand.Mask}" Stretch="UniformToFill" AlignmentY="Top"/></Border.Background>
+                        </Border>
+                        <Border Height="1" Background="#22EBE9E5" Margin="0,0,0,18"/>
                         <Button Content="Обновить каталог" x:Name="ReloadCatalogButton" FontSize="12" Padding="8,10" Click="ReloadCatalogButton_Click"/>
-                        <TextBlock Text="by dragloner" Foreground="#605B73" FontSize="10" TextAlignment="Center" Margin="0,6,0,0"/>
+                        <TextBlock Text="by dragloner" Foreground="#746C5A" FontSize="10" TextAlignment="Center" Margin="0,6,0,0"/>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -91,28 +94,28 @@
             <Border Grid.Row="0"
                     Padding="18"
                     CornerRadius="18"
-                    Background="#A51C1D31"
-                    BorderBrush="#35D6CEFF"
+                    Background="#A5282924"
+                    BorderBrush="#35EAE8E3"
                     BorderThickness="1"
                     MouseLeftButtonDown="TopHeaderBorder_MouseLeftButtonDown">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="200"/>
                         <ColumnDefinition Width="230"/>
-                        <ColumnDefinition Width="190"/>
                         <ColumnDefinition Width="12"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
                     <StackPanel VerticalAlignment="Center">
-                        <TextBlock Text="JokerDBD Tracker"
-                                   Foreground="#F4F3FF"
-                                   FontSize="26"
+                        <TextBlock Text="JokerDBD"
+                                   Foreground="#FAF9F8"
+                                   FontSize="23"
                                    FontWeight="ExtraBold"/>
                         <StackPanel Margin="3,-2,0,0" Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock x:Name="AppVersionText"
-                                       Text="v1.4.4"
-                                       Foreground="#B6B1CF"
+                                       Text="v1.4.9"
+                                       Foreground="#C8C3B8"
                                        FontSize="14"
                                        FontWeight="SemiBold"
                                        VerticalAlignment="Center"/>
@@ -145,9 +148,9 @@
                     <Border Grid.Column="1"
                             Margin="8,0,0,0"
                             CornerRadius="22"
-                            BorderBrush="#35D6CEFF"
+                            BorderBrush="#35EAE8E3"
                             BorderThickness="1"
-                            Background="#801C1D31"
+                            Background="#80282924"
                             Height="50"
                             VerticalAlignment="Center">
                         <Grid>
@@ -159,9 +162,9 @@
                                      Background="Transparent"
                                      TextChanged="SearchBox_TextChanged"/>
                         <TextBlock x:Name="SearchPlaceholderText" Text="Поиск стримов..."
-                                    Foreground="#A4A1BA"
+                                    Foreground="#B8B2A3"
                                     FontWeight="Bold"
-                                   FontSize="18"
+                                   FontSize="14"
                                    IsHitTestVisible="False"
                                    VerticalAlignment="Center"
                                    HorizontalAlignment="Center">
@@ -183,7 +186,7 @@
                         </Grid>
                     </Border>
 
-                    <ComboBox x:Name="SortModeBox"
+                    <ComboBox x:Name="SortModeBox" FontSize="12"
                               Grid.Column="2"
                               Margin="8,0,0,0"
                               VerticalAlignment="Center"
@@ -215,11 +218,35 @@
                 </Grid>
             </Border>
 
-            <Border x:Name="LibraryHero" Grid.Row="2" CornerRadius="16" Padding="20,14"
-                    Background="#151923" BorderBrush="#2A3343" BorderThickness="1">
-                <StackPanel>
-                    <TextBlock x:Name="LibraryHeroTitle" Text="Библиотека" Foreground="#F1F5FA" FontSize="22" FontWeight="SemiBold"/>
-                </StackPanel>
+            <Border x:Name="LibraryHero" Grid.Row="2" CornerRadius="20" BorderBrush="#454333" BorderThickness="1" Background="#20221B" ClipToBounds="True">
+                <Grid x:Name="HeroLayout" MinHeight="190">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="350"/></Grid.ColumnDefinitions>
+                    <StackPanel x:Name="HeroContent" Margin="26,20,18,20" VerticalAlignment="Center">
+                        <TextBlock x:Name="LibraryHeroTitle" Text="Библиотека стримов" Foreground="#F4F0E7" FontSize="30" FontWeight="SemiBold"/>
+                        <TextBlock x:Name="HeroStreamTitle" Text="Выберите стрим для просмотра" Foreground="#BBBBAA" FontSize="13" Margin="0,8,0,16" TextTrimming="CharacterEllipsis" MaxHeight="36" TextWrapping="Wrap"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="HeroStartButton" Style="{StaticResource Brand.PrimaryButton}" IsEnabled="False" Click="HeroStartButton_Click">
+                                <StackPanel Orientation="Horizontal"><TextBlock Text="▶" FontSize="13" VerticalAlignment="Center" Margin="0,0,12,0"/><TextBlock x:Name="HeroStartText" Text="Старт"/></StackPanel>
+                            </Button>
+                            <Button x:Name="TwitchWatchButton" Margin="16,0,0,0" Padding="14,10" FontSize="13" Click="TwitchWatchButton_Click">
+                                <TextBlock x:Name="TwitchWatchButtonText" Text="Открыть Twitch"/>
+                            </Button>
+                            <TextBlock x:Name="HeroResumeText" Foreground="#A5A696" FontSize="12" Margin="16,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </StackPanel>
+                    <Grid Grid.Column="1" Margin="10,16,18,16" IsHitTestVisible="False">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="1.1*"/><ColumnDefinition Width="10"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                        <Border CornerRadius="13" BorderBrush="#756345" BorderThickness="1" RenderTransformOrigin="0.5,0.5">
+                            <Border.RenderTransform><RotateTransform Angle="-4"/></Border.RenderTransform>
+                            <Border.Background><ImageBrush ImageSource="{StaticResource Brand.Medals}" Stretch="UniformToFill" AlignmentY="Top"/></Border.Background>
+                        </Border>
+                        <Grid Grid.Column="2" Margin="0,5,0,5">
+                            <Grid.RowDefinitions><RowDefinition/><RowDefinition Height="8"/><RowDefinition/></Grid.RowDefinitions>
+                            <Border CornerRadius="12"><Border.Background><ImageBrush ImageSource="{StaticResource Brand.Smile}" Stretch="UniformToFill"/></Border.Background></Border>
+                            <Border Grid.Row="2" CornerRadius="12"><Border.Background><ImageBrush ImageSource="{StaticResource Brand.Reaction}" Stretch="UniformToFill"/></Border.Background></Border>
+                        </Grid>
+                    </Grid>
+                </Grid>
             </Border>
 
             <TabControl x:Name="TopTabControl" SelectedIndex="0"
@@ -239,21 +266,21 @@
             <Grid Grid.Row="4" Grid.RowSpan="3" Margin="0,12,0,0">
                 <Grid.Resources>
                     <LinearGradientBrush x:Key="HomePanelBackgroundBrush" StartPoint="0,0" EndPoint="1,1">
-                        <GradientStop Color="#A31C1D32" Offset="0"/>
-                        <GradientStop Color="#A322233C" Offset="0.55"/>
-                        <GradientStop Color="#A3272542" Offset="1"/>
+                        <GradientStop Color="#A3292A24" Offset="0"/>
+                        <GradientStop Color="#A331322C" Offset="0.55"/>
+                        <GradientStop Color="#A3363730" Offset="1"/>
                     </LinearGradientBrush>
                     <Style x:Key="HomeGlassPanelStyle" TargetType="Border">
                         <Setter Property="CornerRadius" Value="18"/>
                         <Setter Property="BorderThickness" Value="1"/>
-                        <Setter Property="BorderBrush" Value="#30D6CEFF"/>
+                        <Setter Property="BorderBrush" Value="#30EAE8E3"/>
                         <Setter Property="Background" Value="{StaticResource HomePanelBackgroundBrush}"/>
                     </Style>
                     <Style x:Key="HomeInnerGlassStyle" TargetType="Border">
                         <Setter Property="CornerRadius" Value="14"/>
                         <Setter Property="BorderThickness" Value="1"/>
-                        <Setter Property="BorderBrush" Value="#36556D"/>
-                        <Setter Property="Background" Value="#A9111922"/>
+                        <Setter Property="BorderBrush" Value="#56574C"/>
+                        <Setter Property="Background" Value="#A91B1B18"/>
                     </Style>
                 </Grid.Resources>
                 <Grid.RowDefinitions>
@@ -262,7 +289,7 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition x:Name="RecommendationsColumn" Width="420"/>
+                    <ColumnDefinition x:Name="RecommendationsColumn" Width="320"/>
                     <ColumnDefinition x:Name="MainColumnsSpacer" Width="16"/>
                     <ColumnDefinition x:Name="StreamsColumn" Width="*"/>
                 </Grid.ColumnDefinitions>
@@ -293,7 +320,7 @@
                         <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="4,0,18,0">
                             <TextBlock x:Name="StatsStreakLabel"
                                        Text="Серия"
-                                       Foreground="#A29AB8"
+                                       Foreground="#B4AD9E"
                                        FontSize="12"
                                        FontWeight="SemiBold"/>
                             <TextBlock x:Name="StatsStreakText"
@@ -304,41 +331,41 @@
                                        Margin="0,1,0,0"/>
                         </StackPanel>
 
-                        <Rectangle Grid.Column="1" Width="1" Height="36" Fill="#3C3656" VerticalAlignment="Center"/>
+                        <Rectangle Grid.Column="1" Width="1" Height="36" Fill="#4A4B41" VerticalAlignment="Center"/>
 
                         <!-- Hours stat -->
                         <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="18,0">
                             <TextBlock x:Name="StatsTotalHoursLabel"
                                        Text="Часов просмотра"
-                                       Foreground="#A29AB8"
+                                       Foreground="#B4AD9E"
                                        FontSize="12"
                                        FontWeight="SemiBold"/>
                             <TextBlock x:Name="StatsTotalHoursText"
                                        Text="0.0 ч"
-                                       Foreground="#E7DEFF"
+                                       Foreground="#F1EFEC"
                                        FontSize="22"
                                        FontWeight="Bold"
                                        Margin="0,1,0,0"/>
                         </StackPanel>
 
-                        <Rectangle Grid.Column="3" Width="1" Height="36" Fill="#3C3656" VerticalAlignment="Center"/>
+                        <Rectangle Grid.Column="3" Width="1" Height="36" Fill="#4A4B41" VerticalAlignment="Center"/>
 
                         <!-- Stream count stat -->
                         <StackPanel Grid.Column="4" VerticalAlignment="Center" Margin="18,0">
                             <TextBlock x:Name="StatsStreamCountLabel"
                                        Text="Стримов в каталоге"
-                                       Foreground="#A29AB8"
+                                       Foreground="#B4AD9E"
                                        FontSize="12"
                                        FontWeight="SemiBold"/>
                             <TextBlock x:Name="StatsStreamCountText"
                                        Text="0"
-                                       Foreground="#E7DEFF"
+                                       Foreground="#F1EFEC"
                                        FontSize="22"
                                        FontWeight="Bold"
                                        Margin="0,1,0,0"/>
                         </StackPanel>
 
-                        <Rectangle Grid.Column="5" Width="1" Height="36" Fill="#3C3656" VerticalAlignment="Center"/>
+                        <Rectangle Grid.Column="5" Width="1" Height="36" Fill="#4A4B41" VerticalAlignment="Center"/>
 
                         <!-- XP / Level widget -->
                         <StackPanel Grid.Column="6" VerticalAlignment="Center" Margin="18,0,4,0">
@@ -349,13 +376,13 @@
                                 </Grid.ColumnDefinitions>
                                 <TextBlock x:Name="StatsLevelText"
                                            Text="Уровень 1"
-                                           Foreground="#E7DEFF"
+                                           Foreground="#F1EFEC"
                                            FontSize="14"
                                            FontWeight="Bold"/>
                                 <TextBlock x:Name="StatsXpText"
                                            Grid.Column="1"
                                            Text="0 / 0 XP"
-                                           Foreground="#A99BC6"
+                                           Foreground="#BBB4A6"
                                            FontSize="12"
                                            FontWeight="SemiBold"
                                            VerticalAlignment="Center"/>
@@ -366,8 +393,8 @@
                                          Minimum="0"
                                          Maximum="100"
                                          Value="0"
-                                         Background="#28233D"
-                                         BorderBrush="#3C3656"
+                                         Background="#32332D"
+                                         BorderBrush="#4A4B41"
                                          BorderThickness="1"/>
                         </StackPanel>
 
@@ -392,14 +419,14 @@
 
                         <StackPanel Margin="0,0,18,0">
                             <TextBlock x:Name="FavoritesOverviewHeaderText"
-                                       Text="Избранное без шума"
-                                       Foreground="#EEF8FF"
+                                       Text="Избранное"
+                                       Foreground="#F8F7F5"
                                        FontSize="24"
                                        FontWeight="Bold"/>
                             <TextBlock x:Name="FavoritesOverviewSubText"
                                        Margin="0,5,0,0"
                                        Text="Быстрый доступ к любимым стримам и сохранённым моментам."
-                                       Foreground="#8EB8D4"
+                                       Foreground="#BBB5A7"
                                        FontSize="13"
                                        TextWrapping="Wrap"/>
 
@@ -417,18 +444,18 @@
                                 <Border Grid.Column="0"
                                         Padding="12,10"
                                         CornerRadius="14"
-                                        Background="#B0152636"
-                                        BorderBrush="#3F607B"
+                                        Background="#B0272823"
+                                        BorderBrush="#626456"
                                         BorderThickness="1">
                                     <StackPanel>
                                         <TextBlock x:Name="FavoritesFavoriteCountLabelText"
                                                    Text="Избранные стримы"
-                                                   Foreground="#77A6C3"
+                                                   Foreground="#AAA290"
                                                    FontSize="12"
                                                    FontWeight="SemiBold"/>
                                         <TextBlock x:Name="FavoritesFavoriteCountValueText"
                                                    Text="0"
-                                                   Foreground="#F0F8FF"
+                                                   Foreground="#F8F8F7"
                                                    FontSize="28"
                                                    FontWeight="Bold"
                                                    Margin="0,2,0,0"/>
@@ -438,18 +465,18 @@
                                 <Border Grid.Column="2"
                                         Padding="12,10"
                                         CornerRadius="14"
-                                        Background="#B0192538"
-                                        BorderBrush="#4B6D8B"
+                                        Background="#B02B2B26"
+                                        BorderBrush="#79705D"
                                         BorderThickness="1">
                                     <StackPanel>
                                         <TextBlock x:Name="FavoritesMomentCountLabelText"
                                                    Text="Сохранённые моменты"
-                                                   Foreground="#7BB0D1"
+                                                   Foreground="#B2AA9A"
                                                    FontSize="12"
                                                    FontWeight="SemiBold"/>
                                         <TextBlock x:Name="FavoritesMomentCountValueText"
                                                    Text="0"
-                                                   Foreground="#97D8FF"
+                                                   Foreground="#D2CEC4"
                                                    FontSize="28"
                                                    FontWeight="Bold"
                                                    Margin="0,2,0,0"/>
@@ -459,18 +486,18 @@
                                 <Border Grid.Column="4"
                                         Padding="12,10"
                                         CornerRadius="14"
-                                        Background="#B0222A39"
-                                        BorderBrush="#5B7590"
+                                        Background="#B030312A"
+                                        BorderBrush="#857B66"
                                         BorderThickness="1">
                                     <StackPanel>
                                         <TextBlock x:Name="FavoritesResumeCountLabelText"
                                                    Text="Готовы к продолжению"
-                                                   Foreground="#8CB7D1"
+                                                   Foreground="#B9B2A4"
                                                    FontSize="12"
                                                    FontWeight="SemiBold"/>
                                         <TextBlock x:Name="FavoritesResumeCountValueText"
                                                    Text="0"
-                                                   Foreground="#E9F3FF"
+                                                   Foreground="#F5F5F3"
                                                    FontSize="28"
                                                    FontWeight="Bold"
                                                    Margin="0,2,0,0"/>
@@ -480,13 +507,13 @@
                                 <Border Grid.Column="6"
                                         Padding="12,10"
                                         CornerRadius="14"
-                                        Background="#B0282434"
-                                        BorderBrush="#6B7394"
+                                        Background="#B02E2F29"
+                                        BorderBrush="#90866F"
                                         BorderThickness="1">
                                     <StackPanel>
                                         <TextBlock x:Name="FavoritesStreamsWithMomentsLabelText"
                                                    Text="Стримы с таймкодами"
-                                                   Foreground="#95B7DE"
+                                                   Foreground="#C3BDB0"
                                                    FontSize="12"
                                                    FontWeight="SemiBold"/>
                                         <TextBlock x:Name="FavoritesStreamsWithMomentsValueText"
@@ -508,7 +535,7 @@
                                     Padding="12,10"
                                     FontSize="14"
                                     FontWeight="SemiBold"
-                                    Content="Продолжить лучшее"
+                                    Content="Продолжить просмотр"
                                     Click="ResumeFavoriteButton_Click"/>
                             <Button x:Name="RandomFavoriteMomentButton"
                                     Padding="12,10"
@@ -519,12 +546,12 @@
                             <Border Margin="0,12,0,0"
                                     Padding="12,10"
                                     CornerRadius="12"
-                                    Background="#8F111C27"
-                                    BorderBrush="#345A73"
+                                    Background="#8F1D1E1A"
+                                    BorderBrush="#58594E"
                                     BorderThickness="1">
                                 <TextBlock x:Name="FavoritesSearchHintText"
                                            Text="Поиск сверху ищет и стримы, и таймкоды."
-                                           Foreground="#8FB8D3"
+                                           Foreground="#BBB5A7"
                                            FontSize="12"
                                            TextWrapping="Wrap"/>
                             </Border>
@@ -548,20 +575,6 @@
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
-                        <!-- Twitch open button -->
-                        <Button x:Name="TwitchWatchButton"
-                                Grid.Row="0"
-                                Margin="0,0,0,4"
-                                Padding="0,9"
-                                FontSize="14"
-                                FontWeight="SemiBold"
-                                Click="TwitchWatchButton_Click">
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                <TextBlock Text="&#xE714;" FontFamily="Segoe MDL2 Assets" FontSize="15" Margin="0,0,7,0" VerticalAlignment="Center"/>
-                                <TextBlock x:Name="TwitchWatchButtonText" Text="Открыть Twitch" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
-
                         <!-- Category filter chips row -->
                         <Border Grid.Row="2"
                                 Padding="10,8"
@@ -575,52 +588,52 @@
                                     <Button x:Name="FilterAllButton"
                                             Content="Все"
                                             Tag="all"
-                                            Padding="5,12"
+                                            Padding="9,8"
                                             Margin="0,0,6,0"
                                             FontSize="13"
                                             FontWeight="SemiBold"
-                                            Background="#53426F"
-                                            BorderBrush="#A08BC7"
+                                            Background="#5D5F52"
+                                            BorderBrush="#B4AD9E"
                                             BorderThickness="1"
-                                            Foreground="#D4EEFF"
+                                            Foreground="#ECEBE7"
                                             Click="CategoryFilterButton_Click"/>
                                     <Button x:Name="FilterFavoritesButton"
                                             Content="★ Избранное"
                                             Tag="favorites"
-                                            Padding="5,12"
+                                            Padding="9,8"
                                             Margin="0,0,6,0"
                                             FontSize="13"
                                             FontWeight="SemiBold"
-                                            Background="#171626"
-                                            BorderBrush="#3C3656"
+                                            Background="#20201C"
+                                            BorderBrush="#4A4B41"
                                             BorderThickness="1"
                                             Foreground="#E8C445"
                                             Click="CategoryFilterButton_Click"/>
                                     <Button x:Name="FilterTimecodesButton"
                                             Content="# Таймкоды"
                                             Tag="with_timecodes"
-                                            Padding="5,12"
+                                            Padding="9,8"
                                             Margin="0,0,0,0"
                                             FontSize="13"
                                             FontWeight="SemiBold"
-                                            Background="#171626"
-                                            BorderBrush="#3C3656"
+                                            Background="#20201C"
+                                            BorderBrush="#4A4B41"
                                             BorderThickness="1"
-                                            Foreground="#90BEFF"
+                                            Foreground="#CFCAC0"
                                             Click="CategoryFilterButton_Click"/>
                                 </StackPanel>
 
                                 <!-- Random stream button -->
                                 <Button x:Name="RandomStreamButton"
                                         Grid.Column="1"
-                                        Content="&#x1F500; Случайный"
+                                        Content="Случайный"
                                         Padding="10,5"
                                         FontSize="13"
                                         FontWeight="SemiBold"
-                                        Background="#1A3E55"
-                                        BorderBrush="#3A6E88"
+                                        Background="#3A3B34"
+                                        BorderBrush="#66685A"
                                         BorderThickness="1"
-                                        Foreground="#90D6FF"
+                                        Foreground="#CFCAC0"
                                         ToolTip="Открыть случайный стрим из текущего списка"
                                         Click="RandomStreamButton_Click"/>
                             </Grid>
@@ -629,7 +642,7 @@
                         <!-- Stream count indicator -->
                         <TextBlock x:Name="StreamsCountLabel"
                                    Grid.Row="4"
-                                   Foreground="#4A7890"
+                                   Foreground="#7B725F"
                                    FontSize="12"
                                    FontWeight="SemiBold"
                                    Margin="4,0,0,0"
@@ -639,9 +652,9 @@
                         <Border Grid.Row="6"
                                 Padding="8"
                                 CornerRadius="14"
-                                BorderBrush="#34546B"
+                                BorderBrush="#54554A"
                                 BorderThickness="1"
-                                Background="#99101923">
+                                Background="#991B1B18">
                             <ListBox x:Name="VideoList"
                                      Margin="0,2,6,2"
                                      Background="Transparent"
@@ -676,10 +689,10 @@
                                                     VerticalAlignment="Stretch">
                                                 <Border.Style>
                                                     <Style TargetType="Border">
-                                                        <Setter Property="Background" Value="#1E4060"/>
+                                                        <Setter Property="Background" Value="#42433B"/>
                                                         <Style.Triggers>
                                                             <DataTrigger Binding="{Binding HasResumePosition}" Value="True">
-                                                                <Setter Property="Background" Value="#A88BD6"/>
+                                                                <Setter Property="Background" Value="#BBB4A6"/>
                                                             </DataTrigger>
                                                         </Style.Triggers>
                                                     </Style>
@@ -691,19 +704,25 @@
                                                     Width="162"
                                                     Height="92"
                                                     CornerRadius="8"
-                                                    Background="#A41A2838"
-                                                    BorderBrush="#3C3656"
+                                                    Background="#A42B2C26"
+                                                    BorderBrush="#4A4B41"
                                                     BorderThickness="1"
                                                     ClipToBounds="True"
                                                     VerticalAlignment="Top">
                                                 <Grid>
                                                     <Image Source="{Binding ThumbnailUrl}" Stretch="UniformToFill"/>
-                                                    <Border Background="#15081116"/>
+                                                    <Border HorizontalAlignment="Center" VerticalAlignment="Center" Width="40" Height="40" CornerRadius="20" Background="#E7BD72" IsHitTestVisible="False">
+                                                        <Border.Style><Style TargetType="Border"><Setter Property="Opacity" Value="0"/>
+                                                            <Style.Triggers><DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True"><Setter Property="Opacity" Value="1"/></DataTrigger></Style.Triggers>
+                                                        </Style></Border.Style>
+                                                        <TextBlock Text="▶" Foreground="#211B11" FontSize="15" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="3,0,0,0"/>
+                                                    </Border>
+                                                    <Border Background="#1510100E"/>
 
                                                     <!-- Progress bar at bottom of thumbnail -->
                                                     <Border VerticalAlignment="Bottom"
                                                             Height="3"
-                                                            Background="#28233D"
+                                                            Background="#32332D"
                                                             Opacity="0.7">
                                                         <Border.Style>
                                                             <Style TargetType="Border">
@@ -718,7 +737,7 @@
                                                     </Border>
                                                     <Rectangle VerticalAlignment="Bottom"
                                                                Height="3"
-                                                               Fill="#BB9CEF"
+                                                               Fill="#CDC8BE"
                                                                HorizontalAlignment="Left"
                                                                Width="{Binding ResumeBarWidth}">
                                                         <Rectangle.Style>
@@ -742,8 +761,8 @@
                                                         <Border CornerRadius="4"
                                                                 Padding="3,2"
                                                                 Margin="0,0,3,0"
-                                                                Background="#CC1A4A6A"
-                                                                BorderBrush="#557AC8E8"
+                                                                Background="#CC45473D"
+                                                                BorderBrush="#55BBB5A7"
                                                                 BorderThickness="1">
                                                             <Border.Style>
                                                                 <Style TargetType="Border">
@@ -756,7 +775,7 @@
                                                                 </Style>
                                                             </Border.Style>
                                                             <TextBlock Text="▶"
-                                                                       Foreground="#7AC8E8"
+                                                                       Foreground="#BBB5A7"
                                                                        FontSize="9"
                                                                        FontWeight="Bold"/>
                                                         </Border>
@@ -785,8 +804,8 @@
                                                         <!-- Timecode badge -->
                                                         <Border CornerRadius="4"
                                                                 Padding="3,2"
-                                                                Background="#CC103050"
-                                                                BorderBrush="#554A8AFF"
+                                                                Background="#CC32332D"
+                                                                BorderBrush="#55B0A999"
                                                                 BorderThickness="1">
                                                             <Border.Style>
                                                                 <Style TargetType="Border">
@@ -799,7 +818,7 @@
                                                                 </Style>
                                                             </Border.Style>
                                                             <TextBlock Text="{Binding TimecodeCount, StringFormat='🔖{0}'}"
-                                                                       Foreground="#9AB8FF"
+                                                                       Foreground="#D3CFC6"
                                                                        FontSize="9"
                                                                        FontWeight="Bold"/>
                                                         </Border>
@@ -810,21 +829,21 @@
                                             <!-- Info text -->
                                             <StackPanel Grid.Column="3" Margin="0,2,4,0" VerticalAlignment="Top">
                                                 <TextBlock Text="{Binding Title}"
-                                                           Foreground="#EEF6FF"
+                                                           Foreground="#F8F7F5"
                                                            FontWeight="Bold"
                                                            FontSize="17"
                                                            TextWrapping="Wrap"
                                                            MaxHeight="68"/>
                                                 <TextBlock Text="{Binding PublishedAtText}"
-                                                           Foreground="#A29AB8"
+                                                           Foreground="#B4AD9E"
                                                            FontSize="13"
                                                            Margin="0,5,0,0"/>
                                                 <TextBlock Text="{Binding LastViewedText}"
-                                                           Foreground="#527E97"
+                                                           Foreground="#847A65"
                                                            FontSize="13"
                                                            Margin="0,2,0,0"/>
                                                 <TextBlock Text="{Binding ResumeText}"
-                                                           Foreground="#86B6CE"
+                                                           Foreground="#B5AE9F"
                                                            FontSize="13"
                                                            FontWeight="SemiBold"
                                                            Margin="0,2,0,0"/>
@@ -838,9 +857,9 @@
                                                     FontSize="13"
                                                     FontWeight="Bold"
                                                     Background="Transparent"
-                                                    BorderBrush="#334D65"
+                                                    BorderBrush="#505147"
                                                     BorderThickness="1"
-                                                    Foreground="#70A8C8"
+                                                    Foreground="#A9A18F"
                                                     Content="+"
                                                     Tag="{Binding VideoId}"
                                                     ToolTip="Добавить в очередь"
@@ -856,7 +875,7 @@
                                                     FontSize="14"
                                                     FontWeight="Bold"
                                                     Background="Transparent"
-                                                    BorderBrush="#334D65"
+                                                    BorderBrush="#505147"
                                                     BorderThickness="1"
                                                     Foreground="#E8C445"
                                                     Content="{Binding FavoriteGlyph}"
@@ -890,8 +909,8 @@
                         <!-- ── Continue Watching ── -->
                         <Border x:Name="ContinueWatchingSection"
                                 Grid.Row="0"
-                                Background="#702B2944"
-                                BorderBrush="#30D6CEFF"
+                                Background="#70393A33"
+                                BorderBrush="#30EAE8E3"
                                 BorderThickness="1"
                                 CornerRadius="12"
                                 Padding="12,10"
@@ -899,7 +918,7 @@
                             <StackPanel>
                                 <TextBlock x:Name="ContinueWatchingHeaderText"
                                            Text="Продолжить просмотр"
-                                           Foreground="#E6E0FF"
+                                           Foreground="#F2F0ED"
                                            FontSize="14"
                                            FontWeight="Bold"
                                            Margin="0,0,0,8"/>
@@ -920,30 +939,30 @@
                                                 </Grid.ColumnDefinitions>
                                                 <Border Width="80" Height="46"
                                                         CornerRadius="6"
-                                                        Background="#A41A2838"
-                                                        BorderBrush="#3C3656"
+                                                        Background="#A42B2C26"
+                                                        BorderBrush="#4A4B41"
                                                         BorderThickness="1"
                                                         ClipToBounds="True">
                                                     <Grid>
                                                         <Image Source="{Binding ThumbnailUrl}" Stretch="UniformToFill"/>
                                                         <!-- Resume bar -->
-                                                        <Border VerticalAlignment="Bottom" Height="3" Background="#28233D" Opacity="0.7"/>
+                                                        <Border VerticalAlignment="Bottom" Height="3" Background="#32332D" Opacity="0.7"/>
                                                         <Rectangle VerticalAlignment="Bottom"
                                                                    Height="3"
-                                                                   Fill="#BB9CEF"
+                                                                   Fill="#CDC8BE"
                                                                    HorizontalAlignment="Left"
                                                                    Width="{Binding ResumeBarWidthSmall}"/>
                                                     </Grid>
                                                 </Border>
                                                 <StackPanel Grid.Column="2" VerticalAlignment="Center">
                                                     <TextBlock Text="{Binding Title}"
-                                                               Foreground="#EEF6FF"
+                                                               Foreground="#F8F7F5"
                                                                FontSize="12"
                                                                FontWeight="SemiBold"
                                                                TextWrapping="Wrap"
                                                                MaxHeight="36"/>
                                                     <TextBlock Text="{Binding ResumeText}"
-                                                               Foreground="#BB9CEF"
+                                                               Foreground="#CDC8BE"
                                                                FontSize="12"
                                                                Margin="0,2,0,0"/>
                                                 </StackPanel>
@@ -957,8 +976,8 @@
                         <!-- ── Watch Queue ── -->
                         <Border x:Name="WatchQueueSection"
                                 Grid.Row="2"
-                                Background="#702B2944"
-                                BorderBrush="#30D6CEFF"
+                                Background="#70393A33"
+                                BorderBrush="#30EAE8E3"
                                 BorderThickness="1"
                                 CornerRadius="12"
                                 Padding="12,10"
@@ -972,18 +991,18 @@
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                         <TextBlock x:Name="WatchQueueHeaderText"
                                                    Text="Очередь"
-                                                   Foreground="#E6E0FF"
+                                                   Foreground="#F2F0ED"
                                                    FontSize="14"
                                                    FontWeight="Bold"/>
                                         <Border x:Name="WatchQueueBadge"
                                                 Margin="6,0,0,0"
                                                 Padding="5,1"
                                                 CornerRadius="8"
-                                                Background="#2A5F7E"
+                                                Background="#585A4E"
                                                 VerticalAlignment="Center">
                                             <TextBlock x:Name="WatchQueueCountText"
                                                        Text="0"
-                                                       Foreground="#90D6FF"
+                                                       Foreground="#CFCAC0"
                                                        FontSize="12"
                                                        FontWeight="Bold"/>
                                         </Border>
@@ -994,10 +1013,10 @@
                                             Padding="8,4"
                                             FontSize="12"
                                             FontWeight="SemiBold"
-                                            Background="#1A4A60"
-                                            BorderBrush="#3A7A98"
+                                            Background="#404139"
+                                            BorderBrush="#776E5B"
                                             BorderThickness="1"
-                                            Foreground="#90D6FF"
+                                            Foreground="#CFCAC0"
                                             Click="PlayQueueButton_Click"/>
                                 </Grid>
                                 <ListBox x:Name="WatchQueueList"
@@ -1018,7 +1037,7 @@
                                                     <ColumnDefinition Width="24"/>
                                                 </Grid.ColumnDefinitions>
                                                 <TextBlock Text="{Binding Title}"
-                                                           Foreground="#C8E4F4"
+                                                           Foreground="#E2E0DA"
                                                            FontSize="12"
                                                            TextWrapping="Wrap"
                                                            MaxHeight="36"
@@ -1029,9 +1048,9 @@
                                                         Padding="0"
                                                         FontSize="12"
                                                         Background="Transparent"
-                                                        BorderBrush="#334D65"
+                                                        BorderBrush="#505147"
                                                         BorderThickness="1"
-                                                        Foreground="#8098B0"
+                                                        Foreground="#A59D8B"
                                                         Content="✕"
                                                         Tag="{Binding VideoId}"
                                                         VerticalAlignment="Center"
@@ -1045,11 +1064,11 @@
 
                         <!-- ── Recommendations ── -->
                         <Border Grid.Row="4"
-                                Background="#702B2944"
-                                BorderBrush="#30D6CEFF"
+                                Background="Transparent"
+                                BorderBrush="Transparent"
                                 BorderThickness="1"
                                 CornerRadius="12"
-                                Padding="12,10">
+                                Padding="0">
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
@@ -1058,15 +1077,15 @@
                                 </Grid.RowDefinitions>
                                 <TextBlock x:Name="RecommendationsHeaderText"
                                            Text="Рекомендации"
-                                           Foreground="#E6E0FF"
+                                           Foreground="#F2F0ED"
                                            FontSize="14"
                                            FontWeight="Bold"/>
                                 <Border Grid.Row="2"
-                                        Padding="4"
+                                        Padding="0"
                                         CornerRadius="10"
-                                        BorderBrush="#34546B"
+                                        BorderBrush="Transparent"
                                         BorderThickness="1"
-                                        Background="#99101923">
+                                        Background="Transparent">
                                     <ListBox x:Name="RecommendationsList"
                                              Margin="0,2,4,2"
                                              BorderThickness="0"
@@ -1086,35 +1105,35 @@
                                             <DataTemplate>
                                                 <Grid Margin="0,2,0,2">
                                                     <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="100"/>
+                                                        <ColumnDefinition Width="76"/>
                                                         <ColumnDefinition Width="8"/>
                                                         <ColumnDefinition Width="*"/>
                                                     </Grid.ColumnDefinitions>
-                                                    <Border Width="100" Height="58"
+                                                    <Border Width="76" Height="52"
                                                             CornerRadius="6"
-                                                            Background="#A41A2838"
-                                                            BorderBrush="#3C3656"
+                                                            Background="#A42B2C26"
+                                                            BorderBrush="#4A4B41"
                                                             BorderThickness="1"
                                                             ClipToBounds="True"
                                                             VerticalAlignment="Top">
                                                         <Grid>
                                                             <Image Source="{Binding ThumbnailUrl}" Stretch="UniformToFill"/>
-                                                            <Border Background="#15081116"/>
+                                                            <Border Background="#1510100E"/>
                                                         </Grid>
                                                     </Border>
                                                     <StackPanel Grid.Column="2" Margin="0,0,2,0">
                                                         <TextBlock Text="{Binding Title}"
-                                                                   Foreground="#EEF6FF"
+                                                                   Foreground="#F8F7F5"
                                                                    FontWeight="Bold"
                                                                    FontSize="13"
                                                                    TextWrapping="Wrap"
                                                                    MaxHeight="48"/>
-                                                        <TextBlock Text="{Binding PublishedAtText}"
-                                                                   Foreground="#567A92"
+                                                        <TextBlock Text="{Binding PublishedAtText}" TextTrimming="CharacterEllipsis"
+                                                                   Foreground="#A5A592"
                                                                    FontSize="12"
                                                                    Margin="0,3,0,0"/>
-                                                        <TextBlock Text="{Binding LastViewedText}"
-                                                                   Foreground="#447090"
+                                                        <TextBlock Text="{Binding LastViewedText}" TextTrimming="CharacterEllipsis"
+                                                                   Foreground="#A5A592"
                                                                    FontSize="12"
                                                                    Margin="0,2,0,0"/>
                                                     </StackPanel>
@@ -1150,19 +1169,19 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock x:Name="FavoritesClipsHeaderText"
                                        Text="Сохранённые клипы"
-                                       Foreground="#F4F3FF"
+                                       Foreground="#FAF9F8"
                                        FontSize="16"
                                        FontWeight="Bold"
                                        VerticalAlignment="Center"/>
                             <TextBlock x:Name="FavoritesClipsSubtitleText"
                                        Margin="0,24,0,0"
-                                       Foreground="#86ABC4"
+                                       Foreground="#B1A999"
                                        FontSize="12"
                                        TextWrapping="Wrap"
                                        VerticalAlignment="Top"/>
                             <TextBlock x:Name="FavoritesClipsCountText"
                                        Grid.Column="1"
-                                       Foreground="#4A7890"
+                                       Foreground="#7B725F"
                                        FontSize="12"
                                        FontWeight="SemiBold"
                                        VerticalAlignment="Center"
@@ -1173,15 +1192,18 @@
                         <Border Grid.Row="2"
                                 Padding="6"
                                 CornerRadius="14"
-                                BorderBrush="#34546B"
+                                BorderBrush="#54554A"
                                 BorderThickness="1"
-                                Background="#99101923">
+                                Background="#991B1B18">
                             <ScrollViewer VerticalScrollBarVisibility="Auto"
                                           HorizontalScrollBarVisibility="Disabled">
                                 <StackPanel>
+                                    <Border Width="180" Height="120" CornerRadius="14" HorizontalAlignment="Center" Margin="0,22,0,12" Visibility="{Binding Visibility, ElementName=FavoritesClipsEmptyText}">
+                                        <Border.Background><ImageBrush ImageSource="{StaticResource Brand.Smile}" Stretch="UniformToFill"/></Border.Background>
+                                    </Border>
                                     <TextBlock x:Name="FavoritesClipsEmptyText"
                                                Text="Нет сохранённых клипов. Открой видео и нажми M."
-                                               Foreground="#8FAFC8"
+                                               Foreground="#B6B0A1"
                                                FontSize="13"
                                                TextWrapping="Wrap"
                                                Margin="4,4,4,0"
@@ -1191,8 +1213,8 @@
                                             <DataTemplate>
                                                 <Border Margin="0,0,0,6"
                                                         CornerRadius="9"
-                                                        Background="#B0142233"
-                                                        BorderBrush="#33607A8A"
+                                                        Background="#B0252621"
+                                                        BorderBrush="#33847B66"
                                                         BorderThickness="1"
                                                         ClipToBounds="True">
                                                     <Grid>
@@ -1202,7 +1224,7 @@
                                                         </Grid.ColumnDefinitions>
 
                                                         <!-- Thumbnail with time badge -->
-                                                        <Grid Width="80" Height="48" Background="#0A1820">
+                                                        <Grid Width="80" Height="48" Background="#161614">
                                                             <Image Source="{Binding ThumbnailUrl}"
                                                                    Stretch="UniformToFill"/>
                                                             <Border VerticalAlignment="Bottom"
@@ -1212,7 +1234,7 @@
                                                                     Background="#CC000000"
                                                                     CornerRadius="3">
                                                                 <TextBlock Text="{Binding TimeFormatted}"
-                                                                           Foreground="#F0FAFF"
+                                                                           Foreground="#F8F8F7"
                                                                            FontSize="9"
                                                                            FontWeight="Bold"/>
                                                             </Border>
@@ -1229,12 +1251,12 @@
                                                             <TextBlock Grid.Row="0"
                                                                        Text="{Binding VideoTitle}"
                                                                        FontSize="10"
-                                                                       Foreground="#5B92B2"
+                                                                       Foreground="#968C77"
                                                                        TextTrimming="CharacterEllipsis"/>
 
                                                             <TextBlock Grid.Row="1"
                                                                        Text="{Binding Label}"
-                                                                       Foreground="#F4F3FF"
+                                                                       Foreground="#FAF9F8"
                                                                        FontSize="12"
                                                                        FontWeight="SemiBold"
                                                                        TextTrimming="CharacterEllipsis"/>
@@ -1275,8 +1297,8 @@
                     Grid.RowSpan="3"
                     Padding="14"
                     CornerRadius="18"
-                    Background="#A51C1D31"
-                    BorderBrush="#35D6CEFF"
+                    Background="#A5282924"
+                    BorderBrush="#35EAE8E3"
                     BorderThickness="1"
                     Visibility="Collapsed">
                 <Grid>
@@ -1286,7 +1308,7 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <Border Grid.Row="0" Background="#702B2944" BorderBrush="#30D6CEFF" BorderThickness="1" CornerRadius="14" Padding="16,14">
+                    <Border Grid.Row="0" Background="#70393A33" BorderBrush="#30EAE8E3" BorderThickness="1" CornerRadius="14" Padding="16,14">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
@@ -1297,8 +1319,8 @@
 
                             <!-- Prestige circle -->
                             <Grid Width="80" Height="80" VerticalAlignment="Center">
-                                <Border Background="#2A4460"
-                                        BorderBrush="#6090B0"
+                                <Border Background="#484A40"
+                                        BorderBrush="#978E79"
                                         BorderThickness="2"
                                         CornerRadius="40"
                                         ClipToBounds="True">
@@ -1319,14 +1341,14 @@
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock x:Name="ProfileHeaderText" Text="Профиль" Foreground="#E6E0FF" FontWeight="Bold" FontSize="22"/>
-                                    <TextBlock x:Name="ProfileLevelText" Grid.Column="1" Margin="14,0,0,0" Foreground="#C8D8E8" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="ProfileHeaderText" Text="Профиль" Foreground="#F2F0ED" FontWeight="Bold" FontSize="22"/>
+                                    <TextBlock x:Name="ProfileLevelText" Grid.Column="1" Margin="14,0,0,0" Foreground="#DDDAD3" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                 </Grid>
-                                <TextBlock x:Name="ProfileXpText" Foreground="#8AAAC0" FontSize="14" Margin="0,4,0,0"/>
+                                <TextBlock x:Name="ProfileXpText" Foreground="#B1A999" FontSize="14" Margin="0,4,0,0"/>
                                 <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                                     <TextBlock x:Name="ProfileStreakText" Foreground="#F0C070" FontSize="14" FontWeight="Bold"/>
-                                    <TextBlock x:Name="ProfileTodayText" Foreground="#90B8D0" FontSize="14" Margin="14,0,0,0"/>
-                                    <TextBlock x:Name="ProfileHoursText" Foreground="#7AA0B8" FontSize="14" Margin="14,0,0,0"/>
+                                    <TextBlock x:Name="ProfileTodayText" Foreground="#BAB4A6" FontSize="14" Margin="14,0,0,0"/>
+                                    <TextBlock x:Name="ProfileHoursText" Foreground="#A69E8C" FontSize="14" Margin="14,0,0,0"/>
                                 </StackPanel>
                                 <ProgressBar x:Name="ProfileXpProgress" Margin="0,10,0,0" Height="16" Minimum="0"/>
                             </StackPanel>
@@ -1334,8 +1356,8 @@
                             <!-- Quests button -->
                             <Button x:Name="OpenQuestsButton"
                                     Grid.Column="3"
-                                    Background="#2A5F7E"
-                                    Foreground="#E8F6FF"
+                                    Background="#585A4E"
+                                    Foreground="#F5F4F2"
                                     Padding="18,10"
                                     MinHeight="40"
                                     VerticalAlignment="Center"
@@ -1351,13 +1373,13 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
-                        <Border Grid.Column="0" Background="#702B2944" BorderBrush="#30D6CEFF" BorderThickness="1" CornerRadius="14" Padding="14">
+                        <Border Grid.Column="0" Background="#70393A33" BorderBrush="#30EAE8E3" BorderThickness="1" CornerRadius="14" Padding="14">
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
-                                <TextBlock x:Name="AchievementsHeaderText" Text="Достижения" Foreground="#E6E0FF" FontWeight="Bold" FontSize="18"/>
+                                <TextBlock x:Name="AchievementsHeaderText" Text="Достижения" Foreground="#F2F0ED" FontWeight="Bold" FontSize="18"/>
                                 <ListBox x:Name="AchievementsList"
                                           Grid.Row="1"
                                           Margin="0,12,0,0"
@@ -1386,26 +1408,26 @@
                                                         Width="40"
                                                         Height="40"
                                                         CornerRadius="20"
-                                                        BorderBrush="#8AAAC0"
+                                                        BorderBrush="#B1A999"
                                                         BorderThickness="1"
-                                                        Background="#C63A5468">
+                                                        Background="#C655574B">
                                                     <TextBlock x:Name="AchievementGlyph"
                                                                Text="○"
                                                                FontSize="24"
                                                                FontWeight="Bold"
-                                                               Foreground="#D6E8F5"
+                                                               Foreground="#E9E7E2"
                                                                HorizontalAlignment="Center"
                                                                VerticalAlignment="Center"/>
                                                 </Border>
 
                                                 <StackPanel Grid.Column="2">
                                                     <TextBlock Text="{Binding Title}"
-                                                               Foreground="#F2FAFF"
+                                                               Foreground="#F9F9F8"
                                                                FontWeight="Bold"
                                                                FontSize="20"
                                                                TextWrapping="Wrap"/>
                                                     <TextBlock Text="{Binding Description}"
-                                                               Foreground="#D2E3EF"
+                                                               Foreground="#E4E2DD"
                                                                FontSize="15"
                                                                Margin="0,2,0,0"
                                                                TextWrapping="Wrap"/>
@@ -1423,11 +1445,11 @@
                             </Grid>
                         </Border>
 
-                        <Border Grid.Column="2" Background="#702B2944" BorderBrush="#30D6CEFF" BorderThickness="1" CornerRadius="14" Padding="14">
+                        <Border Grid.Column="2" Background="#70393A33" BorderBrush="#30EAE8E3" BorderThickness="1" CornerRadius="14" Padding="14">
                             <StackPanel>
                                 <TextBlock x:Name="RecentStreamsHeaderText"
                                            Text="Последние просмотренные"
-                                           Foreground="#E6E0FF"
+                                           Foreground="#F2F0ED"
                                            FontWeight="Bold"
                                            FontSize="18"/>
                                 <ListBox x:Name="RecentStreamsList"
@@ -1457,7 +1479,7 @@
                                                 <Border Width="120"
                                                         Height="68"
                                                         CornerRadius="8"
-                                                        Background="#C334485A"
+                                                        Background="#C34B4C42"
                                                         ClipToBounds="True"
                                                         VerticalAlignment="Top">
                                                     <Image Source="{Binding ThumbnailUrl}" Stretch="UniformToFill"/>
@@ -1465,12 +1487,12 @@
 
                                                 <StackPanel Grid.Column="2">
                                                     <TextBlock Text="{Binding Title}"
-                                                               Foreground="#F2FAFF"
+                                                               Foreground="#F9F9F8"
                                                                FontWeight="Bold"
                                                                FontSize="16"
                                                                TextWrapping="Wrap"/>
                                                     <TextBlock Text="{Binding LastViewedText}"
-                                                               Foreground="#C3DBEA"
+                                                               Foreground="#DCD9D1"
                                                                FontSize="13"
                                                                Margin="0,3,0,0"
                                                                TextWrapping="Wrap"/>
@@ -1490,8 +1512,8 @@
                     Grid.RowSpan="3"
                     Padding="14"
                     CornerRadius="18"
-                    Background="#A51C1D31"
-                    BorderBrush="#35D6CEFF"
+                    Background="#A5282924"
+                    BorderBrush="#35EAE8E3"
                     BorderThickness="1"
                     Visibility="Collapsed">
                 <Grid>
@@ -1509,12 +1531,12 @@
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock x:Name="QuestsPageHeaderText"
                                        Text="Задания"
-                                       Foreground="#E6E0FF"
+                                       Foreground="#F2F0ED"
                                        FontSize="22"
                                        FontWeight="Bold"/>
                             <TextBlock x:Name="QuestsSummaryText"
                                        Margin="0,4,0,0"
-                                       Foreground="#5A8DAA"
+                                       Foreground="#928872"
                                        FontSize="13"
                                        TextWrapping="Wrap"/>
                         </StackPanel>
@@ -1534,13 +1556,13 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
-                        <Border Grid.Column="0" Background="#702B2944" BorderBrush="#30D6CEFF" BorderThickness="1" CornerRadius="14" Padding="14">
+                        <Border Grid.Column="0" Background="#70393A33" BorderBrush="#30EAE8E3" BorderThickness="1" CornerRadius="14" Padding="14">
                             <StackPanel>
-                                <TextBlock x:Name="QuestsDailyHeaderText" Text="Ежедневные задания" Foreground="#E6E0FF" FontWeight="Bold" FontSize="17"/>
+                                <TextBlock x:Name="QuestsDailyHeaderText" Text="Ежедневные задания" Foreground="#F2F0ED" FontWeight="Bold" FontSize="17"/>
                                 <TextBlock x:Name="QuestsDailyResetText"
                                            Margin="0,4,0,0"
                                            Text="Обновление через: --:--:--"
-                                           Foreground="#A8D8F2"
+                                           Foreground="#D4CFC6"
                                            FontSize="13"
                                            FontWeight="SemiBold"/>
                                 <ListBox x:Name="QuestsDailyList"
@@ -1562,10 +1584,10 @@
                                                 </Grid.ColumnDefinitions>
                                                 <TextBlock Text="{Binding StatusGlyph}" Foreground="{Binding StatusColor}" FontSize="16" VerticalAlignment="Top"/>
                                                 <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                                                    <TextBlock Text="{Binding Title}" Foreground="#F4FBFF" FontWeight="Bold" FontSize="16"/>
-                                                    <TextBlock Text="{Binding Description}" Foreground="#D3E6F3" FontSize="13" TextWrapping="Wrap"/>
+                                                    <TextBlock Text="{Binding Title}" Foreground="#FAFAF9" FontWeight="Bold" FontSize="16"/>
+                                                    <TextBlock Text="{Binding Description}" Foreground="#E7E4DF" FontSize="13" TextWrapping="Wrap"/>
                                                     <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusColor}" FontSize="13" FontWeight="SemiBold" Margin="0,2,0,0"/>
-                                                    <TextBlock Text="{Binding ProgressText}" Foreground="#A9D8F3" FontSize="13" Margin="0,2,0,0"/>
+                                                    <TextBlock Text="{Binding ProgressText}" Foreground="#D4D0C8" FontSize="13" Margin="0,2,0,0"/>
                                                     <TextBlock Text="{Binding RewardText}" Foreground="#9CE6B7" FontSize="13"/>
                                                     <Button Margin="0,6,0,0"
                                                             Height="32"
@@ -1583,13 +1605,13 @@
                             </StackPanel>
                         </Border>
 
-                        <Border Grid.Column="2" Background="#702B2944" BorderBrush="#30D6CEFF" BorderThickness="1" CornerRadius="14" Padding="14">
+                        <Border Grid.Column="2" Background="#70393A33" BorderBrush="#30EAE8E3" BorderThickness="1" CornerRadius="14" Padding="14">
                             <StackPanel>
-                                <TextBlock x:Name="QuestsWeeklyHeaderText" Text="Еженедельные задания" Foreground="#E6E0FF" FontWeight="Bold" FontSize="17"/>
+                                <TextBlock x:Name="QuestsWeeklyHeaderText" Text="Еженедельные задания" Foreground="#F2F0ED" FontWeight="Bold" FontSize="17"/>
                                 <TextBlock x:Name="QuestsWeeklyResetText"
                                            Margin="0,4,0,0"
                                            Text="Обновление через: --:--:--"
-                                           Foreground="#A8D8F2"
+                                           Foreground="#D4CFC6"
                                            FontSize="13"
                                            FontWeight="SemiBold"/>
                                 <ListBox x:Name="QuestsWeeklyList"
@@ -1611,10 +1633,10 @@
                                                 </Grid.ColumnDefinitions>
                                                 <TextBlock Text="{Binding StatusGlyph}" Foreground="{Binding StatusColor}" FontSize="16" VerticalAlignment="Top"/>
                                                 <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                                                    <TextBlock Text="{Binding Title}" Foreground="#F4FBFF" FontWeight="Bold" FontSize="16"/>
-                                                    <TextBlock Text="{Binding Description}" Foreground="#D3E6F3" FontSize="13" TextWrapping="Wrap"/>
+                                                    <TextBlock Text="{Binding Title}" Foreground="#FAFAF9" FontWeight="Bold" FontSize="16"/>
+                                                    <TextBlock Text="{Binding Description}" Foreground="#E7E4DF" FontSize="13" TextWrapping="Wrap"/>
                                                     <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusColor}" FontSize="13" FontWeight="SemiBold" Margin="0,2,0,0"/>
-                                                    <TextBlock Text="{Binding ProgressText}" Foreground="#A9D8F3" FontSize="13" Margin="0,2,0,0"/>
+                                                    <TextBlock Text="{Binding ProgressText}" Foreground="#D4D0C8" FontSize="13" Margin="0,2,0,0"/>
                                                     <TextBlock Text="{Binding RewardText}" Foreground="#9CE6B7" FontSize="13"/>
                                                     <Button Margin="0,6,0,0"
                                                             Height="32"
@@ -1640,8 +1662,8 @@
                     Grid.RowSpan="3"
                     Padding="0"
                     CornerRadius="18"
-                    Background="#A51C1D31"
-                    BorderBrush="#35D6CEFF"
+                    Background="#A5282924"
+                    BorderBrush="#35EAE8E3"
                     BorderThickness="1"
                     Visibility="Collapsed">
                 <Grid Margin="16,14,16,14">
@@ -1660,14 +1682,14 @@
                         <TextBlock x:Name="SettingsHeaderText"
                                    Grid.Row="0"
                                    Text="Настройки"
-                                   Foreground="#F4F3FF"
+                                   Foreground="#FAF9F8"
                                    FontSize="26"
                                    FontWeight="Bold"/>
                         <TextBlock x:Name="SettingsSubtitleText"
                                    Grid.Row="1"
                                    Margin="0,2,0,0"
                                    Text="Персонализация и поведение приложения"
-                                   Foreground="#A8A4C2"
+                                   Foreground="#BDB7A9"
                                    FontSize="13"/>
                         <TextBlock x:Name="SettingsCreatorText"
                                    Grid.Row="0"
@@ -1675,7 +1697,7 @@
                                    HorizontalAlignment="Right"
                                    VerticalAlignment="Bottom"
                                    Text="dragloner"
-                                   Foreground="#55AFC5D7"
+                                   Foreground="#55CBC6BB"
                                    FontSize="9"
                                    FontWeight="SemiBold"/>
                     </Grid>
@@ -1696,13 +1718,13 @@
 
                                 <!-- Card: Интерфейс -->
                                 <Border CornerRadius="12"
-                                        Background="#702B2944"
-                                        BorderBrush="#30D6CEFF"
+                                        Background="#70393A33"
+                                        BorderBrush="#30EAE8E3"
                                         BorderThickness="1"
                                         Padding="16">
                                     <StackPanel>
                                         <TextBlock Text="Интерфейс"
-                                                   Foreground="#E6E0FF"
+                                                   Foreground="#F2F0ED"
                                                    FontSize="14"
                                                    FontWeight="Bold"
 />
@@ -1710,7 +1732,7 @@
                                         <TextBlock x:Name="LanguageLabelText"
                                                    Margin="0,14,0,0"
                                                    Text="Язык"
-                                                   Foreground="#A8A4C2"
+                                                   Foreground="#BDB7A9"
                                                    FontSize="12"
                                                    FontWeight="SemiBold"/>
                                         <ComboBox x:Name="LanguageComboBox"
@@ -1723,7 +1745,7 @@
                                         <TextBlock x:Name="UiScaleLabelText"
                                                    Margin="0,14,0,0"
                                                    Text="Масштаб UI"
-                                                   Foreground="#A8A4C2"
+                                                   Foreground="#BDB7A9"
                                                    FontSize="12"
                                                    FontWeight="SemiBold"/>
                                         <Grid Margin="0,5,0,0">
@@ -1742,7 +1764,7 @@
                                             <TextBlock x:Name="UiScaleValueText"
                                                        Grid.Column="1"
                                                        Margin="8,0,0,0"
-                                                       Foreground="#D8EAF8"
+                                                       Foreground="#EBE9E5"
                                                        FontSize="14"
                                                        FontWeight="Bold"
                                                        VerticalAlignment="Center"
@@ -1752,7 +1774,7 @@
 
                                         <CheckBox x:Name="AnimationsEnabledCheckBox"
                                                   Margin="0,12,0,0"
-                                                  Foreground="#DDD6ED"
+                                                  Foreground="#E5E3DE"
                                                   FontSize="14"
                                                   Content="Плавные анимации интерфейса"
                                                   Checked="AnimationsEnabledCheckBox_Changed"
@@ -1762,14 +1784,14 @@
 
                                 <!-- Card: Запуск и поведение -->
                                 <Border CornerRadius="12"
-                                        Background="#702B2944"
-                                        BorderBrush="#30D6CEFF"
+                                        Background="#70393A33"
+                                        BorderBrush="#30EAE8E3"
                                         BorderThickness="1"
                                         Padding="16"
                                         Margin="0,10,0,0">
                                     <StackPanel>
                                         <TextBlock Text="Запуск и поведение"
-                                                   Foreground="#E6E0FF"
+                                                   Foreground="#F2F0ED"
                                                    FontSize="14"
                                                    FontWeight="Bold"
 />
@@ -1777,29 +1799,29 @@
                                         <TextBlock x:Name="AutoStartLabelText"
                                                    Margin="0,14,0,0"
                                                    Text="Автозапуск"
-                                                   Foreground="#A8A4C2"
+                                                   Foreground="#BDB7A9"
                                                    FontSize="12"
                                                    FontWeight="SemiBold"/>
                                         <CheckBox x:Name="AutoStartCheckBox"
                                                   Margin="0,6,0,0"
-                                                  Foreground="#DDD6ED"
+                                                  Foreground="#E5E3DE"
                                                   FontSize="14"
                                                   Content="Запускать вместе с Windows"
                                                   Checked="AutoStartCheckBox_Changed"
                                                   Unchecked="AutoStartCheckBox_Changed"/>
                                         <CheckBox x:Name="AutoCheckUpdatesCheckBox"
                                                   Margin="0,9,0,0"
-                                                  Foreground="#DDD6ED"
+                                                  Foreground="#E5E3DE"
                                                   FontSize="14"
                                                   Content="Проверять обновления при запуске"
                                                   Checked="AutoCheckUpdatesCheckBox_Changed"
                                                   Unchecked="AutoCheckUpdatesCheckBox_Changed"/>
 
-                                        <Border Margin="0,14,0,12" Height="1" Background="#25485E"/>
+                                        <Border Margin="0,14,0,12" Height="1" Background="#45463D"/>
 
                                         <TextBlock x:Name="FullscreenBehaviorLabelText"
                                                    Text="Поведение fullscreen"
-                                                   Foreground="#A8A4C2"
+                                                   Foreground="#BDB7A9"
                                                    FontSize="12"
                                                    FontWeight="SemiBold"/>
                                         <ComboBox x:Name="FullscreenBehaviorComboBox"
@@ -1811,7 +1833,7 @@
                                         <TextBlock x:Name="FullscreenBehaviorDescriptionText"
                                                    Margin="0,6,0,0"
                                                    Text="Auto: при fullscreen в YouTube окно плеера тоже развернется. Windowed: остаётся обычным."
-                                                   Foreground="#5E8EA8"
+                                                   Foreground="#938973"
                                                    FontSize="12"
                                                    TextWrapping="Wrap"/>
                                     </StackPanel>
@@ -1819,22 +1841,22 @@
 
                                 <!-- Card: Данные и кеш -->
                                 <Border CornerRadius="12"
-                                        Background="#702B2944"
-                                        BorderBrush="#30D6CEFF"
+                                        Background="#70393A33"
+                                        BorderBrush="#30EAE8E3"
                                         BorderThickness="1"
                                         Padding="16"
                                         Margin="0,10,0,0">
                                     <StackPanel>
                                         <TextBlock x:Name="CacheLabelText"
                                                    Text="Данные и кеш"
-                                                   Foreground="#E6E0FF"
+                                                   Foreground="#F2F0ED"
                                                    FontSize="14"
                                                    FontWeight="Bold"
 />
                                         <TextBlock x:Name="CacheDescriptionText"
                                                    Margin="0,8,0,0"
                                                    Text="Очищает WebView2 профиль (YouTube данные) и временные обновления."
-                                                   Foreground="#5E8EA8"
+                                                   Foreground="#938973"
                                                    FontSize="12"
                                                    TextWrapping="Wrap"/>
                                         <Grid Margin="0,10,0,0">
@@ -1870,31 +1892,31 @@
 
                                 <!-- Card: Плеер и бинды -->
                                 <Border CornerRadius="12"
-                                        Background="#702B2944"
-                                        BorderBrush="#30D6CEFF"
+                                        Background="#70393A33"
+                                        BorderBrush="#30EAE8E3"
                                         BorderThickness="1"
                                         Padding="16">
                                     <StackPanel>
                                         <TextBlock x:Name="BindsSectionTitleText"
                                                    Text="Бинды плеера"
-                                                   Foreground="#E6E0FF"
+                                                   Foreground="#F2F0ED"
                                                    FontSize="14"
                                                    FontWeight="Bold"/>
                                         <TextBlock x:Name="BindsSectionDescriptionText"
                                                    Margin="0,4,0,0"
                                                    Text="Клавиши для панели эффектов, всех 15 эффектов и саунд-эффектов."
-                                                   Foreground="#5E8EA8"
+                                                   Foreground="#938973"
                                                    FontSize="12"
                                                    TextWrapping="Wrap"/>
 
                                         <!-- Capture hint + live status -->
                                         <Border Margin="0,10,0,0" Padding="10,7"
-                                                Background="#0D1F2D" CornerRadius="8"
-                                                BorderBrush="#2A4F68" BorderThickness="1">
+                                                Background="#1E1F1B" CornerRadius="8"
+                                                BorderBrush="#4D4E44" BorderThickness="1">
                                             <StackPanel>
                                                 <TextBlock x:Name="BindCaptureHelpText"
                                                            Text="Нажмите «Назначить», затем любую клавишу. Esc — отмена."
-                                                           Foreground="#6EB0D4"
+                                                           Foreground="#ADA695"
                                                            FontSize="12"
                                                            TextWrapping="Wrap"/>
                                                 <TextBlock x:Name="BindCaptureStatusText"
@@ -1908,7 +1930,7 @@
                                         </Border>
 
                                         <!-- Sound spam mode -->
-                                        <Border Margin="0,14,0,0" Height="1" Background="#25485E"/>
+                                        <Border Margin="0,14,0,0" Height="1" Background="#45463D"/>
                                         <Grid Margin="0,12,0,0">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/>
@@ -1917,13 +1939,13 @@
                                             <StackPanel>
                                                 <TextBlock x:Name="SoundModeHeaderText"
                                                            Text="Режим звуковых эффектов"
-                                                           Foreground="#DDD6ED"
+                                                           Foreground="#E5E3DE"
                                                            FontSize="14"
                                                            FontWeight="SemiBold"/>
                                                 <TextBlock x:Name="SoundModeDescText"
                                                            Margin="0,3,0,0"
                                                            Text="Выкл — стоп при повторном нажатии. Вкл — спам до 8 звуков."
-                                                           Foreground="#5E8EA8"
+                                                           Foreground="#938973"
                                                            FontSize="12"
                                                            TextWrapping="Wrap"/>
                                             </StackPanel>
@@ -1931,14 +1953,14 @@
                                                       Grid.Column="1"
                                                       Margin="16,0,0,0"
                                                       VerticalAlignment="Center"
-                                                      Foreground="#DDD6ED"
+                                                      Foreground="#E5E3DE"
                                                       FontSize="13"
                                                       Checked="SoundSpamModeToggle_Changed"
                                                       Unchecked="SoundSpamModeToggle_Changed"/>
                                         </Grid>
 
                                         <!-- EQ for sound effects -->
-                                        <Border Margin="0,12,0,0" Height="1" Background="#25485E"/>
+                                        <Border Margin="0,12,0,0" Height="1" Background="#45463D"/>
                                         <Grid Margin="0,12,0,0">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/>
@@ -1947,13 +1969,13 @@
                                             <StackPanel>
                                                 <TextBlock x:Name="EqForSoundFxHeaderText"
                                                            Text="Эквалайзер для звуковых эффектов"
-                                                           Foreground="#DDD6ED"
+                                                           Foreground="#E5E3DE"
                                                            FontSize="14"
                                                            FontWeight="SemiBold"/>
                                                 <TextBlock x:Name="EqForSoundFxDescText"
                                                            Margin="0,3,0,0"
                                                            Text="Применять настройки эквалайзера плеера к звуковым эффектам."
-                                                           Foreground="#5E8EA8"
+                                                           Foreground="#938973"
                                                            FontSize="12"
                                                            TextWrapping="Wrap"/>
                                             </StackPanel>
@@ -1961,17 +1983,17 @@
                                                       Grid.Column="1"
                                                       Margin="16,0,0,0"
                                                       VerticalAlignment="Center"
-                                                      Foreground="#DDD6ED"
+                                                      Foreground="#E5E3DE"
                                                       FontSize="13"
                                                       Checked="ApplyEqToSoundEffectsCheckBox_Changed"
                                                       Unchecked="ApplyEqToSoundEffectsCheckBox_Changed"/>
                                         </Grid>
 
                                         <!-- Utility + Sound binds -->
-                                        <Border Margin="0,14,0,0" Height="1" Background="#25485E"/>
+                                        <Border Margin="0,14,0,0" Height="1" Background="#45463D"/>
                                         <TextBlock Margin="0,12,0,4"
                                                    Text="Клавиши звуков и панели"
-                                                   Foreground="#A8A4C2"
+                                                   Foreground="#BDB7A9"
                                                    FontSize="12"
                                                    FontWeight="SemiBold"/>
 
@@ -1984,13 +2006,13 @@
                                             </Grid.ColumnDefinitions>
                                             <TextBlock x:Name="HideEffectsBindLabelText"
                                                        Text="Скрыть/показать эффекты"
-                                                       Foreground="#DDD6ED" FontSize="12"
+                                                       Foreground="#E5E3DE" FontSize="12"
                                                        VerticalAlignment="Center"/>
                                             <Border Grid.Column="1" Margin="6,0" Padding="6,3"
-                                                    CornerRadius="6" BorderBrush="#44819DB8"
-                                                    BorderThickness="1" Background="#802C2540">
+                                                    CornerRadius="6" BorderBrush="#44A9A190"
+                                                    BorderThickness="1" Background="#8035362F">
                                                 <TextBlock x:Name="HideEffectsPanelBindValueText"
-                                                           Text="H" Foreground="#F3FBFF"
+                                                           Text="H" Foreground="#FAF9F8"
                                                            FontWeight="Bold" FontSize="12"
                                                            HorizontalAlignment="Center"/>
                                             </Border>
@@ -2008,13 +2030,13 @@
                                                 <ColumnDefinition Width="92"/>
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Text="Чат слева (вкл/выкл)"
-                                                       Foreground="#DDD6ED" FontSize="12"
+                                                       Foreground="#E5E3DE" FontSize="12"
                                                        VerticalAlignment="Center"/>
                                             <Border Grid.Column="1" Margin="6,0" Padding="6,3"
-                                                    CornerRadius="6" BorderBrush="#44819DB8"
-                                                    BorderThickness="1" Background="#802C2540">
+                                                    CornerRadius="6" BorderBrush="#44A9A190"
+                                                    BorderThickness="1" Background="#8035362F">
                                                 <TextBlock x:Name="ToggleChatBindValueText"
-                                                           Text="-" Foreground="#F3FBFF"
+                                                           Text="-" Foreground="#FAF9F8"
                                                            FontWeight="Bold" FontSize="12"
                                                            HorizontalAlignment="Center"/>
                                             </Border>
@@ -2032,13 +2054,13 @@
                                                 <ColumnDefinition Width="92"/>
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Text="Комментарии снизу (вкл/выкл)"
-                                                       Foreground="#DDD6ED" FontSize="12"
+                                                       Foreground="#E5E3DE" FontSize="12"
                                                        VerticalAlignment="Center"/>
                                             <Border Grid.Column="1" Margin="6,0" Padding="6,3"
-                                                    CornerRadius="6" BorderBrush="#44819DB8"
-                                                    BorderThickness="1" Background="#802C2540">
+                                                    CornerRadius="6" BorderBrush="#44A9A190"
+                                                    BorderThickness="1" Background="#8035362F">
                                                 <TextBlock x:Name="ToggleCommentsBindValueText"
-                                                           Text="-" Foreground="#F3FBFF"
+                                                           Text="-" Foreground="#FAF9F8"
                                                            FontWeight="Bold" FontSize="12"
                                                            HorizontalAlignment="Center"/>
                                             </Border>
@@ -2057,13 +2079,13 @@
                                             </Grid.ColumnDefinitions>
                                             <TextBlock x:Name="AuraFarmBindLabelText"
                                                        Text="Звук Aura Farm"
-                                                       Foreground="#DDD6ED" FontSize="12"
+                                                       Foreground="#E5E3DE" FontSize="12"
                                                        VerticalAlignment="Center"/>
                                             <Border Grid.Column="1" Margin="6,0" Padding="6,3"
-                                                    CornerRadius="6" BorderBrush="#44819DB8"
-                                                    BorderThickness="1" Background="#802C2540">
+                                                    CornerRadius="6" BorderBrush="#44A9A190"
+                                                    BorderThickness="1" Background="#8035362F">
                                                 <TextBlock x:Name="AuraFarmBindValueText"
-                                                           Text="Y" Foreground="#F3FBFF"
+                                                           Text="Y" Foreground="#FAF9F8"
                                                            FontWeight="Bold" FontSize="12"
                                                            HorizontalAlignment="Center"/>
                                             </Border>
@@ -2082,13 +2104,13 @@
                                             </Grid.ColumnDefinitions>
                                             <TextBlock x:Name="LaughBindLabelText"
                                                        Text="Звук Смех"
-                                                       Foreground="#DDD6ED" FontSize="12"
+                                                       Foreground="#E5E3DE" FontSize="12"
                                                        VerticalAlignment="Center"/>
                                             <Border Grid.Column="1" Margin="6,0" Padding="6,3"
-                                                    CornerRadius="6" BorderBrush="#44819DB8"
-                                                    BorderThickness="1" Background="#802C2540">
+                                                    CornerRadius="6" BorderBrush="#44A9A190"
+                                                    BorderThickness="1" Background="#8035362F">
                                                 <TextBlock x:Name="LaughBindValueText"
-                                                           Text="U" Foreground="#F3FBFF"
+                                                           Text="U" Foreground="#FAF9F8"
                                                            FontWeight="Bold" FontSize="12"
                                                            HorizontalAlignment="Center"/>
                                             </Border>
@@ -2107,13 +2129,13 @@
                                             </Grid.ColumnDefinitions>
                                             <TextBlock x:Name="PsiBindLabelText"
                                                        Text="Звук Пси-излучение"
-                                                       Foreground="#DDD6ED" FontSize="12"
+                                                       Foreground="#E5E3DE" FontSize="12"
                                                        VerticalAlignment="Center"/>
                                             <Border Grid.Column="1" Margin="6,0" Padding="6,3"
-                                                    CornerRadius="6" BorderBrush="#44819DB8"
-                                                    BorderThickness="1" Background="#802C2540">
+                                                    CornerRadius="6" BorderBrush="#44A9A190"
+                                                    BorderThickness="1" Background="#8035362F">
                                                 <TextBlock x:Name="PsiBindValueText"
-                                                           Text="I" Foreground="#F3FBFF"
+                                                           Text="I" Foreground="#FAF9F8"
                                                            FontWeight="Bold" FontSize="12"
                                                            HorizontalAlignment="Center"/>
                                             </Border>
@@ -2132,13 +2154,13 @@
                                             </Grid.ColumnDefinitions>
                                             <TextBlock x:Name="RespectBindLabelText"
                                                        Text="Звук +Respect"
-                                                       Foreground="#DDD6ED" FontSize="12"
+                                                       Foreground="#E5E3DE" FontSize="12"
                                                        VerticalAlignment="Center"/>
                                             <Border Grid.Column="1" Margin="6,0" Padding="6,3"
-                                                    CornerRadius="6" BorderBrush="#44819DB8"
-                                                    BorderThickness="1" Background="#802C2540">
+                                                    CornerRadius="6" BorderBrush="#44A9A190"
+                                                    BorderThickness="1" Background="#8035362F">
                                                 <TextBlock x:Name="RespectBindValueText"
-                                                           Text="O" Foreground="#F3FBFF"
+                                                           Text="O" Foreground="#FAF9F8"
                                                            FontWeight="Bold" FontSize="12"
                                                            HorizontalAlignment="Center"/>
                                             </Border>
@@ -2157,13 +2179,13 @@
                                             </Grid.ColumnDefinitions>
                                             <TextBlock x:Name="SadBindLabelText"
                                                        Text="Звук Грусти"
-                                                       Foreground="#DDD6ED" FontSize="12"
+                                                       Foreground="#E5E3DE" FontSize="12"
                                                        VerticalAlignment="Center"/>
                                             <Border Grid.Column="1" Margin="6,0" Padding="6,3"
-                                                    CornerRadius="6" BorderBrush="#44819DB8"
-                                                    BorderThickness="1" Background="#802C2540">
+                                                    CornerRadius="6" BorderBrush="#44A9A190"
+                                                    BorderThickness="1" Background="#8035362F">
                                                 <TextBlock x:Name="SadBindValueText"
-                                                           Text="P" Foreground="#F3FBFF"
+                                                           Text="P" Foreground="#FAF9F8"
                                                            FontWeight="Bold" FontSize="12"
                                                            HorizontalAlignment="Center"/>
                                             </Border>
@@ -2181,13 +2203,13 @@
                                             </Grid.ColumnDefinitions>
                                             <TextBlock x:Name="DaUzhTochnoBindLabelText"
                                                        Text="Да уж точно"
-                                                       Foreground="#DDD6ED" FontSize="12"
+                                                       Foreground="#E5E3DE" FontSize="12"
                                                        VerticalAlignment="Center"/>
                                             <Border Grid.Column="1" Margin="6,0" Padding="6,3"
-                                                    CornerRadius="6" BorderBrush="#44819DB8"
-                                                    BorderThickness="1" Background="#802C2540">
+                                                    CornerRadius="6" BorderBrush="#44A9A190"
+                                                    BorderThickness="1" Background="#8035362F">
                                                 <TextBlock x:Name="DaUzhTochnoBindValueText"
-                                                           Text="J" Foreground="#F3FBFF"
+                                                           Text="J" Foreground="#FAF9F8"
                                                            FontWeight="Bold" FontSize="12"
                                                            HorizontalAlignment="Center"/>
                                             </Border>
@@ -2198,11 +2220,11 @@
                                         </Grid>
 
                                         <!-- Effect binds (1–15) — labeled rows -->
-                                        <Border Margin="0,14,0,0" Height="1" Background="#25485E"/>
+                                        <Border Margin="0,14,0,0" Height="1" Background="#45463D"/>
                                         <TextBlock x:Name="EffectBindsDescriptionText"
                                                    Margin="0,12,0,4"
                                                    Text="Бинды эффектов (1–15)"
-                                                   Foreground="#A8A4C2"
+                                                   Foreground="#BDB7A9"
                                                    FontSize="12"
                                                    FontWeight="SemiBold"
                                                    TextWrapping="Wrap"/>
@@ -2213,9 +2235,9 @@
                                                 <ColumnDefinition Width="56"/>
                                                 <ColumnDefinition Width="92"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock x:Name="EffectBind1LabelText" Text="1. Без цвета" Foreground="#DDD6ED" FontSize="12" VerticalAlignment="Center"/>
-                                            <Border Grid.Column="1" Margin="6,0" Padding="6,3" CornerRadius="6" BorderBrush="#44819DB8" BorderThickness="1" Background="#802C2540">
-                                                <TextBlock x:Name="Fx1BindValueText" Text="1" Foreground="#F3FBFF" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="EffectBind1LabelText" Text="1. Без цвета" Foreground="#E5E3DE" FontSize="12" VerticalAlignment="Center"/>
+                                            <Border Grid.Column="1" Margin="6,0" Padding="6,3" CornerRadius="6" BorderBrush="#44A9A190" BorderThickness="1" Background="#8035362F">
+                                                <TextBlock x:Name="Fx1BindValueText" Text="1" Foreground="#FAF9F8" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center"/>
                                             </Border>
                                             <Button x:Name="AssignFx1BindButton" Grid.Column="2" Padding="6,4" FontSize="12" Tag="fx1" Content="Назначить" Click="AssignBindButton_Click"/>
                                         </Grid>
@@ -2225,9 +2247,9 @@
                                                 <ColumnDefinition Width="56"/>
                                                 <ColumnDefinition Width="92"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock x:Name="EffectBind2LabelText" Text="2. Сепия" Foreground="#DDD6ED" FontSize="12" VerticalAlignment="Center"/>
-                                            <Border Grid.Column="1" Margin="6,0" Padding="6,3" CornerRadius="6" BorderBrush="#44819DB8" BorderThickness="1" Background="#802C2540">
-                                                <TextBlock x:Name="Fx2BindValueText" Text="2" Foreground="#F3FBFF" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="EffectBind2LabelText" Text="2. Сепия" Foreground="#E5E3DE" FontSize="12" VerticalAlignment="Center"/>
+                                            <Border Grid.Column="1" Margin="6,0" Padding="6,3" CornerRadius="6" BorderBrush="#44A9A190" BorderThickness="1" Background="#8035362F">
+                                                <TextBlock x:Name="Fx2BindValueText" Text="2" Foreground="#FAF9F8" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center"/>
                                             </Border>
                                             <Button x:Name="AssignFx2BindButton" Grid.Column="2" Padding="6,4" FontSize="12" Tag="fx2" Content="Назначить" Click="AssignBindButton_Click"/>
                                         </Grid>
@@ -2237,9 +2259,9 @@
                                                 <ColumnDefinition Width="56"/>
                                                 <ColumnDefinition Width="92"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock x:Name="EffectBind3LabelText" Text="3. Инверсия" Foreground="#DDD6ED" FontSize="12" VerticalAlignment="Center"/>
-                                            <Border Grid.Column="1" Margin="6,0" Padding="6,3" CornerRadius="6" BorderBrush="#44819DB8" BorderThickness="1" Background="#802C2540">
-                                                <TextBlock x:Name="Fx3BindValueText" Text="3" Foreground="#F3FBFF" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="EffectBind3LabelText" Text="3. Инверсия" Foreground="#E5E3DE" FontSize="12" VerticalAlignment="Center"/>
+                                            <Border Grid.Column="1" Margin="6,0" Padding="6,3" CornerRadius="6" BorderBrush="#44A9A190" BorderThickness="1" Background="#8035362F">
+                                                <TextBlock x:Name="Fx3BindValueText" Text="3" Foreground="#FAF9F8" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center"/>
                                             </Border>
                                             <Button x:Name="AssignFx3BindButton" Grid.Column="2" Padding="6,4" FontSize="12" Tag="fx3" Content="Назначить" Click="AssignBindButton_Click"/>
                                         </Grid>
@@ -2249,9 +2271,9 @@
                                                 <ColumnDefinition Width="56"/>
                                                 <ColumnDefinition Width="92"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock x:Name="EffectBind4LabelText" Text="4. Высокий контраст" Foreground="#DDD6ED" FontSize="12" VerticalAlignment="Center"/>
-                                            <Border Grid.Column="1" Margin="6,0" Padding="6,3" CornerRadius="6" BorderBrush="#44819DB8" BorderThickness="1" Background="#802C2540">
-                                                <TextBlock x:Name="Fx4BindValueText" Text="4" Foreground="#F3FBFF" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="EffectBind4LabelText" Text="4. Высокий контраст" Foreground="#E5E3DE" FontSize="12" VerticalAlignment="Center"/>
+                                            <Border Grid.Column="1" Margin="6,0" Padding="6,3" CornerRadius="6" BorderBrush="#44A9A190" BorderThickness="1" Background="#8035362F">
+                                                <TextBlock x:Name="Fx4BindValueText" Text="4" Foreground="#FAF9F8" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center"/>
                                             </Border>
                                             <Button x:Name="AssignFx4BindButton" Grid.Column="2" Padding="6,4" FontSize="12" Tag="fx4" Content="Назначить" Click="AssignBindButton_Click"/>
                                         </Grid>
@@ -2261,9 +2283,9 @@
                                                 <ColumnDefinition Width="56"/>
                                                 <ColumnDefinition Width="92"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock x:Name="EffectBind5LabelText" Text="5. Затемнение" Foreground="#DDD6ED" FontSize="12" VerticalAlignment="Center"/>
-                                            <Border Grid.Column="1" Margin="6,0" Padding="6,3" CornerRadius="6" BorderBrush="#44819DB8" BorderThickness="1" Background="#802C2540">
-                                                <TextBlock x:Name="Fx5BindValueText" Text="5" Foreground="#F3FBFF" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="EffectBind5LabelText" Text="5. Затемнение" Foreground="#E5E3DE" FontSize="12" VerticalAlignment="Center"/>
+                                            <Border Grid.Column="1" Margin="6,0" Padding="6,3" CornerRadius="6" BorderBrush="#44A9A190" BorderThickness="1" Background="#8035362F">
+                                                <TextBlock x:Name="Fx5BindValueText" Text="5" Foreground="#FAF9F8" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center"/>
                                             </Border>
                                             <Button x:Name="AssignFx5BindButton" Grid.Column="2" Padding="6,4" FontSize="12" Tag="fx5" Content="Назначить" Click="AssignBindButton_Click"/>
                                         </Grid>
@@ -2273,9 +2295,9 @@
                                                 <ColumnDefinition Width="56"/>
                                                 <ColumnDefinition Width="92"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock x:Name="EffectBind6LabelText" Text="6. Насыщенность" Foreground="#DDD6ED" FontSize="12" VerticalAlignment="Center"/>
-                                            <Border Grid.Column="1" Margin="6,0" Padding="6,3" CornerRadius="6" BorderBrush="#44819DB8" BorderThickness="1" Background="#802C2540">
-                                                <TextBlock x:Name="Fx6BindValueText" Text="6" Foreground="#F3FBFF" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="EffectBind6LabelText" Text="6. Насыщенность" Foreground="#E5E3DE" FontSize="12" VerticalAlignment="Center"/>
+                                            <Border Grid.Column="1" Margin="6,0" Padding="6,3" CornerRadius="6" BorderBrush="#44A9A190" BorderThickness="1" Background="#8035362F">
+                                                <TextBlock x:Name="Fx6BindValueText" Text="6" Foreground="#FAF9F8" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center"/>
                                             </Border>
                                             <Button x:Name="AssignFx6BindButton" Grid.Column="2" Padding="6,4" FontSize="12" Tag="fx6" Content="Назначить" Click="AssignBindButton_Click"/>
                                         </Grid>
@@ -2285,9 +2307,9 @@
                                                 <ColumnDefinition Width="56"/>
                                                 <ColumnDefinition Width="92"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock x:Name="EffectBind7LabelText" Text="7. Сдвиг оттенка" Foreground="#DDD6ED" FontSize="12" VerticalAlignment="Center"/>
-                                            <Border Grid.Column="1" Margin="6,0" Padding="6,3" CornerRadius="6" BorderBrush="#44819DB8" BorderThickness="1" Background="#802C2540">
-                                                <TextBlock x:Name="Fx7BindValueText" Text="7" Foreground="#F3FBFF" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="EffectBind7LabelText" Text="7. Сдвиг оттенка" Foreground="#E5E3DE" FontSize="12" VerticalAlignment="Center"/>
+                                            <Border Grid.Column="1" Margin="6,0" Padding="6,3" CornerRadius="6" BorderBrush="#44A9A190" BorderThickness="1" Background="#8035362F">
+                                                <TextBlock x:Name="Fx7BindValueText" Text="7" Foreground="#FAF9F8" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center"/>
                                             </Border>
                                             <Button x:Name="AssignFx7BindButton" Grid.Column="2" Padding="6,4" FontSize="12" Tag="fx7" Content="Назначить" Click="AssignBindButton_Click"/>
                                         </Grid>
@@ -2297,9 +2319,9 @@
                                                 <ColumnDefinition Width="56"/>
                                                 <ColumnDefinition Width="92"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock x:Name="EffectBind8LabelText" Text="8. Размытие" Foreground="#DDD6ED" FontSize="12" VerticalAlignment="Center"/>
-                                            <Border Grid.Column="1" Margin="6,0" Padding="6,3" CornerRadius="6" BorderBrush="#44819DB8" BorderThickness="1" Background="#802C2540">
-                                                <TextBlock x:Name="Fx8BindValueText" Text="8" Foreground="#F3FBFF" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="EffectBind8LabelText" Text="8. Размытие" Foreground="#E5E3DE" FontSize="12" VerticalAlignment="Center"/>
+                                            <Border Grid.Column="1" Margin="6,0" Padding="6,3" CornerRadius="6" BorderBrush="#44A9A190" BorderThickness="1" Background="#8035362F">
+                                                <TextBlock x:Name="Fx8BindValueText" Text="8" Foreground="#FAF9F8" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center"/>
                                             </Border>
                                             <Button x:Name="AssignFx8BindButton" Grid.Column="2" Padding="6,4" FontSize="12" Tag="fx8" Content="Назначить" Click="AssignBindButton_Click"/>
                                         </Grid>
@@ -2309,9 +2331,9 @@
                                                 <ColumnDefinition Width="56"/>
                                                 <ColumnDefinition Width="92"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock x:Name="EffectBind9LabelText" Text="9. Фишай" Foreground="#DDD6ED" FontSize="12" VerticalAlignment="Center"/>
-                                            <Border Grid.Column="1" Margin="6,0" Padding="6,3" CornerRadius="6" BorderBrush="#44819DB8" BorderThickness="1" Background="#802C2540">
-                                                <TextBlock x:Name="Fx9BindValueText" Text="9" Foreground="#F3FBFF" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="EffectBind9LabelText" Text="9. Фишай" Foreground="#E5E3DE" FontSize="12" VerticalAlignment="Center"/>
+                                            <Border Grid.Column="1" Margin="6,0" Padding="6,3" CornerRadius="6" BorderBrush="#44A9A190" BorderThickness="1" Background="#8035362F">
+                                                <TextBlock x:Name="Fx9BindValueText" Text="9" Foreground="#FAF9F8" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center"/>
                                             </Border>
                                             <Button x:Name="AssignFx9BindButton" Grid.Column="2" Padding="6,4" FontSize="12" Tag="fx9" Content="Назначить" Click="AssignBindButton_Click"/>
                                         </Grid>
@@ -2321,9 +2343,9 @@
                                                 <ColumnDefinition Width="56"/>
                                                 <ColumnDefinition Width="92"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock x:Name="EffectBind10LabelText" Text="10. VHS сканлайн" Foreground="#DDD6ED" FontSize="12" VerticalAlignment="Center"/>
-                                            <Border Grid.Column="1" Margin="6,0" Padding="6,3" CornerRadius="6" BorderBrush="#44819DB8" BorderThickness="1" Background="#802C2540">
-                                                <TextBlock x:Name="Fx10BindValueText" Text="0" Foreground="#F3FBFF" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="EffectBind10LabelText" Text="10. VHS сканлайн" Foreground="#E5E3DE" FontSize="12" VerticalAlignment="Center"/>
+                                            <Border Grid.Column="1" Margin="6,0" Padding="6,3" CornerRadius="6" BorderBrush="#44A9A190" BorderThickness="1" Background="#8035362F">
+                                                <TextBlock x:Name="Fx10BindValueText" Text="0" Foreground="#FAF9F8" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center"/>
                                             </Border>
                                             <Button x:Name="AssignFx10BindButton" Grid.Column="2" Padding="6,4" FontSize="12" Tag="fx10" Content="Назначить" Click="AssignBindButton_Click"/>
                                         </Grid>
@@ -2333,9 +2355,9 @@
                                                 <ColumnDefinition Width="56"/>
                                                 <ColumnDefinition Width="92"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock x:Name="EffectBind11LabelText" Text="11. Тряска кадра" Foreground="#DDD6ED" FontSize="12" VerticalAlignment="Center"/>
-                                            <Border Grid.Column="1" Margin="6,0" Padding="6,3" CornerRadius="6" BorderBrush="#44819DB8" BorderThickness="1" Background="#802C2540">
-                                                <TextBlock x:Name="Fx11BindValueText" Text="Q" Foreground="#F3FBFF" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="EffectBind11LabelText" Text="11. Тряска кадра" Foreground="#E5E3DE" FontSize="12" VerticalAlignment="Center"/>
+                                            <Border Grid.Column="1" Margin="6,0" Padding="6,3" CornerRadius="6" BorderBrush="#44A9A190" BorderThickness="1" Background="#8035362F">
+                                                <TextBlock x:Name="Fx11BindValueText" Text="Q" Foreground="#FAF9F8" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center"/>
                                             </Border>
                                             <Button x:Name="AssignFx11BindButton" Grid.Column="2" Padding="6,4" FontSize="12" Tag="fx11" Content="Назначить" Click="AssignBindButton_Click"/>
                                         </Grid>
@@ -2345,9 +2367,9 @@
                                                 <ColumnDefinition Width="56"/>
                                                 <ColumnDefinition Width="92"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock x:Name="EffectBind12LabelText" Text="12. Горизонтальное зеркало" Foreground="#DDD6ED" FontSize="12" VerticalAlignment="Center" TextWrapping="Wrap"/>
-                                            <Border Grid.Column="1" Margin="6,0" Padding="6,3" CornerRadius="6" BorderBrush="#44819DB8" BorderThickness="1" Background="#802C2540">
-                                                <TextBlock x:Name="Fx12BindValueText" Text="W" Foreground="#F3FBFF" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="EffectBind12LabelText" Text="12. Горизонтальное зеркало" Foreground="#E5E3DE" FontSize="12" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                            <Border Grid.Column="1" Margin="6,0" Padding="6,3" CornerRadius="6" BorderBrush="#44A9A190" BorderThickness="1" Background="#8035362F">
+                                                <TextBlock x:Name="Fx12BindValueText" Text="W" Foreground="#FAF9F8" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center"/>
                                             </Border>
                                             <Button x:Name="AssignFx12BindButton" Grid.Column="2" Padding="6,4" FontSize="12" Tag="fx12" Content="Назначить" Click="AssignBindButton_Click"/>
                                         </Grid>
@@ -2357,9 +2379,9 @@
                                                 <ColumnDefinition Width="56"/>
                                                 <ColumnDefinition Width="92"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock x:Name="EffectBind13LabelText" Text="13. JPEG-помехи" Foreground="#DDD6ED" FontSize="12" VerticalAlignment="Center"/>
-                                            <Border Grid.Column="1" Margin="6,0" Padding="6,3" CornerRadius="6" BorderBrush="#44819DB8" BorderThickness="1" Background="#802C2540">
-                                                <TextBlock x:Name="Fx13BindValueText" Text="E" Foreground="#F3FBFF" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="EffectBind13LabelText" Text="13. JPEG-помехи" Foreground="#E5E3DE" FontSize="12" VerticalAlignment="Center"/>
+                                            <Border Grid.Column="1" Margin="6,0" Padding="6,3" CornerRadius="6" BorderBrush="#44A9A190" BorderThickness="1" Background="#8035362F">
+                                                <TextBlock x:Name="Fx13BindValueText" Text="E" Foreground="#FAF9F8" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center"/>
                                             </Border>
                                             <Button x:Name="AssignFx13BindButton" Grid.Column="2" Padding="6,4" FontSize="12" Tag="fx13" Content="Назначить" Click="AssignBindButton_Click"/>
                                         </Grid>
@@ -2369,9 +2391,9 @@
                                                 <ColumnDefinition Width="56"/>
                                                 <ColumnDefinition Width="92"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock x:Name="EffectBind14LabelText" Text="14. Холодный тон" Foreground="#DDD6ED" FontSize="12" VerticalAlignment="Center"/>
-                                            <Border Grid.Column="1" Margin="6,0" Padding="6,3" CornerRadius="6" BorderBrush="#44819DB8" BorderThickness="1" Background="#802C2540">
-                                                <TextBlock x:Name="Fx14BindValueText" Text="R" Foreground="#F3FBFF" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="EffectBind14LabelText" Text="14. Холодный тон" Foreground="#E5E3DE" FontSize="12" VerticalAlignment="Center"/>
+                                            <Border Grid.Column="1" Margin="6,0" Padding="6,3" CornerRadius="6" BorderBrush="#44A9A190" BorderThickness="1" Background="#8035362F">
+                                                <TextBlock x:Name="Fx14BindValueText" Text="R" Foreground="#FAF9F8" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center"/>
                                             </Border>
                                             <Button x:Name="AssignFx14BindButton" Grid.Column="2" Padding="6,4" FontSize="12" Tag="fx14" Content="Назначить" Click="AssignBindButton_Click"/>
                                         </Grid>
@@ -2381,9 +2403,9 @@
                                                 <ColumnDefinition Width="56"/>
                                                 <ColumnDefinition Width="92"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock x:Name="EffectBind15LabelText" Text="15. Вертикальное зеркало" Foreground="#DDD6ED" FontSize="12" VerticalAlignment="Center" TextWrapping="Wrap"/>
-                                            <Border Grid.Column="1" Margin="6,0" Padding="6,3" CornerRadius="6" BorderBrush="#44819DB8" BorderThickness="1" Background="#802C2540">
-                                                <TextBlock x:Name="Fx15BindValueText" Text="T" Foreground="#F3FBFF" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="EffectBind15LabelText" Text="15. Вертикальное зеркало" Foreground="#E5E3DE" FontSize="12" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                            <Border Grid.Column="1" Margin="6,0" Padding="6,3" CornerRadius="6" BorderBrush="#44A9A190" BorderThickness="1" Background="#8035362F">
+                                                <TextBlock x:Name="Fx15BindValueText" Text="T" Foreground="#FAF9F8" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center"/>
                                             </Border>
                                             <Button x:Name="AssignFx15BindButton" Grid.Column="2" Padding="6,4" FontSize="12" Tag="fx15" Content="Назначить" Click="AssignBindButton_Click"/>
                                         </Grid>
@@ -2401,43 +2423,43 @@
 
                                 <!-- Card: Диагностика -->
                                 <Border CornerRadius="12"
-                                        Background="#702B2944"
-                                        BorderBrush="#30D6CEFF"
+                                        Background="#70393A33"
+                                        BorderBrush="#30EAE8E3"
                                         BorderThickness="1"
                                         Padding="16"
                                         Margin="0,10,0,0">
                                     <StackPanel>
                                         <TextBlock Text="Диагностика"
-                                                   Foreground="#E6E0FF"
+                                                   Foreground="#F2F0ED"
                                                    FontSize="14"
                                                    FontWeight="Bold"
 />
 
                                         <CheckBox x:Name="LoggingEnabledCheckBox"
                                                   Margin="0,12,0,0"
-                                                  Foreground="#DDD6ED"
+                                                  Foreground="#E5E3DE"
                                                   FontSize="14"
                                                   Content="Включить логирование ошибок"
                                                   Checked="LoggingEnabledCheckBox_Changed"
                                                   Unchecked="LoggingEnabledCheckBox_Changed"/>
 
-                                        <Border Margin="0,12,0,0" Height="1" Background="#25485E"/>
+                                        <Border Margin="0,12,0,0" Height="1" Background="#45463D"/>
 
                                         <TextBlock x:Name="LogViewerHeaderText"
                                                    Margin="0,12,0,0"
                                                    Text="Лог событий"
-                                                   Foreground="#A8A4C2"
+                                                   Foreground="#BDB7A9"
                                                    FontSize="12"
                                                    FontWeight="SemiBold"/>
                                         <TextBlock x:Name="LogViewerDescText"
                                                    Margin="0,4,0,0"
                                                    Text="Последние события приложения в реальном времени."
-                                                   Foreground="#5E8EA8"
+                                                   Foreground="#938973"
                                                    FontSize="12"
                                                    TextWrapping="Wrap"/>
                                         <CheckBox x:Name="LogViewerErrorsOnlyCheckBox"
                                                   Margin="0,8,0,0"
-                                                  Foreground="#DDD6ED"
+                                                  Foreground="#E5E3DE"
                                                   FontSize="13"
                                                   Content="Только ошибки"
                                                   Checked="LogViewerFilter_Changed"
@@ -2447,9 +2469,9 @@
                                                  Height="180"
                                                  FontFamily="Consolas"
                                                  FontSize="12"
-                                                 Background="#131320"
-                                                 Foreground="#C8E6F8"
-                                                 BorderBrush="#33506070"
+                                                 Background="#1B1B18"
+                                                 Foreground="#E4E2DC"
+                                                 BorderBrush="#33656759"
                                                  BorderThickness="1"
                                                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
                                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
@@ -2480,78 +2502,25 @@
                 </Grid>
             </Border>
 
-            <TextBlock x:Name="StatusText" Grid.Row="8" Foreground="#D8CAE9" FontSize="12" TextWrapping="Wrap" Margin="4,4,0,0" Visibility="Collapsed"/>
+            <TextBlock x:Name="StatusText" Grid.Row="8" Foreground="#DEDBD5" FontSize="12" TextWrapping="Wrap" Margin="4,4,0,0" Visibility="Collapsed"/>
 
-            <Grid x:Name="LoadingOverlay"
-                  Grid.RowSpan="9"
-                  Panel.ZIndex="1000"
-                  Margin="-28"
-                  ClipToBounds="True"
-                  Background="#0B141D">
-                <Image x:Name="LoadingBackgroundImage"
-                        Stretch="UniformToFill"
-                       Opacity="1.0"/>
-                <Grid HorizontalAlignment="Center"
-                      VerticalAlignment="Center"
-                      Width="760">
-                    <Border Padding="24,22"
-                            CornerRadius="18"
-                            BorderBrush="#78C7E6FA"
-                            BorderThickness="1"
-                            Background="#D61D2731">
-                        <StackPanel>
-                            <TextBlock Text="JokerDBD Tracker"
-                                       Foreground="#F8FCFF"
-                                       FontSize="50"
-                                       FontWeight="ExtraBold"
-                                       TextOptions.TextFormattingMode="Display"
-                                       HorizontalAlignment="Center"
-                                       TextAlignment="Center">
-                                <TextBlock.Effect>
-                                    <DropShadowEffect BlurRadius="5" ShadowDepth="0" Color="#0C151E" Opacity="1"/>
-                                </TextBlock.Effect>
-                            </TextBlock>
-                            <TextBlock x:Name="LoadingTitleText"
-                                       Text="Загрузка приложения"
-                                       Margin="0,6,0,0"
-                                       Foreground="#E8F4FC"
-                                       FontSize="24"
-                                       FontWeight="Bold"
-                                       HorizontalAlignment="Center"
-                                       TextAlignment="Center">
-                                <TextBlock.Effect>
-                                    <DropShadowEffect BlurRadius="4" ShadowDepth="0" Color="#0E1A25" Opacity="1"/>
-                                </TextBlock.Effect>
-                            </TextBlock>
-                            <TextBlock x:Name="LoadingStatusText"
-                                       Margin="0,14,0,0"
-                                       Foreground="#EEF8FF"
-                                       FontSize="20"
-                                       FontWeight="Bold"
-                                       TextAlignment="Center"
-                                       TextWrapping="Wrap"/>
-                            <Border Margin="0,16,0,0"
-                                    Padding="10"
-                                    CornerRadius="12"
-                                    Background="#13202B"
-                                    BorderBrush="#47657C"
-                                    BorderThickness="1">
-                                <ProgressBar
-                                         Margin="0"
-                                         x:Name="LoadingProgressBar"
-                                         Height="18"
-                                         IsIndeterminate="True"/>
-                            </Border>
-                            <TextBlock x:Name="LoadingProgressText"
-                                       Margin="0,10,0,0"
-                                       Foreground="#DDF1FF"
-                                       FontSize="16"
-                                       FontWeight="SemiBold"
-                                       TextAlignment="Center"/>
-                        </StackPanel>
-                    </Border>
-                </Grid>
             </Grid>
+            <Grid x:Name="LoadingOverlay" Grid.ColumnSpan="3" Panel.ZIndex="1000" Margin="-20" Background="#12140F" ClipToBounds="True">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="1.05*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                <Grid Grid.Column="1" ClipToBounds="True">
+                    <Image x:Name="LoadingBackgroundImage" Source="{StaticResource Brand.Medals}" Stretch="UniformToFill"/>
+                    <Rectangle><Rectangle.Fill><LinearGradientBrush StartPoint="0,0" EndPoint="1,0"><GradientStop Color="#FF12140F" Offset="0"/><GradientStop Color="#2012140F" Offset="0.45"/><GradientStop Color="#3812140F" Offset="1"/></LinearGradientBrush></Rectangle.Fill></Rectangle>
+                </Grid>
+                <StackPanel Margin="64,40,30,40" VerticalAlignment="Center">
+                    <Border Width="64" Height="3" Background="#E7BD72" HorizontalAlignment="Left" Margin="0,0,0,28"/>
+                    <TextBlock Text="JOKER" FontSize="68" FontWeight="Black" Foreground="#F4F0E7"/>
+                    <TextBlock Text="DBD" FontSize="68" FontWeight="Light" Foreground="#E7BD72" Margin="0,-18,0,28"/>
+                    <TextBlock x:Name="LoadingTitleText" Text="Загрузка библиотеки" Foreground="#E8E7DB" FontSize="20" FontWeight="SemiBold"/>
+                    <TextBlock x:Name="LoadingStatusText" Margin="0,10,0,0" Foreground="#A8AB9D" FontSize="14" TextWrapping="Wrap"/>
+                    <ProgressBar x:Name="LoadingProgressBar" Style="{StaticResource Brand.Progress}" Margin="0,28,30,0" IsIndeterminate="True"/>
+                    <TextBlock x:Name="LoadingProgressText" Margin="0,12,0,0" Foreground="#E7BD72" FontSize="13"/>
+                </StackPanel>
+                <TextBlock Text="JokerDBD Tracker" Foreground="#808577" FontSize="12" Margin="64,0,0,30" VerticalAlignment="Bottom"/>
             </Grid>
         </Grid>
     </Border>

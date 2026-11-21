@@ -34,7 +34,7 @@ namespace JokerDBDTracker
                 }
 
                 if (_isPlayerClosing) return;
-                UiAnimation.SetIsEnabled(this, _appSettings.AnimationsEnabled);
+                UiAnimation.SetIsEnabled(this, _appSettings.AnimationsEnabled && SystemParameters.ClientAreaAnimation);
                 DiagnosticsService.SetEnabled(_appSettings.LoggingEnabled);
                 PositionWindowToOwnerMonitor();
                 ApplyStartupMaximizedWindowed();

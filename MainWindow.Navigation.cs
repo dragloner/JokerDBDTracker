@@ -69,7 +69,7 @@ namespace JokerDBDTracker
             TwitchWatchButton.Visibility = (!isOverlayTab && !favoritesMode) ? Visibility.Visible : Visibility.Collapsed;
             RecommendationsColumn.Width = isOverlayTab
                 ? new GridLength(0)
-                : new GridLength(favoritesMode ? 380 : 420);
+                : new GridLength(favoritesMode ? 340 : (MainRootBorder.ActualHeight < CompactLayoutHeight ? 290 : 320));
             MainColumnsSpacer.Width = isOverlayTab
                 ? new GridLength(0)
                 : new GridLength(12);
