@@ -8,7 +8,7 @@ namespace JokerDBDTracker
     {
         private const int PlayerMinimizeAnimationDurationMs = 540;
         private const double PlayerMinimizeScaleTo = 0.966;
-        private bool ArePlayerAnimationsEnabled => _appSettings.AnimationsEnabled;
+        private bool ArePlayerAnimationsEnabled => _appSettings.AnimationsEnabled && SystemParameters.ClientAreaAnimation;
 
         private void AnimatePlayerWindowEntrance()
         {
@@ -17,25 +17,11 @@ namespace JokerDBDTracker
                 return;
             }
 
-            MainRootGrid.Opacity = 0;
-            MainRootGrid.RenderTransformOrigin = new Point(0.5, 0.5);
-            MainRootGrid.RenderTransform = new ScaleTransform(0.992, 0.992);
-
-            var opacity = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(260))
+            // Animate only WPF chrome opacity; a live HWND must not be scaled during startup.
+            MainRootGrid.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(200))
             {
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-            };
-            MainRootGrid.BeginAnimation(UIElement.OpacityProperty, opacity);
-
-            if (MainRootGrid.RenderTransform is ScaleTransform scale)
-            {
-                var scaleAnimation = new DoubleAnimation(0.992, 1, TimeSpan.FromMilliseconds(300))
-                {
-                    EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-                };
-                scale.BeginAnimation(ScaleTransform.ScaleXProperty, scaleAnimation);
-                scale.BeginAnimation(ScaleTransform.ScaleYProperty, scaleAnimation);
-            }
+            });
         }
 
         private void AnimateWindowStatePulse()

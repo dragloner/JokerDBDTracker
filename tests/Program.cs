@@ -46,6 +46,8 @@ await Test("Consent pages remain interactive and player resumes after dismissal"
     await File.WriteAllTextAsync(fixture, JsonSerializer.Serialize(new
     {
         predicate = (string)Invoke(typeof(PlayerWindow), "BuildPlayerDocumentPredicate", "abcdefghijk")!,
+        pageState = (string)Invoke(typeof(PlayerWindow), "BuildPlayerPageStateScript", "abcdefghijk")!,
+        layout = (string)Invoke(typeof(PlayerWindow), "BuildPlayerLayoutProbeScript")!,
         kiosk = (string)Invoke(typeof(PlayerWindow), "BuildKioskModeScript", "abcdefghijk", Key.H, Array.Empty<Key>())!,
         early = (string)Invoke(typeof(PlayerWindow), "BuildEarlyKioskBootstrapScript", "abcdefghijk")!,
         media = (string)Invoke(typeof(PlayerWindow), "BuildMediaDiagnosticsScript")!
@@ -161,11 +163,14 @@ await Test("Corrupt timecodes recover backup", async () =>
 await Test("Settings and custom presets round trip", async () =>
 {
     var service = new AppSettingsService(); var settings = await service.LoadAsync();
+    Check(JsonSerializer.Deserialize<AppSettingsData>("{}")!.IntroSoundEnabled, "Legacy settings must use the intro default");
+    settings.IntroSoundEnabled = false;
     settings.PlayerCustomPresetNames = ["Glass"];
     settings.PlayerCustomPresetPayloads = ["{}"];
     await service.SaveAsync(settings);
     var refreshed = await service.LoadAsync(); refreshed.Language = "en"; await service.SaveAsync(refreshed);
     Check((await service.LoadAsync()).PlayerCustomPresetNames[0] == "Glass");
+    Check(!(await service.LoadAsync()).IntroSoundEnabled, "Intro mute must survive settings writes");
 });
 await Test("Empty settings recover the last good backup", async () =>
 {

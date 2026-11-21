@@ -24,6 +24,7 @@ namespace JokerDBDTracker
                 };
 
                 ConnectPlayerProgress(player, video);
+                player.PrepareForDisplay();
                 try
                 {
                     await AnimateWindowOpacityAsync(0.0, 220);

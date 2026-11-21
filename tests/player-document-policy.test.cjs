@@ -86,3 +86,21 @@ assert.equal(diagnostic.error, 3);
 assert.equal(diagnostic.current, 42);
 assert.ok(!mediaPage.messages[0].includes('https:'), 'No signed URLs in diagnostics');
 console.log('PASS media diagnostics report decode errors without modifying playback');
+
+for (const url of ['https://consent.youtube.com/m', 'https://accounts.google.com/ServiceLogin']) {
+    assert.equal(vm.runInContext(scripts.pageState, page(url).context), 'interactive');
+}
+assert.equal(vm.runInContext(scripts.pageState, page(watch, {loading:true}).context), 'pending');
+assert.equal(vm.runInContext(scripts.pageState, page(watch, {consent:true}).context), 'interactive');
+assert.equal(vm.runInContext(scripts.pageState, page(watch).context), 'ready');
+function layoutPage(rect = {left:0,top:0,width:1280,height:720}, objectFit = 'contain') {
+    const video={getBoundingClientRect:()=>rect};
+    const container={querySelector:()=>video,getBoundingClientRect:()=>rect};
+    const player={querySelector:()=>container,getBoundingClientRect:()=>rect};
+    return vm.createContext({document:{documentElement:{clientWidth:1280,clientHeight:720},getElementById:id=>id==='movie_player'?player:{}},getComputedStyle:()=>({objectFit})});
+}
+assert.equal(vm.runInContext(scripts.layout,layoutPage()),true);
+assert.equal(vm.runInContext(scripts.layout,layoutPage({left:0,top:0,width:960,height:540})),false);
+assert.equal(vm.runInContext(scripts.layout,layoutPage({left:10,top:0,width:1280,height:720})),false);
+assert.equal(vm.runInContext(scripts.layout,layoutPage(undefined,'cover')),false);
+console.log('PASS startup page classification and viewport geometry: consent, pending, stale bounds, offsets, aspect ratio');

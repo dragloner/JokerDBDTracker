@@ -13,10 +13,10 @@
     <AssemblyTitle>JokerDBD Tracker</AssemblyTitle>
     <Title>JokerDBD Tracker</Title>
     <Description>JokerDBD Tracker desktop app for stream tracking and embedded playback.</Description>
-    <Version>1.4.9</Version>
-    <AssemblyVersion>1.4.9</AssemblyVersion>
-    <FileVersion>1.4.9</FileVersion>
-    <InformationalVersion>1.4.9</InformationalVersion>
+    <Version>1.4.10</Version>
+    <AssemblyVersion>1.4.10</AssemblyVersion>
+    <FileVersion>1.4.10</FileVersion>
+    <InformationalVersion>1.4.10</InformationalVersion>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <Company>dragloner</Company>
     <Authors>dragloner</Authors>
@@ -49,6 +49,8 @@
     <Page Remove="tests/**/*.xaml;artifacts/**/*.xaml" />
     <Resource Include="Assets\app.ico" />
     <Resource Include="Assets\Brand\*" />
+    <Resource Include="Assets\Intro\*.png" />
+    <Content Include="Assets\Intro\*.wav" CopyToOutputDirectory="PreserveNewest" />
     <Resource Include="Assets\PrestigeIcons\*.png" />
     <Resource Include="Assets\Sounds\*.mp3" />
     <Content Include="Assets\Sounds\*.mp3">

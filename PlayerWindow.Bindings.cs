@@ -12,6 +12,7 @@ namespace JokerDBDTracker
     public partial class PlayerWindow
     {
         private const int MaxConcurrentSoundEffects = 8;
+        private const long MaximumPrewarmedSoundBytes = 2 * 1024 * 1024;
         private readonly List<MediaPlayer> _activeSoundPlayers = [];
         private readonly Dictionary<SoundEffectKind, MediaPlayer> _activeSoundPlayersByKind = [];
 
@@ -22,7 +23,8 @@ namespace JokerDBDTracker
             PsiRadiation,
             Respect,
             Sad,
-            DaUzhTochno
+            DaUzhTochno,
+            Diss
         }
 
         private void PlayerWindow_PreviewMouseDown(object sender, MouseButtonEventArgs e)
@@ -804,6 +806,8 @@ namespace JokerDBDTracker
                     }
 
                     var filePath = uri.LocalPath;
+                    // Long tracks are decoded on demand, keeping startup memory and work bounded.
+                    if (new FileInfo(filePath).Length > MaximumPrewarmedSoundBytes) continue;
                     if (!_soundEffectBase64Cache.TryGetValue(filePath, out var b64))
                     {
                         var bytes = await File.ReadAllBytesAsync(filePath);
@@ -902,6 +906,7 @@ namespace JokerDBDTracker
                 SoundEffectKind.Respect => "donmafia.mp3",
                 SoundEffectKind.Sad => "sadness.mp3",
                 SoundEffectKind.DaUzhTochno => "dauzhtochno.mp3",
+                SoundEffectKind.Diss => "diss.mp3",
                 _ => null
             };
 
@@ -1074,17 +1079,8 @@ namespace JokerDBDTracker
             _activeSoundPlayersByKind.Clear();
         }
 
-        private void StopAllWebViewInjectedSoundEffects()
-        {
-            try
-            {
-                if (Player?.CoreWebView2 is null)
-                {
-                    return;
-                }
+        private static string BuildStopAllSoundEffectsScript() => $$"""
 
-                _ = Player.CoreWebView2.ExecuteScriptAsync(
-                    """
                     (() => {
                         try {
                             const sfx = window.__jdbdSfx;
@@ -1093,7 +1089,7 @@ namespace JokerDBDTracker
                             }
                             sfx.startGen = sfx.startGen || {};
                             sfx.decoding = sfx.decoding || {};
-                            const kinds = new Set(['AuraFarm', 'Laugh', 'PsiRadiation', 'Respect', 'Sad', 'DaUzhTochno']);
+                            const kinds = new Set({{JsonSerializer.Serialize(Enum.GetNames<SoundEffectKind>())}});
                             for (const k of Object.keys(sfx.decoding)) {
                                 kinds.add(k);
                             }
@@ -1116,7 +1112,19 @@ namespace JokerDBDTracker
                             // no-op
                         }
                     })();
-                    """);
+                    """;
+
+        private void StopAllWebViewInjectedSoundEffects()
+        {
+            try
+            {
+                if (Player?.CoreWebView2 is null)
+                {
+                    return;
+                }
+
+                _ = Player.CoreWebView2.ExecuteScriptAsync(
+                    BuildStopAllSoundEffectsScript());
             }
             catch
             {
@@ -1432,6 +1440,12 @@ namespace JokerDBDTracker
         {
             MarkUserInteraction();
             PlaySoundEffect(SoundEffectKind.Sad);
+        }
+
+        private void DissSoundButton_Click(object sender, RoutedEventArgs e)
+        {
+            MarkUserInteraction();
+            PlaySoundEffect(SoundEffectKind.Diss);
         }
 
         private void DaUzhTochnoSoundButton_Click(object sender, RoutedEventArgs e)

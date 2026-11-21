@@ -11,6 +11,7 @@ namespace JokerDBDTracker.Services
         public string Language { get; set; } = "ru";
         public double UiScale { get; set; } = 1.0;
         public bool AnimationsEnabled { get; set; } = true;
+        public bool IntroSoundEnabled { get; set; } = true;
         public bool LoggingEnabled { get; set; } = true;
         public string FullscreenBehavior { get; set; } = "auto";
         public string HideEffectsPanelBind { get; set; } = "H";

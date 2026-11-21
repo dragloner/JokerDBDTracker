@@ -51,6 +51,22 @@ internal static class Program
                 var reset = await browser.CoreWebView2.ExecuteScriptAsync("Object.values(window.__jdbdSfx.playing).map(e => e.source.playbackRate.value)");
                 if (reset != "[1]") throw new Exception("Reset failed: " + reset);
                 Console.WriteLine("PASS real WebView2: MP3 decode, native activation, running Web Audio, live pitch reset; output muted.");
+                var stopAll = (string)typeof(PlayerWindow).GetMethod("BuildStopAllSoundEffectsScript", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, null)!;
+                await Evaluate(stopAll);
+                var dissBytes = await File.ReadAllBytesAsync("Assets/Sounds/diss.mp3");
+                using (var embedded = Application.GetResourceStream(new Uri("pack://application:,,,/JokerDBDTracker;component/Assets/Sounds/diss.mp3"))!.Stream)
+                {
+                    var embeddedHash = System.Security.Cryptography.SHA256.HashData(embedded);
+                    if (!embeddedHash.SequenceEqual(System.Security.Cryptography.SHA256.HashData(dissBytes))) throw new Exception("Embedded diss differs from the supplied final file");
+                }
+                var diss = Convert.ToBase64String(dissBytes);
+                await Evaluate((string)builder.Invoke(null, new object[] { "Diss", diss, false, parameters })!);
+                var dissActive = await browser.CoreWebView2.ExecuteScriptAsync("Object.values(window.__jdbdSfx.playing).some(e=>e.kind==='Diss' && e.ctx.state==='running')");
+                if (dissActive != "true") throw new Exception("Diss did not decode or start");
+                await Evaluate(stopAll);
+                var stopped = await browser.CoreWebView2.ExecuteScriptAsync("Object.keys(window.__jdbdSfx.playing).length===0 && window.__jdbdSfx.count===0 && window.__jdbdSfx.startGen.Diss>0");
+                if (stopped != "true") throw new Exception("Diss was not stopped by the shared reset");
+                Console.WriteLine("PASS supplied diss MP3: decode, start and shared reset/cancellation; output muted.");
             }
             catch (Exception ex) { Console.Error.WriteLine(ex); Environment.ExitCode = 1; }
             finally { browser.Dispose(); window.Close(); app.Shutdown(); }

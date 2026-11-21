@@ -13,9 +13,11 @@ public partial class PlayerWindow
         #movie_player { position: fixed !important; inset: 0 !important;
             width: 100vw !important; height: 100vh !important;
             max-width: none !important; max-height: none !important; z-index: 9000 !important; }
-        #movie_player .html5-video-container { width: 100% !important; height: 100% !important; }
+        #movie_player .html5-video-container { position: absolute !important; inset: 0 !important;
+            width: 100% !important; height: 100% !important; margin: 0 !important; padding: 0 !important; }
         #movie_player video.html5-main-video { width: 100% !important; height: 100% !important;
-            left: 0 !important; top: 0 !important; object-fit: contain !important; }
+            max-width: none !important; max-height: none !important; position: absolute !important;
+            left: 0 !important; top: 0 !important; margin: 0 !important; object-fit: contain !important; }
         ytd-masthead, #masthead-container, #secondary, #related,
         ytd-watch-metadata, #comments, ytd-comments, ytd-live-chat-frame,
         ytd-engagement-panel-section-list-renderer { display: none !important; }

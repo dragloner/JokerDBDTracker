@@ -6,6 +6,7 @@ namespace JokerDBDTracker
         {
             try
             {
+                PsiIntro.Dispose();
                 _searchDebounceTimer.Stop();
                 _networkTimeSyncTimer.Stop();
                 _questRolloverTimer.Stop();

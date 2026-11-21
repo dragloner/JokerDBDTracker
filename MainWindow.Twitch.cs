@@ -32,6 +32,7 @@ namespace JokerDBDTracker
                     Owner = this
                 };
 
+                player.PrepareForDisplay();
                 try
                 {
                     await AnimateWindowOpacityAsync(0.0, 220);

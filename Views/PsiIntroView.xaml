@@ -1,0 +1,69 @@
+<UserControl x:Class="JokerDBDTracker.Views.PsiIntroView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:JokerDBDTracker.Views"
+             Background="#0B0F09" ClipToBounds="True" Focusable="False">
+    <UserControl.Resources>
+        <ResourceDictionary><ResourceDictionary.MergedDictionaries><ResourceDictionary Source="/JokerDBDTracker;component/Resources/Brand.xaml"/></ResourceDictionary.MergedDictionaries>
+            <Style x:Key="PsiButton" TargetType="Button" BasedOn="{StaticResource Brand.PrimaryButton}">
+                <Setter Property="Background"><Setter.Value><LinearGradientBrush StartPoint="0,0" EndPoint="1,1"><GradientStop Color="#D4E7A0"/><GradientStop Color="#94B25C" Offset="1"/></LinearGradientBrush></Setter.Value></Setter>
+                <Setter Property="BorderBrush" Value="#E2EFBA"/>
+                <Setter Property="Foreground" Value="#16200E"/>
+                <Setter Property="FontSize" Value="20"/>
+                <Setter Property="Padding" Value="28,18"/>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid x:Name="SceneRoot" MouseMove="Scene_MouseMove" MouseLeave="Scene_MouseLeave">
+        <Rectangle x:Name="SceneImage" Margin="-24" RenderTransformOrigin="0.5,0.5">
+            <Rectangle.Fill><ImageBrush x:Name="SceneBrush" ImageSource="/JokerDBDTracker;component/Assets/Intro/psi-joker-zone.png" Stretch="UniformToFill" AlignmentX="Right"/></Rectangle.Fill>
+            <Rectangle.RenderTransform><TranslateTransform x:Name="SceneTranslation"/></Rectangle.RenderTransform>
+        </Rectangle>
+        <Rectangle IsHitTestVisible="False"><Rectangle.Fill><LinearGradientBrush StartPoint="0,0" EndPoint="1,0"><GradientStop Color="#B20B0F09"/><GradientStop Color="#450B0F09" Offset="0.48"/><GradientStop Color="#000B0F09" Offset="0.78"/></LinearGradientBrush></Rectangle.Fill></Rectangle>
+        <Rectangle IsHitTestVisible="False"><Rectangle.Fill><LinearGradientBrush StartPoint="0,0" EndPoint="0,1"><GradientStop Color="#50080D07"/><GradientStop Color="#00080D07" Offset="0.32"/><GradientStop Color="#E0080D07" Offset="1"/></LinearGradientBrush></Rectangle.Fill></Rectangle>
+        <local:PsiAtmosphere x:Name="Atmosphere" IsHitTestVisible="False"/>
+        <Grid Margin="48,28,48,28">
+            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+            <Grid>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock x:Name="RadiationMark" Text="☢" Foreground="#C7DC86" FontFamily="Segoe UI Symbol" FontSize="25" Margin="0,0,12,0" RenderTransformOrigin="0.5,0.5">
+                        <TextBlock.RenderTransform><RotateTransform x:Name="RadiationRotation"/></TextBlock.RenderTransform>
+                        <TextBlock.Effect><DropShadowEffect Color="#AFD470" BlurRadius="16" ShadowDepth="0" Opacity="0.35"/></TextBlock.Effect>
+                    </TextBlock>
+                    <StackPanel><TextBlock Text="JOKERDBD" Foreground="#F0F1DE" FontSize="15" FontWeight="Bold"/><TextBlock Text="ПСИ-СЕКТОР / 01" Foreground="#8B9875" FontSize="10" Margin="0,3,0,0"/></StackPanel>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button x:Name="SoundToggle" Content="Звук: вкл" Click="SoundToggle_Click" FontSize="12" Padding="14,8" Margin="0,0,8,0"/>
+                    <Button Content="✕" ToolTip="Закрыть программу" Click="Close_Click" Width="38" Height="38" Padding="0"/>
+                </StackPanel>
+            </Grid>
+            <Viewbox Grid.Row="1" Stretch="Uniform" StretchDirection="DownOnly" HorizontalAlignment="Left" VerticalAlignment="Center" MaxWidth="620" Margin="0,18,0,18">
+                <StackPanel x:Name="IntroContent" Width="570">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,24">
+                        <Border Width="30" Height="1" Background="#C8D69B" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                        <TextBlock Text="СИГНАЛ ОБНАРУЖЕН" Foreground="#C8D69B" FontSize="12" FontFamily="Consolas"/>
+                    </StackPanel>
+                    <TextBlock Text="МИР" Foreground="#F2F1E3" FontSize="84" FontWeight="Light"/>
+                    <TextBlock Text="ПСИ" Foreground="#CEDEA0" FontSize="108" FontWeight="Black" Margin="-5,-28,0,0"/>
+                    <TextBlock x:Name="PhraseText" Text="Контроллер уже рядом." Foreground="#D4D8C3" FontSize="19" Margin="0,16,0,0"/>
+                    <TextBlock Text="Джокер. По ту сторону сигнала." Foreground="#8E9A7B" FontSize="13" Margin="0,10,0,30"/>
+                    <Button x:Name="EnterButton" HorizontalAlignment="Left" Style="{StaticResource PsiButton}" Click="Enter_Click" IsEnabled="False">
+                        <StackPanel Orientation="Horizontal"><TextBlock Text="Войти в мир пси"/><TextBlock Text="→" Margin="22,0,0,0"/></StackPanel>
+                    </Button>
+                    <TextBlock x:Name="ReadyText" Text="Подключение к библиотеке…" Foreground="#A4AF91" FontSize="12" Margin="0,16,0,0"/>
+                    <Button x:Name="RetryButton" Content="Повторить загрузку каталога" HorizontalAlignment="Left" Click="Retry_Click" Visibility="Collapsed" Margin="0,12,0,0" Padding="12,8" FontSize="12"/>
+                </StackPanel>
+            </Viewbox>
+            <Grid Grid.Row="2">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom">
+                    <Border Width="2" Background="#A7BE70" Margin="0,0,12,0"/>
+                    <StackPanel><TextBlock Text="ПСИ-ПОЛЕ АКТИВНО" Foreground="#C1D28C" FontFamily="Consolas" FontSize="11"/><TextBlock Text="Контакт с контроллером установлен" Foreground="#738263" FontSize="11" Margin="0,6,0,0"/></StackPanel>
+                </StackPanel>
+                <StackPanel HorizontalAlignment="Right" VerticalAlignment="Bottom">
+                    <TextBlock Text="JOKER / КОНТРОЛЛЕР" Foreground="#B2BE98" FontSize="11" FontFamily="Consolas" HorizontalAlignment="Right"/>
+                    <TextBlock Text="JOKER / МУТАЦИЯ 02" Foreground="#768567" FontSize="10" FontFamily="Consolas" Margin="0,5,0,0" HorizontalAlignment="Right"/>
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Grid>
+</UserControl>

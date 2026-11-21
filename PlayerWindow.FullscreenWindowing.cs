@@ -19,6 +19,14 @@ namespace JokerDBDTracker
 {
     public partial class PlayerWindow : Window
     {
+        internal void PrepareForDisplay()
+        {
+            PositionWindowToOwnerMonitor();
+            Topmost = false;
+            ResizeMode = ResizeMode.CanResize;
+            WindowState = WindowState.Maximized;
+        }
+
         private void PositionWindowToOwnerMonitor()
         {
             if (Owner is null)
@@ -40,20 +48,6 @@ namespace JokerDBDTracker
             Top = ownerBounds.Top;
             Width = Math.Max(MinWidth, ownerBounds.Width);
             Height = Math.Max(MinHeight, ownerBounds.Height);
-        }
-
-        private void ApplyStartupMaximizedWindowed()
-        {
-            Topmost = false;
-            ResizeMode = ResizeMode.CanResize;
-            WindowState = WindowState.Maximized;
-            Dispatcher.BeginInvoke(() =>
-            {
-                if (WindowState != WindowState.Minimized)
-                {
-                    WindowState = WindowState.Maximized;
-                }
-            }, DispatcherPriority.Loaded);
         }
 
         private void CoreWebView2_ContainsFullScreenElementChanged(object? sender, object e)

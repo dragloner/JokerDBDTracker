@@ -36,8 +36,6 @@ namespace JokerDBDTracker
                 if (_isPlayerClosing) return;
                 UiAnimation.SetIsEnabled(this, _appSettings.AnimationsEnabled && SystemParameters.ClientAreaAnimation);
                 DiagnosticsService.SetEnabled(_appSettings.LoggingEnabled);
-                PositionWindowToOwnerMonitor();
-                ApplyStartupMaximizedWindowed();
                 AnimatePlayerWindowEntrance();
                 VideoTitleText.Text = _video.IsTwitchStream ? "Twitch" : _video.Title;
                 InitializePresetsUi();
@@ -253,39 +251,35 @@ namespace JokerDBDTracker
             {
                 Player.ZoomFactor = 1.0;
 
-                // A successful navigation can be a consent/login document, not a video.
-                // Let the user interact with it before installing player-only behavior.
-                if (!await WaitForPlayerDocumentAsync(navigationVersion)) return;
-
-                SetPlayerLoadingOverlay(visible: true, PT("Загрузка видео...", "Loading video..."));
-                var bootstrapResult = await ExecuteWebScriptWithTimeoutAsync(
-                    BuildKioskModeScript(
-                        _video.VideoId,
-                        ReadConfiguredKey(_appSettings.HideEffectsPanelBind, Key.H),
-                        [.. BuildPlayerHotkeySet()]),
-                    timeoutMs: 10000,
-                    operation: "CoreWebView2_NavigationCompleted.Bootstrap");
-                if (_isPlayerClosing || navigationVersion != _playerNavigationVersion)
+                string? bootstrapResult;
+                do
                 {
-                    return;
-                }
+                    // A consent prompt may appear between the readiness probe and bootstrap.
+                    if (!await WaitForPlayerDocumentAsync(navigationVersion)) return;
+                    bootstrapResult = await ExecuteWebScriptWithTimeoutAsync(
+                        BuildKioskModeScript(_video.VideoId, ReadConfiguredKey(_appSettings.HideEffectsPanelBind, Key.H), [.. BuildPlayerHotkeySet()]),
+                        timeoutMs: 10000, operation: "Player.Bootstrap");
+                    if (_isPlayerClosing || navigationVersion != _playerNavigationVersion) return;
+                } while (bootstrapResult == "false");
 
                 if (bootstrapResult is null)
                 {
-                    // Script timed out or failed — release the lock so the player isn't frozen forever.
-                    // The position timer will clear the loading overlay once video starts ticking.
-                    _isPlayerNavigationInProgress = false;
-                    _isPlayerRuntimeReady = true;
-                    SetPlayerSurfaceVisible(true);
-                    SetPlayerInteractionsEnabled(true);
-                    SetPlayerLoadingOverlay(visible: true, PT(
-                        "Загрузка видео...",
-                        "Loading video..."));
+                    SetPlayerSurfaceVisible(false);
+                    SetPlayerLoadingOverlay(true, PT("Не удалось подготовить плеер. Повторите загрузку.", "Player preparation failed. Retry loading."));
+                    PlayerLoadingProgress.Visibility = Visibility.Collapsed;
+                    RetryPlayerButton.Visibility = Visibility.Visible;
                     return;
                 }
 
-                SetPlayerSurfaceVisible(true);
-
+                var layoutReady = await WaitForPlayerLayoutAsync(navigationVersion);
+                if (_isPlayerClosing || navigationVersion != _playerNavigationVersion) return;
+                if (!layoutReady)
+                {
+                    SetPlayerLoadingOverlay(true, PT("Не удалось подготовить размер видео. Повторите загрузку.", "Video layout could not be prepared. Retry loading."));
+                    PlayerLoadingProgress.Visibility = Visibility.Collapsed;
+                    RetryPlayerButton.Visibility = Visibility.Visible;
+                    return;
+                }
                 _lastAppliedEffectsSignature = string.Empty;
                 await ApplyEffectsSafelyAsync(force: true);
                 if (_isPlayerClosing || navigationVersion != _playerNavigationVersion)
@@ -293,6 +287,7 @@ namespace JokerDBDTracker
                     return;
                 }
 
+                SetPlayerSurfaceVisible(true);
                 var playbackStarted = await WaitForPlaybackStartAsync();
                 if (_isPlayerClosing || navigationVersion != _playerNavigationVersion)
                 {
@@ -314,16 +309,18 @@ namespace JokerDBDTracker
                 FlushPendingEffectsApplyRequests();
                 _ = PrewarmWebViewSoundEffectsAsync();
             }
-            catch
+            catch (Exception ex)
             {
-                // Script error during bootstrap — release lock so the player isn't frozen.
-                _isPlayerNavigationInProgress = false;
-                _isPlayerRuntimeReady = true;
-                SetPlayerSurfaceVisible(true);
+                DiagnosticsService.LogException("Player.Bootstrap", ex);
+                // Keep the retry UI visible without exposing an unprepared document.
+                _isPlayerRuntimeReady = false;
+                SetPlayerSurfaceVisible(false);
                 SetPlayerInteractionsEnabled(true);
                 SetPlayerLoadingOverlay(visible: true, PT(
                     "Ошибка инициализации плеера. Попробуйте открыть видео снова.",
                     "Player initialization error. Try opening this video again."));
+                PlayerLoadingProgress.Visibility = Visibility.Collapsed;
+                RetryPlayerButton.Visibility = Visibility.Visible;
             }
         }
 
@@ -483,7 +480,10 @@ namespace JokerDBDTracker
                 return;
             }
 
-            PlayerSurfaceHost.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+            // Hidden reserves the actual viewport while keeping the native browser HWND
+            // out of view. Collapsing the host gives Chromium transient zero-sized bounds.
+            PlayerSurfaceHost.Visibility = Visibility.Visible;
+            Player.Visibility = visible ? Visibility.Visible : Visibility.Hidden;
         }
 
         private void SetPlayerInteractionsEnabled(bool enabled)

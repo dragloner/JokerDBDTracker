@@ -13,6 +13,7 @@ namespace JokerDBDTracker
             WindowBoundsHelper.Attach(this);
             WindowMaterial.Attach(this);
             InitializeSettingsUi();
+            InitializePsiIntro();
             VideoList.ItemsSource = _videos;
             UpdateTopNavButtonsVisualState();
             StateChanged += MainWindow_StateChanged;
@@ -77,6 +78,8 @@ namespace JokerDBDTracker
             {
                 _ = InitializeNetworkClockAsync();
                 await LoadAndApplySettingsAsync();
+                PsiIntro.Start(_appSettings.IntroSoundEnabled, AreAnimationsEnabled);
+                PsiIntro.SetCatalogState(false, true);
                 InitializeLogViewer();
                 DiagnosticsService.LogInfo("App", $"Started, v{GetCurrentAppVersion()}, lang={_appSettings.Language}, scale={_appSettings.UiScale:0.00}");
                 var loadVideosTask = LoadVideosAsync();
@@ -103,6 +106,11 @@ namespace JokerDBDTracker
             finally
             {
                 HideLoadingOverlay();
+                if (!_introDismissed)
+                {
+                    PsiIntro.Start(_appSettings.IntroSoundEnabled, AreAnimationsEnabled);
+                    PsiIntro.SetCatalogState(_allVideos.Count > 0, false);
+                }
             }
         }
 
