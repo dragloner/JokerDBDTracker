@@ -6,16 +6,17 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <DefaultItemExcludes>$(DefaultItemExcludes);artifacts/**;tests/**</DefaultItemExcludes>
     <AssemblyName>JokerDBDTracker</AssemblyName>
     <RootNamespace>JokerDBDTracker</RootNamespace>
     <Product>JokerDBD Tracker</Product>
     <AssemblyTitle>JokerDBD Tracker</AssemblyTitle>
     <Title>JokerDBD Tracker</Title>
     <Description>JokerDBD Tracker desktop app for stream tracking and embedded playback.</Description>
-    <Version>1.4.7</Version>
-    <AssemblyVersion>1.4.7</AssemblyVersion>
-    <FileVersion>1.4.7</FileVersion>
-    <InformationalVersion>1.4.7</InformationalVersion>
+    <Version>1.4.8</Version>
+    <AssemblyVersion>1.4.8</AssemblyVersion>
+    <FileVersion>1.4.8</FileVersion>
+    <InformationalVersion>1.4.8</InformationalVersion>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <Company>dragloner</Company>
     <Authors>dragloner</Authors>

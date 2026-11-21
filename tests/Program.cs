@@ -47,6 +47,38 @@ await Test("Consent pages remain interactive and player resumes after dismissal"
     Check(process.ExitCode == 0, "Player document JavaScript regression failed");
 });
 
+await Test("Player audio reset, pitch, sound lifecycle and decode cancellation", async () =>
+{
+    var soundType = typeof(PlayerWindow).GetNestedType("SoundEffectAudioParams", BindingFlags.NonPublic)!;
+    var neutral = Activator.CreateInstance(soundType, nonPublic: true)!;
+    var colored = Activator.CreateInstance(soundType, nonPublic: true)!;
+    soundType.GetProperty("PitchSemitones")!.SetValue(colored, 12d);
+    soundType.GetProperty("Reverb")!.SetValue(colored, 0.5d);
+    var fixture = Path.Combine(root, "audio-scripts.json");
+    string Effects(double pitch) => (string)Invoke(typeof(PlayerWindow), "BuildEffectsScript",
+        JsonSerializer.Serialize(new { Flags = new bool[15], AudioPitchSemitones = pitch }))!;
+    string Sound(string kind, object parameters) => (string)Invoke(typeof(PlayerWindow), "BuildSoundEffectScript", kind, "AA==", false, parameters)!;
+    await File.WriteAllTextAsync(fixture, JsonSerializer.Serialize(new
+    {
+        neutralVideo = Effects(0), pitchVideo = Effects(12),
+        edgeVideo = (string)Invoke(typeof(PlayerWindow), "BuildEffectsScript", JsonSerializer.Serialize(new
+        {
+            Flags = Enumerable.Range(0, 15).Select(index => index is 0 or 8).ToArray(),
+            Fisheye = 0.5, FisheyeCenterX = 0d, FisheyeCenterY = 0d
+        }))!,
+        coloredSound = Sound("AuraFarm", colored), neutralSound = Sound("AuraFarm", neutral),
+        otherSound = Sound("Laugh", neutral),
+        neutralSync = (string)Invoke(typeof(PlayerWindow), "BuildSoundParamsScript", JsonSerializer.Serialize(neutral))!,
+        eqSync = (string)Invoke(typeof(PlayerWindow), "BuildSoundParamsScript", "{\"Reverb\":0.5,\"PitchSemitones\":12,\"EqLowDb\":3}")!
+    }));
+    var start = new System.Diagnostics.ProcessStartInfo("node") { UseShellExecute = false };
+    start.ArgumentList.Add(Path.Combine(AppContext.BaseDirectory, "player-audio-state.test.cjs"));
+    start.ArgumentList.Add(fixture);
+    using var process = System.Diagnostics.Process.Start(start)!;
+    await process.WaitForExitAsync();
+    Check(process.ExitCode == 0, "Audio state JavaScript regression failed");
+});
+
 await Test("Encrypted profile round trip and daily membership", async () =>
 {
     var history = new WatchHistoryService(Fixture("profile-roundtrip"));

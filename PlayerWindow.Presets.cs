@@ -139,7 +139,7 @@ namespace JokerDBDTracker
         {
             if (EffectsWorkspaceEffectsTab is not null)
             {
-                EffectsWorkspaceEffectsTab.Header = PT("Эффекты", "Effects");
+                EffectsWorkspaceEffectsTab.Header = PT("Видео", "Video");
             }
 
             if (EffectsWorkspacePresetsTab is not null)
@@ -197,7 +197,7 @@ namespace JokerDBDTracker
             }
             if (ShowEffectsWorkspaceButton is not null)
             {
-                ShowEffectsWorkspaceButton.Content = PT("Эффекты", "Effects");
+                ShowEffectsWorkspaceButton.Content = PT("Видео", "Video");
             }
 
             if (ShowPresetsWorkspaceButton is not null)
@@ -462,15 +462,16 @@ namespace JokerDBDTracker
         {
             var isEffectsPage = EffectsWorkspaceEffectsTab?.IsSelected == true;
             var isPresetsPage = EffectsWorkspacePresetsTab?.IsSelected == true;
+            if (ShowAudioWorkspaceButton is not null) ShowAudioWorkspaceButton.Tag = EffectsWorkspaceAudioTab?.IsSelected == true ? "active" : null;
 
             if (ShowEffectsWorkspaceButton is not null)
             {
-                ShowEffectsWorkspaceButton.IsEnabled = !isEffectsPage;
+                ShowEffectsWorkspaceButton.Tag = isEffectsPage ? "active" : null;
             }
 
             if (ShowPresetsWorkspaceButton is not null)
             {
-                ShowPresetsWorkspaceButton.IsEnabled = !isPresetsPage;
+                ShowPresetsWorkspaceButton.Tag = isPresetsPage ? "active" : null;
             }
 
             if (BackToEffectsFromPresetsButton is not null)
@@ -487,6 +488,12 @@ namespace JokerDBDTracker
         private void ShowEffectsWorkspaceButton_Click(object sender, RoutedEventArgs e)
         {
             SwitchPresetsPage(showPresets: false);
+        }
+
+        private void ShowAudioWorkspaceButton_Click(object sender, RoutedEventArgs e)
+        {
+            EffectsWorkspaceAudioTab.IsSelected = true;
+            UpdatePresetWorkspaceSwitcherState();
         }
 
         private void ShowPresetsWorkspaceButton_Click(object sender, RoutedEventArgs e)

@@ -168,6 +168,7 @@ namespace JokerDBDTracker
             _lastXpSampleTimestamp = null;
             _lastMeasuredTime = -1;
             _soundEffectsPrewarmedForCurrentNavigation = false;
+            _lastSoundParamsJson = string.Empty;
 
             if (_video.IsTwitchStream)
             {
@@ -381,6 +382,11 @@ namespace JokerDBDTracker
         private void CoreWebView2_WebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
         {
             if (!TryReadTrustedWebMessage(e, out var message)) return;
+            if (message.StartsWith("jdbd:sfx-error:", StringComparison.Ordinal))
+            {
+                DiagnosticsService.LogInfo("Player.Sound", message["jdbd:sfx-error:".Length..]);
+                return;
+            }
             if (message.StartsWith("jdbd:media:", StringComparison.Ordinal))
             {
                 DiagnosticsService.LogInfo("Player.Media", message["jdbd:media:".Length..]);
@@ -780,7 +786,7 @@ namespace JokerDBDTracker
                     };
 
                     const tryAttach = () => {
-                        const video = window.__stwfxRuntime?.video
+                        const video = document.querySelector('#movie_player video.html5-main-video')
                             || document.querySelector('video.html5-main-video')
                             || document.querySelector('.html5-video-player video');
                         if (!video || video === attachedVideo) return;
@@ -789,12 +795,13 @@ namespace JokerDBDTracker
                             attachedVideo.removeEventListener('seeked', onSeeked);
                         }
                         attachedVideo = video;
+                        lastSteadyTime = -1;
                         video.addEventListener('timeupdate', onTimeUpdate, { passive: true });
                         video.addEventListener('seeked', onSeeked, { passive: true });
                     };
 
                     const interval = setInterval(tryAttach, 800);
-                    setTimeout(() => clearInterval(interval), 60000);
+                    window.addEventListener('pagehide', () => clearInterval(interval), { once: true });
                     tryAttach();
                 })();
                 """;

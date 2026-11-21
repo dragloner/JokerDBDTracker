@@ -11,6 +11,7 @@ namespace JokerDBDTracker
 {
     public partial class PlayerWindow
     {
+        private const int MaxConcurrentSoundEffects = 8;
         private readonly List<MediaPlayer> _activeSoundPlayers = [];
         private readonly Dictionary<SoundEffectKind, MediaPlayer> _activeSoundPlayersByKind = [];
 
@@ -374,7 +375,7 @@ namespace JokerDBDTracker
                 {
                     // Spam mode still should not stack the SAME effect endlessly.
                     StopSoundEffect(kind);
-                    if (_activeSoundPlayers.Count >= 8)
+                    if (_activeSoundPlayers.Count >= MaxConcurrentSoundEffects)
                     {
                         return;
                     }
@@ -424,53 +425,27 @@ namespace JokerDBDTracker
             };
         }
 
-        private async Task SyncSoundEffectsAudioParamsAsync(SoundEffectAudioParams p)
+        private string _lastSoundParamsJson = string.Empty;
+
+        private async Task SyncSoundEffectsAudioParamsAsync(SoundEffectAudioParams parameters)
         {
-            try
-            {
-                if (Player?.CoreWebView2 is null || _isPlayerClosing)
-                {
-                    return;
-                }
-
-                string F(double v) => v.ToString("F4", CultureInfo.InvariantCulture);
-                var script = $$"""
-                    (() => {
-                        try {
-                            window.__jdbdSfx = window.__jdbdSfx || { playing: {}, count: 0, currentParams: null };
-                            const sfx = window.__jdbdSfx;
-                            sfx.currentParams = {
-                                EqLowDb: {{F(p.EqLowDb)}},
-                                EqMidDb: {{F(p.EqMidDb)}},
-                                EqHighDb: {{F(p.EqHighDb)}},
-                                VolumeBoost: {{F(p.VolumeBoost)}},
-                                PitchSemitones: {{F(p.PitchSemitones)}},
-                                Reverb: {{F(p.Reverb)}},
-                                Echo: {{F(p.Echo)}},
-                                Distortion: {{F(p.Distortion)}},
-                                Wobble: {{F(p.Wobble)}}
-                            };
-
-                            for (const entry of Object.values(sfx.playing || {})) {
-                                try {
-                                    entry?.applyParams?.(sfx.currentParams);
-                                } catch {
-                                    // no-op
-                                }
-                            }
-                        } catch {
-                            // no-op
-                        }
-                    })();
-                    """;
-
-                await Player.CoreWebView2.ExecuteScriptAsync(script);
-            }
-            catch
-            {
-                // Best-effort realtime sync.
-            }
+            if (Player?.CoreWebView2 is null || _isPlayerClosing) return;
+            var navigationVersion = _playerNavigationVersion;
+            var json = JsonSerializer.Serialize(parameters);
+            if (json == _lastSoundParamsJson) return;
+            var result = await ExecuteWebScriptWithTimeoutAsync(BuildSoundParamsScript(json), 1000, "SoundEffects.Sync");
+            if (result == "true" && !_isPlayerClosing && navigationVersion == _playerNavigationVersion)
+                _lastSoundParamsJson = json;
         }
+
+        private static string BuildSoundParamsScript(string json) => $$"""
+            (() => {
+                const sfx = window.__jdbdSfx ||= { playing: {}, count: 0 };
+                sfx.currentParams = {{json}};
+                for (const entry of Object.values(sfx.playing)) entry.applyParams?.(sfx.currentParams);
+                return true;
+            })();
+            """;
 
         private async Task PlaySoundEffectViaWebViewAsync(
             SoundEffectKind kind,
@@ -478,6 +453,8 @@ namespace JokerDBDTracker
             bool spamMode,
             SoundEffectAudioParams p)
         {
+            var resetGeneration = _soundResetGeneration;
+            var navigationVersion = _playerNavigationVersion;
             try
             {
                 if (Player?.CoreWebView2 is null || _isPlayerClosing)
@@ -494,12 +471,30 @@ namespace JokerDBDTracker
                 }
 
                 var kindStr = kind.ToString();
-                var toggleJs = spamMode ? "false" : "true";
+                if (_isPlayerClosing || resetGeneration != _soundResetGeneration || navigationVersion != _playerNavigationVersion) return;
+                p = BuildCurrentSoundEffectAudioParams();
+                var script = BuildSoundEffectScript(kindStr, b64, spamMode, p);
 
+                // Forward the native button/key activation to Web Audio.
+                var result = await Player.CoreWebView2.CallDevToolsProtocolMethodAsync("Runtime.evaluate",
+                    JsonSerializer.Serialize(new { expression = script, awaitPromise = true, userGesture = true, returnByValue = true }));
+                using var evaluation = JsonDocument.Parse(result);
+                if (evaluation.RootElement.TryGetProperty("exceptionDetails", out _))
+                    throw new InvalidOperationException("Sound playback script failed; see Player.Sound diagnostics.");
+            }
+            catch (Exception ex)
+            {
+                DiagnosticsService.LogException("SoundEffects.Play", ex);
+            }
+        }
+
+        private static string BuildSoundEffectScript(string kindStr, string b64, bool spamMode, SoundEffectAudioParams p)
+        {
+            var toggleJs = spamMode ? "false" : "true";
                 // All numeric parameters as InvariantCulture strings for JS injection.
                 string F(double v) => v.ToString("F4", CultureInfo.InvariantCulture);
 
-                var script = $$"""
+                return $$"""
                     (async () => {
                         try {
                             window.__jdbdSfx = window.__jdbdSfx || {
@@ -517,6 +512,7 @@ namespace JokerDBDTracker
                             sfx.bufferPromises = sfx.bufferPromises || {};
                             sfx.startGen = sfx.startGen || {};
                             sfx.decoding = sfx.decoding || {};
+                            sfx.currentParams = {{JsonSerializer.Serialize(p)}};
                             const kind = '{{kindStr}}';
                             const toggleMode = {{toggleJs}};
                             const stopEntriesForKind = () => {
@@ -540,7 +536,8 @@ namespace JokerDBDTracker
                             sfx.startGen[kind] = nextGen;
                             const gen = nextGen;
                             const hadActivePlayback = stopEntriesForKind();
-                            const hadDecodeInFlight = sfx.decoding[kind] === true;
+                            const hadDecodeInFlight = Boolean(sfx.decoding[kind]);
+                            sfx.decoding[kind] = false;
 
                             // Toggle mode: 1st press starts, 2nd press cancels even if the sound is
                             // still decoding and hasn't started playing yet.
@@ -548,7 +545,7 @@ namespace JokerDBDTracker
                                 return;
                             }
 
-                            if (!toggleMode && sfx.count >= 8) { return; }
+                            if (!toggleMode && sfx.count >= {{MaxConcurrentSoundEffects}}) { return; }
 
                             const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
                             if (!AudioContextCtor) {
@@ -556,7 +553,7 @@ namespace JokerDBDTracker
                             }
 
                             try {
-                            sfx.decoding[kind] = true;
+                            sfx.decoding[kind] = gen;
 
                             const ensureDecodedBuffer = async () => {
                                 if (sfx.bufferCache[kind]) {
@@ -569,9 +566,6 @@ namespace JokerDBDTracker
                                             ? sfx.decodeCtx
                                             : new AudioContextCtor();
                                         sfx.decodeCtx = decodeCtx;
-                                        if (decodeCtx.state === 'suspended') {
-                                            await decodeCtx.resume();
-                                        }
 
                                         const binary = atob('{{b64}}');
                                         const pcm = new Uint8Array(binary.length);
@@ -708,6 +702,8 @@ namespace JokerDBDTracker
                             // output
                             outGain.connect(ctx.destination);
 
+                            let lastReverbStrength = null;
+                            let lastDistortionStrength = null;
                             const applyParams = (params) => {
                                 const current = params || sfx.currentParams || {
                                     EqLowDb: {{F(p.EqLowDb)}},
@@ -733,8 +729,11 @@ namespace JokerDBDTracker
                                 eqHigh.gain.value = Math.max(-30, Math.min(30, Number(current.EqHighDb) || 0));
 
                                 const distStrength = Math.max(0, Math.min(2, Number(current.Distortion) || 0));
-                                distNode.curve = buildDistortionCurve(distStrength);
-                                distNode.oversample = distStrength > 0.001 ? '2x' : 'none';
+                                if (distStrength !== lastDistortionStrength) {
+                                    distNode.curve = buildDistortionCurve(distStrength);
+                                    distNode.oversample = distStrength > 0.001 ? '2x' : 'none';
+                                    lastDistortionStrength = distStrength;
+                                }
 
                                 const echoStrength = Math.max(0, Math.min(2, Number(current.Echo) || 0));
                                 delayNode.delayTime.value = 0.12 + echoStrength * 0.44;
@@ -742,7 +741,10 @@ namespace JokerDBDTracker
                                 echoWet.gain.value = echoStrength > 0.001 ? (0.04 + echoStrength * 0.38) : 0;
 
                                 const reverbStrength = Math.max(0, Math.min(2, Number(current.Reverb) || 0));
-                                convolver.buffer = buildReverbImpulse(reverbStrength);
+                                if (reverbStrength !== lastReverbStrength) {
+                                    convolver.buffer = buildReverbImpulse(reverbStrength);
+                                    lastReverbStrength = reverbStrength;
+                                }
                                 reverbWet.gain.value = reverbStrength > 0.001 ? (0.05 + reverbStrength * 0.44) : 0;
 
                                 const wobbleStrength = Math.max(0, Math.min(2, Number(current.Wobble) || 0));
@@ -753,17 +755,6 @@ namespace JokerDBDTracker
                                 wobbleLfoGain.gain.value = wobbleStrength > 0.001 ? (0.003 + wobbleStrength * 0.009) : 0;
                             };
 
-                            sfx.currentParams = sfx.currentParams || {
-                                EqLowDb: {{F(p.EqLowDb)}},
-                                EqMidDb: {{F(p.EqMidDb)}},
-                                EqHighDb: {{F(p.EqHighDb)}},
-                                VolumeBoost: {{F(p.VolumeBoost)}},
-                                PitchSemitones: {{F(p.PitchSemitones)}},
-                                Reverb: {{F(p.Reverb)}},
-                                Echo: {{F(p.Echo)}},
-                                Distortion: {{F(p.Distortion)}},
-                                Wobble: {{F(p.Wobble)}}
-                            };
                             applyParams(sfx.currentParams);
 
                             const entryKey = toggleMode
@@ -778,21 +769,15 @@ namespace JokerDBDTracker
                                 if (sfx.playing[entryKey] && sfx.playing[entryKey].ctx === ctx) {
                                     delete sfx.playing[entryKey];
                                 }
-                                sfx.count = Math.max(0, sfx.count - 1);
+                                sfx.count = Object.keys(sfx.playing).length;
                             };
                             } finally {
-                                sfx.decoding[kind] = false;
+                                if (sfx.decoding[kind] === gen) sfx.decoding[kind] = false;
                             }
-                        } catch {}
+                        } catch (error) { window.chrome?.webview?.postMessage('jdbd:sfx-error:' + String(error.message || error).slice(0, 200)); return false; }
                     })();
                     """;
 
-                await Player.CoreWebView2.ExecuteScriptAsync(script);
-            }
-            catch
-            {
-                // No-op: sound playback via WebView is best-effort.
-            }
         }
 
         private async Task PrewarmWebViewSoundEffectsAsync()
@@ -870,9 +855,6 @@ namespace JokerDBDTracker
                                             ? sfx.decodeCtx
                                             : new AudioContextCtor();
                                         sfx.decodeCtx = decodeCtx;
-                                        if (decodeCtx.state === 'suspended') {
-                                            await decodeCtx.resume();
-                                        }
 
                                         const binary = atob(b64);
                                         const pcm = new Uint8Array(binary.length);
@@ -1067,8 +1049,12 @@ namespace JokerDBDTracker
             }
         }
 
+        private int _soundResetGeneration;
+
         private void StopAllSoundEffects()
         {
+            unchecked { _soundResetGeneration++; }
+            _lastSoundParamsJson = string.Empty;
             StopAllWebViewInjectedSoundEffects();
 
             foreach (var player in _activeSoundPlayers.ToArray())
@@ -1177,39 +1163,41 @@ namespace JokerDBDTracker
                     $"FX 1-10: {fxRow1}\nFX 11-15: {fxRow2} | H:{hide} | Y:{aura} U:{laugh} I:{psi} O:{respect} P:{sad} J:{dauzhtochno}");
             }
 
+            EffectsHeaderText.ToolTip = BindsHintText?.Text;
+
             if (AuraFarmSoundButton is not null)
             {
-                AuraFarmSoundButton.Content = PT("1. Звук Aura Farm", "1. Aura Farm Sound") +
+                AuraFarmSoundButton.Content = PT("Aura Farm", "Aura Farm") +
                                               $" [{FormatBindLabel(_appSettings.AuraFarmSoundBind)}]";
             }
 
             if (LaughSoundButton is not null)
             {
-                LaughSoundButton.Content = PT("2. Звук Смех", "2. Laugh Sound") +
+                LaughSoundButton.Content = PT("Смех", "Laugh") +
                                            $" [{FormatBindLabel(_appSettings.LaughSoundBind)}]";
             }
 
             if (PsiSoundButton is not null)
             {
-                PsiSoundButton.Content = PT("3. Звук Пси", "3. Psi Radiation") +
+                PsiSoundButton.Content = PT("Пси", "Psi") +
                                          $" [{FormatBindLabel(_appSettings.PsiSoundBind)}]";
             }
 
             if (RespectSoundButton is not null)
             {
-                RespectSoundButton.Content = PT("4. +Respect Don Mafia", "4. +Respect Don Mafia") +
+                RespectSoundButton.Content = PT("+Respect", "+Respect") +
                                              $" [{FormatBindLabel(_appSettings.RespectSoundBind)}]";
             }
 
             if (SadSoundButton is not null)
             {
-                SadSoundButton.Content = PT("5. Звук Грусть", "5. Sadness Sound") +
+                SadSoundButton.Content = PT("Грусть", "Sad") +
                                          $" [{FormatBindLabel(_appSettings.SadSoundBind)}]";
             }
 
             if (DaUzhTochnoSoundButton is not null)
             {
-                DaUzhTochnoSoundButton.Content = PT("6. Да уж точно", "6. Da uzh tochno") +
+                DaUzhTochnoSoundButton.Content = PT("Да уж", "Da uzh") +
                                                  $" [{FormatBindLabel(_appSettings.DaUzhTochnoSoundBind)}]";
             }
         }

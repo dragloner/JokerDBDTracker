@@ -347,23 +347,43 @@ namespace JokerDBDTracker
                 return;
             }
 
+            var navigationVersion = _playerNavigationVersion;
+            await SyncSoundEffectsAudioParamsAsync(_appSettings.ApplyEqToSoundEffects
+                ? BuildCurrentSoundEffectAudioParams() : new SoundEffectAudioParams());
+            if (_isPlayerClosing || navigationVersion != _playerNavigationVersion) return;
+
             var settingsJson = JsonSerializer.Serialize(GetEffectSettings());
             if (!forceApply && string.Equals(_lastAppliedEffectsSignature, settingsJson, StringComparison.Ordinal))
+            {
+                var current = await ExecuteWebScriptWithTimeoutAsync(
+                    "window.__stwfxRuntime?.video === document.querySelector('#movie_player video.html5-main-video, video.html5-main-video, video') && !!window.__stwfxRuntime?.video?.isConnected",
+                    500, "Effects.VideoIdentity");
+                if (current == "true") return;
+            }
+
+            var script = BuildEffectsScript(settingsJson);
+
+            var applyResult = await ExecuteWebScriptWithTimeoutAsync(
+                script,
+                timeoutMs: 1800,
+                operation: "ApplyEffectsAsync");
+            if (!string.Equals(applyResult, "true", StringComparison.Ordinal))
             {
                 return;
             }
 
-            var script = $$"""
+            if (!_isPlayerClosing && navigationVersion == _playerNavigationVersion)
+                _lastAppliedEffectsSignature = settingsJson;
+        }
+
+        private static string BuildEffectsScript(string settingsJson)
+        {
+            return $$"""
                 (() => {
                     const settings = {{settingsJson}};
                     const flags = Array.isArray(settings.Flags) ? settings.Flags : [];
                     settings.Flags = flags;
                     const pickMainVideo = () => {
-                        const pinnedRuntimeVideo = window.__stwfxRuntime?.video;
-                        if (pinnedRuntimeVideo instanceof HTMLVideoElement && pinnedRuntimeVideo.isConnected) {
-                            return pinnedRuntimeVideo;
-                        }
-
                         const nodes = Array.from(document.querySelectorAll('video'))
                             .filter((node) => node instanceof HTMLVideoElement);
                         if (nodes.length === 0) {
@@ -534,9 +554,8 @@ namespace JokerDBDTracker
                             audioReverbWetGain: null,
                             audioOutputGain: null,
                             audioLastPitchFactor: 1,
-                            audioBasePlaybackRate: 1,
-                            audioExpectedPlaybackRate: 1,
-                            audioIgnoreRateChanges: 0,
+                            audioBasePlaybackRate: Number.isFinite(video.playbackRate) ? video.playbackRate : 1,
+                            audioExpectedPlaybackRate: Number.isFinite(video.playbackRate) ? video.playbackRate : 1,
                             audioRateChangeHandler: null,
                             audioLastReverbKey: '',
                             audioLastDistortionKey: '',
@@ -774,7 +793,8 @@ namespace JokerDBDTracker
                                 const postFxOwnsVisual =
                                     (this.jpegDamageEnabled && clamp01(this.jpegStrength) > 0.0001) ||
                                     (this.fisheyeEnabled && Math.abs(clamp11(this.fisheyeStrength)) > 0.01);
-                                return postFxOwnsVisual ? 'none' : base;
+                                const overlayVisible = this.jpegCanvas?.style.display === 'block' || this.fisheyeOverlayCanvas?.style.display === 'block';
+                                return postFxOwnsVisual && overlayVisible ? 'none' : base;
                             },
                             applyJpegOverlayFisheyeFilter() {
                                 if (!this.jpegCanvas) {
@@ -805,10 +825,8 @@ namespace JokerDBDTracker
                                     }
 
                                     const currentRate = this.clampPlaybackRate(this.video.playbackRate);
-                                    if (this.audioIgnoreRateChanges > 0 &&
-                                        Math.abs(currentRate - this.audioExpectedPlaybackRate) <= 0.02)
+                                    if (Math.abs(currentRate - this.audioExpectedPlaybackRate) <= 0.001)
                                     {
-                                        this.audioIgnoreRateChanges = Math.max(0, this.audioIgnoreRateChanges - 1);
                                         return;
                                     }
 
@@ -855,7 +873,6 @@ namespace JokerDBDTracker
                                 if (Math.abs(currentRate - targetRate) > 0.001) {
                                     try {
                                         this.audioExpectedPlaybackRate = targetRate;
-                                        this.audioIgnoreRateChanges = Math.max(this.audioIgnoreRateChanges, 2);
                                         this.video.playbackRate = targetRate;
                                     } catch {
                                         // Some players may temporarily reject playbackRate updates.
@@ -1140,9 +1157,8 @@ namespace JokerDBDTracker
                                 this.audioLastDistortionKey = '';
                             },
                             resetAudioEffects() {
-                                this.audioBasePlaybackRate = this.clampPlaybackRate(this.video?.playbackRate ?? 1);
-                                this.audioExpectedPlaybackRate = this.audioBasePlaybackRate;
-                                this.audioIgnoreRateChanges = 0;
+                                // Keep the unpitched user rate; current playbackRate may already
+                                // include the pitch multiplier and must never become the new base.
                                 this.applyPitchPlaybackRate(0);
                                 this.resetAudioNodeEffects();
                             },
@@ -2232,7 +2248,7 @@ namespace JokerDBDTracker
                         video.style.setProperty('animation', 'none', 'important');
                         video.style.setProperty('will-change', 'auto', 'important');
                         removeNode('stwfx-vhs');
-                        return;
+                        return true;
                     }
 
                     if (activeCount === 0) {
@@ -2246,7 +2262,7 @@ namespace JokerDBDTracker
                         video.style.setProperty('animation', 'none', 'important');
                         video.style.setProperty('will-change', 'auto', 'important');
                         removeNode('stwfx-vhs');
-                        return;
+                        return true;
                     }
 
                     const filters = [];
@@ -2272,8 +2288,8 @@ namespace JokerDBDTracker
                     if (flags[6]) filters.push(`hue-rotate(${Math.round(settings.HueShift * 260)}deg)`);
                     if (flags[7]) filters.push(`blur(${(0.6 + settings.Blur * 9.4).toFixed(1)}px)`);
                     const fisheyeAmount = flags[8] ? clamp11(settings.Fisheye) : 0;
-                    const fisheyeCenterX = clamp01(Number(settings.FisheyeCenterX) || 0.5);
-                    const fisheyeCenterY = clamp01(Number(settings.FisheyeCenterY) || 0.5);
+                    const fisheyeCenterX = clamp01(Number.isFinite(settings.FisheyeCenterX) ? settings.FisheyeCenterX : 0.5);
+                    const fisheyeCenterY = clamp01(Number.isFinite(settings.FisheyeCenterY) ? settings.FisheyeCenterY : 0.5);
                     const jpegStrength = flags[12] ? clamp01(settings.JpegDamage) : 0;
                     if (flags[13]) {
                         const toneHue = settings.ColdTone >= 0
@@ -2322,75 +2338,64 @@ namespace JokerDBDTracker
                 })();
                 """;
 
-            var applyResult = await ExecuteWebScriptWithTimeoutAsync(
-                script,
-                timeoutMs: 1800,
-                operation: "ApplyEffectsAsync");
-            if (!string.Equals(applyResult, "true", StringComparison.Ordinal))
-            {
-                return;
-            }
-
-            if (_appSettings.ApplyEqToSoundEffects)
-            {
-                await SyncSoundEffectsAudioParamsAsync(BuildCurrentSoundEffectAudioParams());
-            }
-
-            _lastAppliedEffectsSignature = settingsJson;
         }
 
         private async void ResetEffectsButton_Click(object sender, RoutedEventArgs e)
         {
-            foreach (var effect in new[]
-                     {
-                         Fx1, Fx2, Fx3, Fx4, Fx5,
-                         Fx6, Fx7, Fx8, Fx9, Fx10,
-                         Fx11, Fx12, Fx13, Fx14, Fx15
-                     })
+            StopAllSoundEffects();
+            _suppressEffectUiEvents = true;
+            try
             {
-                effect.IsChecked = false;
+                foreach (var effect in new[]
+                         {
+                             Fx1, Fx2, Fx3, Fx4, Fx5,
+                             Fx6, Fx7, Fx8, Fx9, Fx10,
+                             Fx11, Fx12, Fx13, Fx14, Fx15
+                         })
+                {
+                    effect.IsChecked = false;
+                }
+
+                ContrastStrengthSlider.Value = 0;
+                DarknessStrengthSlider.Value = 0;
+                SaturationStrengthSlider.Value = 0;
+                HueShiftStrengthSlider.Value = 0;
+                BlurStrengthSlider.Value = 0;
+                FisheyeStrengthSlider.Value = 0;
+                _fisheyeCenterX = 0.5;
+                _fisheyeCenterY = 0.5;
+                UpdateFisheyeCenterPadVisual();
+                VhsStrengthSlider.Value = 0;
+                ShakeStrengthSlider.Value = 0;
+                JpegDamageStrengthSlider.Value = 0.4;
+                ColdToneStrengthSlider.Value = 0;
+                ResetAudioControls();
+                UpdateStrengthSlidersEnabledState();
+                UpdateEffectDetailsVisibility(animate: false);
+
             }
-
-            ContrastStrengthSlider.Value = 0;
-            DarknessStrengthSlider.Value = 0;
-            SaturationStrengthSlider.Value = 0;
-            HueShiftStrengthSlider.Value = 0;
-            BlurStrengthSlider.Value = 0;
-            FisheyeStrengthSlider.Value = 0;
-            _fisheyeCenterX = 0.5;
-            _fisheyeCenterY = 0.5;
-            UpdateFisheyeCenterPadVisual();
-            VhsStrengthSlider.Value = 0;
-            ShakeStrengthSlider.Value = 0;
-            JpegDamageStrengthSlider.Value = 0.4;
-            ColdToneStrengthSlider.Value = 0;
-            AudioVolumeBoostSlider.Value = 0;
-            AudioPitchSemitonesSlider.Value = 0;
-            AudioReverbStrengthSlider.Value = 0;
-            AudioEchoStrengthSlider.Value = 0;
-            AudioDistortionStrengthSlider.Value = 0;
-            AudioWobbleStrengthSlider.Value = 0;
-            AudioEqLowDbSlider.Value = 0;
-            AudioEqMidDbSlider.Value = 0;
-            AudioEqHighDbSlider.Value = 0;
-            UpdateStrengthSlidersEnabledState();
-            UpdateEffectDetailsVisibility(animate: false);
-
+            finally { _suppressEffectUiEvents = false; }
+            _effectsApplyTimer.Stop();
             await ApplyEffectsSafelyAsync(force: true);
         }
 
         private void ResetAudioFxButton_Click(object sender, RoutedEventArgs e)
         {
-            AudioVolumeBoostSlider.Value = 0;
-            AudioPitchSemitonesSlider.Value = 0;
-            AudioReverbStrengthSlider.Value = 0;
-            AudioEchoStrengthSlider.Value = 0;
-            AudioDistortionStrengthSlider.Value = 0;
-            AudioWobbleStrengthSlider.Value = 0;
-            AudioEqLowDbSlider.Value = 0;
-            AudioEqMidDbSlider.Value = 0;
-            AudioEqHighDbSlider.Value = 0;
+            _suppressEffectUiEvents = true;
+            try
+            {
+                ResetAudioControls();
+            }
+            finally { _suppressEffectUiEvents = false; }
             RequestApplyEffects(immediate: true, force: true);
+        }
+
+        private void ResetAudioControls()
+        {
+            foreach (var slider in new[] { AudioVolumeBoostSlider, AudioPitchSemitonesSlider,
+                         AudioReverbStrengthSlider, AudioEchoStrengthSlider, AudioDistortionStrengthSlider,
+                         AudioWobbleStrengthSlider, AudioEqLowDbSlider, AudioEqMidDbSlider, AudioEqHighDbSlider })
+                slider.Value = 0;
         }
 
         private void UpdateStrengthSlidersEnabledState()
@@ -2521,7 +2526,7 @@ namespace JokerDBDTracker
                 EffectsPanel.BeginAnimation(UIElement.OpacityProperty, null);
                 EffectsPanel.IsHitTestVisible = true;
                 EffectsPanel.Visibility = Visibility.Visible;
-                EffectsColumn.Width = new GridLength(420);
+                EffectsColumn.Width = new GridLength(EffectsPanelWidth);
                 EffectsSplitterColumn.Width = new GridLength(10);
                 ToggleEffectsPanelButton.Content = PT("Скрыть эффекты", "Hide effects");
                 if (_appSettings.AnimationsEnabled)

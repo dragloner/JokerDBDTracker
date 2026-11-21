@@ -210,7 +210,11 @@ namespace JokerDBDTracker
 
                 var activeEffects = GetActiveEffectsCount();
                 var shakeEnabled = Fx11.IsChecked == true;
-                if (!_isResizeInteractionInProgress && activeEffects > 0 && !shakeEnabled)
+                var audioEffectsActive = new[] { AudioVolumeBoostSlider, AudioPitchSemitonesSlider,
+                    AudioReverbStrengthSlider, AudioEchoStrengthSlider, AudioDistortionStrengthSlider,
+                    AudioWobbleStrengthSlider, AudioEqLowDbSlider, AudioEqMidDbSlider, AudioEqHighDbSlider }
+                    .Any(slider => Math.Abs(slider.Value) > 0.0001);
+                if (!_isResizeInteractionInProgress && (activeEffects > 0 || audioEffectsActive) && !shakeEnabled)
                 {
                     _effectRefreshCounter++;
                     if (_effectRefreshCounter >= EffectRefreshTickInterval)

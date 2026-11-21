@@ -16,8 +16,7 @@ namespace JokerDBDTracker
                 return;
             }
 
-            LibraryHeroTitle.Text = T("Твоя коллекция. Твои правила.", "Your library. Your rules.");
-            LibraryHeroSubtitle.Text = T("Любимые стримы, эффекты и моменты — в одном пространстве.", "Streams, effects and favorite moments, all in your space.");
+            LibraryHeroTitle.Text = T("Библиотека", "Library");
             HomeNavButton.Content = T("Главная", "Home");
             FavoritesNavButton.Content = T("Избранное", "Favorites");
             ProfileNavButton.Content = T("Профиль", "Profile");

@@ -1,4 +1,4 @@
-# JokerDBD Tracker 1.4.7
+# JokerDBD Tracker 1.4.8
 
 Windows-приложение с библиотекой стримов JokerDBD, встроенным YouTube/Twitch-плеером, эффектами и личным прогрессом.
 
@@ -6,12 +6,14 @@ Windows-приложение с библиотекой стримов JokerDBD, 
 
 [Последний релиз Windows x64](https://github.com/dragloner/JokerDBDTracker/releases/latest)
 
-Скачайте `JokerDBDTracker-v1.4.7-win-x64.zip`, распакуйте в отдельную доступную для записи папку и запустите `JokerDBDTracker.exe`. .NET включён в архив; нужен [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/).
+Скачайте `JokerDBDTracker-v1.4.8-win-x64.zip`, распакуйте в отдельную доступную для записи папку и запустите `JokerDBDTracker.exe`. .NET включён в архив; нужен [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/).
 
 Обновление доступно через кнопку в приложении или замену файлов после закрытия программы. Профиль хранится отдельно от папки программы.
 
 ## Что нового
 
+- Исправлены сброс звуков, устаревшие параметры, отмена декодирования и восстановление скорости после питча. [Отчёт о проверке плеера](PLAYER_AUDIT_v1.4.8.md).
+- Компактные разделы «Видео», «Звук», «Пресеты» и интерфейс без рекламных слоганов.
 - Интерфейс Glass: боковая навигация, графитовые поверхности, фиолетовые и ледяные акценты, мягкое освещение и новые элементы управления.
 - Атомарное сохранение данных и восстановление резервных копий.
 - Пресеты плеера сохраняются при изменении настроек главного окна.
@@ -61,6 +63,7 @@ Windows и .NET 10 SDK; для регрессионных проверок JavaS
 ```powershell
 dotnet build JokerDBDTracker.csproj -c Debug
 dotnet run --project tests/JokerDBDTracker.RegressionTests.csproj
+dotnet run --project tests/WebAudioIntegration/WebAudioIntegration.csproj
 dotnet publish JokerDBDTracker.csproj -c Release -r win-x64 -o artifacts/release/win-x64
 ```
 

@@ -119,6 +119,7 @@ namespace JokerDBDTracker
 
         // Shared constants.
         private const int EffectsUpdateIntervalMilliseconds = 33;
+        private const double EffectsPanelWidth = 390;
         private const int PlaybackPersistIntervalSeconds = 10;
         private const int EffectRefreshTickInterval = 3;
         private const int ResizeSettleDelayMilliseconds = 180;

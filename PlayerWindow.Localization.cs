@@ -11,16 +11,18 @@ namespace JokerDBDTracker
 
         private void ApplyPlayerLocalization()
         {
-            BackToListButton.Content = PT("Назад к списку", "Back to list");
+            BackToListButton.Content = PT("← Библиотека", "← Library");
             ToggleEffectsPanelButton.Content = _effectsPanelExpanded
                 ? PT("Скрыть эффекты", "Hide effects")
                 : PT("Показать эффекты", "Show effects");
             PlayerLoadingHeaderText.Text = PT("Загрузка плеера", "Loading player");
-            EffectsHeaderText.Text = PT("Эффекты плеера", "Player effects");
+            EffectsHeaderText.Text = PT("Управление", "Controls");
+            ShowAudioWorkspaceButton.Content = PT("Звук", "Audio");
+            EffectsWorkspaceAudioTab.Header = PT("Звук", "Audio");
             EffectsHintText.Text = PT(
                 "Включайте эффекты и настраивайте силу прямо под каждым эффектом.",
                 "Enable effects and tune each strength slider.");
-            ResetEffectsButton.Content = PT("Сбросить все эффекты", "Reset all effects");
+            ResetEffectsButton.Content = PT("Сбросить всё", "Reset all");
 
             Fx1.Content = PT("1. Без цвета", "1. Grayscale");
             Fx2.Content = PT("2. Сепия", "2. Sepia");
@@ -45,7 +47,7 @@ namespace JokerDBDTracker
 
             if (AudioFxHeaderText is not null)
             {
-                AudioFxHeaderText.Text = PT("Аудио FX", "Audio FX");
+                AudioFxHeaderText.Text = PT("Звук видео", "Video audio");
             }
 
             if (AudioFxHintText is not null)
@@ -57,12 +59,12 @@ namespace JokerDBDTracker
 
             if (ResetAudioFxButton is not null)
             {
-                ResetAudioFxButton.Content = PT("Сбросить Audio FX", "Reset Audio FX");
+                ResetAudioFxButton.Content = PT("Сбросить звук", "Reset audio");
             }
 
             if (AudioFxVolumeLabelText is not null)
             {
-                AudioFxVolumeLabelText.Text = PT("Усиление громкости", "Volume boost");
+                AudioFxVolumeLabelText.Text = PT("Громкость +", "Volume +");
             }
 
             if (AudioFxEqLowLabelText is not null)
@@ -102,7 +104,7 @@ namespace JokerDBDTracker
 
             if (AudioFxWobbleLabelText is not null)
             {
-                AudioFxWobbleLabelText.Text = PT("Wobble", "Wobble");
+                AudioFxWobbleLabelText.Text = PT("Вибрато", "Wobble");
             }
 
             if (TimecodesPanelHintText is not null)

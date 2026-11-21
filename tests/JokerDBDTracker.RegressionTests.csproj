@@ -7,7 +7,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup><ProjectReference Include="../JokerDBDTracker.csproj" /></ItemGroup>
+  <ItemGroup><Compile Remove="WebAudioIntegration/**/*.cs" /></ItemGroup>
   <ItemGroup>
     <None Update="player-document-policy.test.cjs" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="player-audio-state.test.cjs" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

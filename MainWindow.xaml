@@ -71,7 +71,6 @@
                     <StackPanel Grid.Row="2">
                         <Border Height="1" Background="#22D8D1FF" Margin="0,0,0,18"/>
                         <Button Content="Обновить каталог" x:Name="ReloadCatalogButton" FontSize="12" Padding="8,10" Click="ReloadCatalogButton_Click"/>
-                        <TextBlock Text="YOUR SPACE. YOUR VIBE." Foreground="#79728F" FontSize="9" TextAlignment="Center" Margin="0,18,0,0"/>
                         <TextBlock Text="by dragloner" Foreground="#605B73" FontSize="10" TextAlignment="Center" Margin="0,6,0,0"/>
                     </StackPanel>
                 </Grid>
@@ -159,7 +158,7 @@
                                      BorderThickness="0"
                                      Background="Transparent"
                                      TextChanged="SearchBox_TextChanged"/>
-                        <TextBlock x:Name="SearchPlaceholderText" Text="Поиск в коллекции..."
+                        <TextBlock x:Name="SearchPlaceholderText" Text="Поиск стримов..."
                                     Foreground="#A4A1BA"
                                     FontWeight="Bold"
                                    FontSize="18"
@@ -216,20 +215,11 @@
                 </Grid>
             </Border>
 
-            <Border x:Name="LibraryHero" Grid.Row="2" CornerRadius="20" Padding="24,20" BorderBrush="#3AC8B5FF" BorderThickness="1" ClipToBounds="True">
-                <Border.Background>
-                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1"><GradientStop Color="#654C356E" Offset="0"/><GradientStop Color="#30204455" Offset="1"/></LinearGradientBrush>
-                </Border.Background>
-                <Grid>
-                    <StackPanel>
-                        <TextBlock x:Name="LibraryHeroEyebrow" Text="THE JOKERDBD EXPERIENCE" Foreground="#C7B8EC" FontSize="10" FontWeight="SemiBold"/>
-                        <TextBlock x:Name="LibraryHeroTitle" Text="Твоя коллекция. Твои правила." Foreground="#F5F1FF" FontSize="25" FontWeight="SemiBold" Margin="0,6,0,0"/>
-                        <TextBlock x:Name="LibraryHeroSubtitle" Text="Любимые стримы, эффекты и моменты — в одном пространстве." Foreground="#B8B1CD" FontSize="13" Margin="0,8,0,0"/>
-                    </StackPanel>
-                    <Border HorizontalAlignment="Right" VerticalAlignment="Center" Padding="16,10" CornerRadius="14" Background="#2021D5D7" BorderBrush="#604DD5CB" BorderThickness="1">
-                        <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE714;" FontFamily="Segoe MDL2 Assets" Foreground="#8DEBE0" FontSize="18" VerticalAlignment="Center" Margin="0,0,10,0"/><TextBlock Text="PLAY. REMIX. REPEAT." Foreground="#C0E9E8" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/></StackPanel>
-                    </Border>
-                </Grid>
+            <Border x:Name="LibraryHero" Grid.Row="2" CornerRadius="16" Padding="20,14"
+                    Background="#151923" BorderBrush="#2A3343" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock x:Name="LibraryHeroTitle" Text="Библиотека" Foreground="#F1F5FA" FontSize="22" FontWeight="SemiBold"/>
+                </StackPanel>
             </Border>
 
             <TabControl x:Name="TopTabControl" SelectedIndex="0"
