@@ -115,7 +115,7 @@
                                    FontWeight="ExtraBold"/>
                         <StackPanel Margin="3,-2,0,0" Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock x:Name="AppVersionText"
-                                       Text="v1.4.10"
+                                       Text="v1.4.11"
                                        Foreground="#C8C3B8"
                                        FontSize="14"
                                        FontWeight="SemiBold"

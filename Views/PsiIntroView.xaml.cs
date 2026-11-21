@@ -91,7 +91,6 @@ public partial class PsiIntroView : UserControl, IDisposable
             _lastPhrase = phrase;
             PhraseText.Text = Phrases[phrase];
             PhraseText.BeginAnimation(OpacityProperty, new DoubleAnimation(.25, 1, TimeSpan.FromMilliseconds(800)));
-            _audio.Speak(Phrases[phrase]);
         }
     }
 

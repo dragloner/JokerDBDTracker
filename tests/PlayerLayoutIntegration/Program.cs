@@ -19,6 +19,25 @@ internal static class Program
             var window = new Window { Content = browser, Width = 960, Height = 600, Left = -10000, Top = -10000, ShowActivated = false, ShowInTaskbar = false };
             try
             {
+                foreach (var (filename, expectedSeconds) in new[] { ("psi-ambience.wav", 24d), ("psi-wake.wav", 2d), ("psi-enter.wav", .8d) })
+                {
+                    var audio = new System.Windows.Media.MediaPlayer { IsMuted = true };
+                    var opened = new TaskCompletionSource();
+                    audio.MediaOpened += (_, _) => opened.TrySetResult();
+                    audio.MediaFailed += (_, args) => opened.TrySetException(args.ErrorException);
+                    try
+                    {
+                        audio.Open(new Uri(Path.Combine(AppContext.BaseDirectory, "Assets", "Intro", filename)));
+                        await opened.Task.WaitAsync(TimeSpan.FromSeconds(10));
+                        if (!audio.HasAudio || !audio.NaturalDuration.HasTimeSpan || Math.Abs(audio.NaturalDuration.TimeSpan.TotalSeconds - expectedSeconds) > .05)
+                            throw new Exception($"Invalid intro audio: {filename}");
+                        audio.Play();
+                        await Task.Delay(100);
+                        audio.Stop();
+                        Console.WriteLine($"PASS Windows MediaPlayer opens and plays muted {filename}");
+                    }
+                    finally { audio.Close(); }
+                }
                 window.Show();
                 var environment = await CoreWebView2Environment.CreateAsync(userDataFolder: Path.GetFullPath("artifacts/player-layout-integration"));
                 await browser.EnsureCoreWebView2Async(environment);
