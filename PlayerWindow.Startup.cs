@@ -5,12 +5,16 @@ namespace JokerDBDTracker
 {
     public partial class PlayerWindow
     {
-        public PlayerWindow(YouTubeVideo video, int startSeconds, Func<DateTime>? utcNow = null)
+        private readonly MainWindow _host;
+        internal event EventHandler? Closed;
+
+        internal PlayerWindow(MainWindow host, YouTubeVideo video, int startSeconds, Func<DateTime>? utcNow = null)
         {
+            _host = host;
             InitializeComponent();
-            WindowBoundsHelper.Attach(this);
-            WindowMaterial.Attach(this);
             _video = video;
+            if (Uri.TryCreate(video.ThumbnailUrl, UriKind.Absolute, out var cover) && cover.Scheme == Uri.UriSchemeHttps)
+                PlayerLoadingCover.Source = new System.Windows.Media.Imaging.BitmapImage(cover);
             _utcNow = utcNow ?? (() => DateTime.UtcNow);
             _startSeconds = Math.Max(startSeconds, 0);
             LastPlaybackSeconds = _startSeconds;
@@ -28,12 +32,17 @@ namespace JokerDBDTracker
                 (Fx14, Fx14Details)
             ];
 
+            if (_host.IsPlayingQueue)
+            {
+                StopQueueButton.Visibility = System.Windows.Visibility.Visible;
+                StopQueueButton.Content = PT("Остановить очередь", "Stop after this video");
+            }
+
             Loaded += PlayerWindow_Loaded;
-            Closing += PlayerWindow_Closing;
             Closed += PlayerWindow_Closed;
-            Activated += PlayerWindow_Activated;
-            Deactivated += PlayerWindow_Deactivated;
-            StateChanged += PlayerWindow_StateChanged;
+            _host.Activated += PlayerWindow_Activated;
+            _host.Deactivated += PlayerWindow_Deactivated;
+            _host.StateChanged += PlayerWindow_StateChanged;
             SizeChanged += PlayerWindow_SizeChanged;
 
             _positionTimer.Interval = TimeSpan.FromSeconds(2);
@@ -48,6 +57,12 @@ namespace JokerDBDTracker
             PreviewKeyDown += PlayerWindow_PreviewKeyDown;
             PreviewGotKeyboardFocus += PlayerWindow_PreviewGotKeyboardFocus;
             PreviewLostKeyboardFocus += PlayerWindow_PreviewLostKeyboardFocus;
+        }
+
+        private void StopQueueButton_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            _host.StopAfterCurrentVideo();
+            StopQueueButton.IsEnabled = false;
         }
     }
 }

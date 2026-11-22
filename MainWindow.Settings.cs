@@ -14,6 +14,7 @@ namespace JokerDBDTracker
         private readonly AppSettingsService _settingsService = new();
         private AppSettingsData _appSettings = new();
         private bool _isApplyingSettingsUi;
+        private bool _settingsReadFailed;
         private readonly ScaleTransform _uiScaleTransform = new(1.0, 1.0);
         private bool _isCapturingBind;
         private string _bindCaptureTarget = string.Empty;
@@ -44,6 +45,7 @@ namespace JokerDBDTracker
         private async Task LoadAndApplySettingsAsync()
         {
             _appSettings = await _settingsService.LoadAsync();
+            _settingsReadFailed = false;
             ApplySettingsToRuntime();
             ApplySettingsToControls();
             ApplyLocalization();
@@ -128,6 +130,7 @@ namespace JokerDBDTracker
 
         private async Task SaveSettingsAsync()
         {
+            if (_settingsReadFailed) return;
             try
             {
                 await _settingsService.SaveAsync(_appSettings);
@@ -146,33 +149,34 @@ namespace JokerDBDTracker
             _uiScaleTransform.ScaleY = normalizedScale;
         }
 
-        private static void EnsureAutoStartState(bool enabled)
+        private static bool EnsureAutoStartState(bool enabled)
         {
             try
             {
                 using var runKey = Registry.CurrentUser.CreateSubKey(AutoStartRunKey, writable: true);
                 if (runKey is null)
                 {
-                    return;
+                    return false;
                 }
 
                 if (!enabled)
                 {
                     runKey.DeleteValue(AutoStartValueName, throwOnMissingValue: false);
-                    return;
+                    return runKey.GetValue(AutoStartValueName) is null;
                 }
 
                 var executablePath = Environment.ProcessPath;
                 if (string.IsNullOrWhiteSpace(executablePath))
                 {
-                    return;
+                    return false;
                 }
 
                 runKey.SetValue(AutoStartValueName, $"\"{executablePath}\"", RegistryValueKind.String);
+                return Equals(runKey.GetValue(AutoStartValueName), $"\"{executablePath}\"");
             }
             catch
             {
-                // Ignore environments where startup registration is unavailable.
+                return false;
             }
         }
 
@@ -196,8 +200,14 @@ namespace JokerDBDTracker
                 return;
             }
 
-            _appSettings.AutoStartEnabled = AutoStartCheckBox.IsChecked == true;
-            EnsureAutoStartState(_appSettings.AutoStartEnabled);
+            var requested = AutoStartCheckBox.IsChecked == true;
+            if (!EnsureAutoStartState(requested))
+            {
+                ApplySettingsToControls();
+                MessageBox.Show(T("Windows не удалось изменить автозапуск.", "Windows could not change startup registration."));
+                return;
+            }
+            _appSettings.AutoStartEnabled = requested;
             DiagnosticsService.LogInfo("Settings", $"AutoStart → {_appSettings.AutoStartEnabled}");
             await SaveSettingsAsync();
         }
@@ -227,6 +237,8 @@ namespace JokerDBDTracker
             await SaveSettingsAsync();
         }
 
+        private long _scaleSaveVersion;
+
         private async void UiScaleSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (!IsLoaded)
@@ -243,7 +255,9 @@ namespace JokerDBDTracker
 
             _appSettings.UiScale = scale;
             ApplyUiScale(scale);
-            await SaveSettingsAsync();
+            var version = ++_scaleSaveVersion;
+            await Task.Delay(220);
+            if (version == _scaleSaveVersion && IsLoaded) await SaveSettingsAsync();
         }
 
         private async void AnimationsEnabledCheckBox_Changed(object sender, RoutedEventArgs e)

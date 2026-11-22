@@ -16,7 +16,8 @@ namespace JokerDBDTracker
             catch (Exception ex)
             {
                 DiagnosticsService.LogException("RefreshFavoritesClipsAsync", ex);
-                _timecodes = [];
+                MessageBox.Show(T("Не удалось обновить моменты. ", "Could not refresh moments. ") + ex.Message);
+                return;
             }
 
             SyncTimecodeCountsToVideos();
@@ -96,11 +97,8 @@ namespace JokerDBDTracker
 
         private void OpenFavoriteClip(Timecode timecode)
         {
-            var video = _allVideos.FirstOrDefault(v => string.Equals(v.VideoId, timecode.VideoId, StringComparison.OrdinalIgnoreCase));
-            if (video is null)
-            {
-                return;
-            }
+            var video = _allVideos.FirstOrDefault(v => string.Equals(v.VideoId, timecode.VideoId, StringComparison.Ordinal));
+            video ??= new YouTubeVideo { VideoId = timecode.VideoId, Title = timecode.VideoTitle };
 
             _ = OpenVideoAtTimecodeAsync(video, timecode.Seconds);
         }
@@ -109,8 +107,7 @@ namespace JokerDBDTracker
         {
             if (_isOpeningVideo) return;
 
-            video.LastPlaybackSeconds = seconds;
-            await OpenVideoAsync(video);
+            await OpenVideoAsync(video, seconds);
         }
 
         private void FavoritesClipDeleteButton_Click(object sender, RoutedEventArgs e)
@@ -131,6 +128,8 @@ namespace JokerDBDTracker
             catch (Exception ex)
             {
                 DiagnosticsService.LogException("DeleteFavoritesClipAsync", ex);
+                MessageBox.Show(T("Не удалось удалить момент. ", "Could not delete moment. ") + ex.Message);
+                return;
             }
 
             SyncTimecodeCountsToVideos();
@@ -175,8 +174,8 @@ namespace JokerDBDTracker
         private void SyncTimecodeCountsToVideos()
         {
             var countsByVideoId = _timecodes
-                .GroupBy(t => t.VideoId, StringComparer.OrdinalIgnoreCase)
-                .ToDictionary(group => group.Key, group => group.Count(), StringComparer.OrdinalIgnoreCase);
+                .GroupBy(t => t.VideoId, StringComparer.Ordinal)
+                .ToDictionary(group => group.Key, group => group.Count(), StringComparer.Ordinal);
 
             foreach (var video in _allVideos)
             {

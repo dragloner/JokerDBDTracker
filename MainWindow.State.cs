@@ -14,12 +14,12 @@ namespace JokerDBDTracker
         private readonly List<YouTubeVideo> _allVideos = [];
         private readonly ObservableCollection<YouTubeVideo> _watchQueue = [];
         private string _activeCategory = "all";
-        private readonly Dictionary<string, DateTime> _watchHistory = new(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, int> _playbackSecondsHistory = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, DateTime> _watchHistory = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, int> _playbackSecondsHistory = new(StringComparer.Ordinal);
         private readonly HashSet<DateOnly> _watchedDays = [];
-        private readonly HashSet<string> _favoriteVideoIds = new(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> _favoriteVideoIds = new(StringComparer.Ordinal);
         private readonly HashSet<string> _unlockedAchievements = new(StringComparer.OrdinalIgnoreCase);
-        private readonly HashSet<string> _firstViewRewardedVideoIds = new(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> _firstViewRewardedVideoIds = new(StringComparer.Ordinal);
 
         // Progression counters.
         private bool _isHistoryLoadedSuccessfully;
@@ -82,10 +82,10 @@ namespace JokerDBDTracker
         private readonly DispatcherTimer _questUiRefreshTimer = new();
 
         // Shared UI brushes.
-        private static readonly Brush TopNavSelectedBackground = BrushFromHex("#605E6053");
+        private static readonly Brush TopNavSelectedBackground = BrushFromHex("#28232A");
         private static readonly Brush TopNavSelectedForeground = BrushFromHex("#FFFFFF");
-        private static readonly Brush TopNavSelectedBorder = BrushFromHex("#D8D5CD");
-        private static readonly Brush TopNavDefaultBackground = BrushFromHex("#30393A33");
+        private static readonly Brush TopNavSelectedBorder = BrushFromHex("#F1C47E");
+        private static readonly Brush TopNavDefaultBackground = BrushFromHex("#0013151C");
         private static readonly Brush TopNavDefaultForeground = BrushFromHex("#CAC5BA");
         private static readonly Brush TopNavDefaultBorder = BrushFromHex("#20EAE8E3");
     }

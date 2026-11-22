@@ -12,6 +12,13 @@ namespace JokerDBDTracker
             InitializeComponent();
             WindowBoundsHelper.Attach(this);
             WindowMaterial.Attach(this);
+            Closing += (_, args) =>
+            {
+                if (_activePlayer is null) return;
+                args.Cancel = true;
+                _closeAfterPlayer = true;
+                _activePlayer.Close();
+            };
             InitializeSettingsUi();
             InitializePsiIntro();
             VideoList.ItemsSource = _videos;
@@ -77,10 +84,17 @@ namespace JokerDBDTracker
             try
             {
                 _ = InitializeNetworkClockAsync();
-                await LoadAndApplySettingsAsync();
+                try { await LoadAndApplySettingsAsync(); }
+                catch (Exception ex)
+                {
+                    _settingsReadFailed = true;
+                    DiagnosticsService.LogException("Startup.Settings", ex);
+                    MessageBox.Show(T("Настройки повреждены. Используются временные настройки.", "Using temporary settings because settings could not be loaded."));
+                }
                 PsiIntro.Start(_appSettings.IntroSoundEnabled, AreAnimationsEnabled);
                 PsiIntro.SetCatalogState(false, true);
                 InitializeLogViewer();
+                ShowPreviousUpdateResult();
                 DiagnosticsService.LogInfo("App", $"Started, v{GetCurrentAppVersion()}, lang={_appSettings.Language}, scale={_appSettings.UiScale:0.00}");
                 var loadVideosTask = LoadVideosAsync();
                 _ = _appSettings.AutoCheckUpdates

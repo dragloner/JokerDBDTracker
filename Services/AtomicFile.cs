@@ -8,6 +8,12 @@ internal static class AtomicFile
     private static readonly ConcurrentDictionary<string, SemaphoreSlim> Gates = new(StringComparer.OrdinalIgnoreCase);
     public static SemaphoreSlim Gate(string path) => Gates.GetOrAdd(Path.GetFullPath(path), _ => new(1, 1));
 
+    public static async Task RestoreAsync(string path, byte[] payload, CancellationToken cancellationToken)
+    {
+        if (File.Exists(path)) File.Move(path, path + ".corrupt-" + Guid.NewGuid().ToString("N"));
+        await WriteAsync(path, payload, cancellationToken);
+    }
+
     public static async Task WriteAsync(string path, byte[] data, CancellationToken cancellationToken = default)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);

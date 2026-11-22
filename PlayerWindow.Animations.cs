@@ -18,7 +18,16 @@ namespace JokerDBDTracker
             }
 
             // Animate only WPF chrome opacity; a live HWND must not be scaled during startup.
-            MainRootGrid.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(200))
+            var coverScale = new ScaleTransform(1, 1);
+            PlayerLoadingCover.RenderTransformOrigin = new Point(.5, .5);
+            PlayerLoadingCover.RenderTransform = coverScale;
+            var zoom = new DoubleAnimation(.94, 1, TimeSpan.FromMilliseconds(260))
+            {
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            };
+            coverScale.BeginAnimation(ScaleTransform.ScaleXProperty, zoom);
+            coverScale.BeginAnimation(ScaleTransform.ScaleYProperty, zoom);
+            TopBarPanel.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(200))
             {
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
             });
@@ -87,12 +96,12 @@ namespace JokerDBDTracker
                 }
 
                 var tcs = new TaskCompletionSource<bool>();
-                var opacityAnimation = new DoubleAnimation(Opacity, 0.0, TimeSpan.FromMilliseconds(PlayerMinimizeAnimationDurationMs))
+                var opacityAnimation = new DoubleAnimation(_host.Opacity, 0.0, TimeSpan.FromMilliseconds(PlayerMinimizeAnimationDurationMs))
                 {
                     EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
                 };
                 opacityAnimation.Completed += (_, _) => tcs.TrySetResult(true);
-                BeginAnimation(OpacityProperty, opacityAnimation);
+                _host.BeginAnimation(OpacityProperty, opacityAnimation);
                 await tcs.Task;
             }
             catch
@@ -101,7 +110,7 @@ namespace JokerDBDTracker
             }
             finally
             {
-                Opacity = 1;
+                _host.Opacity = 1;
                 BeginAnimation(OpacityProperty, null);
                 if (MainRootGrid?.RenderTransform is ScaleTransform scale)
                 {

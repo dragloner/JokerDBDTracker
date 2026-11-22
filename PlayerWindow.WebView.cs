@@ -18,8 +18,10 @@ using JokerDBDTracker.Services;
 
 namespace JokerDBDTracker
 {
-    public partial class PlayerWindow : Window
+    public partial class PlayerWindow : System.Windows.Controls.UserControl
     {
+        private bool _canSavePlayerSettings;
+
         private async void PlayerWindow_Loaded(object sender, RoutedEventArgs e)
         {
             try
@@ -27,6 +29,7 @@ namespace JokerDBDTracker
                 try
                 {
                     _appSettings = await _settingsService.LoadAsync();
+                    _canSavePlayerSettings = true;
                 }
                 catch
                 {
@@ -37,26 +40,10 @@ namespace JokerDBDTracker
                 UiAnimation.SetIsEnabled(this, _appSettings.AnimationsEnabled && SystemParameters.ClientAreaAnimation);
                 DiagnosticsService.SetEnabled(_appSettings.LoggingEnabled);
                 AnimatePlayerWindowEntrance();
-                VideoTitleText.Text = _video.IsTwitchStream ? "Twitch" : _video.Title;
+                VideoTitleText.Text = _video.Title;
                 InitializePresetsUi();
-                if (_video.IsTwitchStream)
-                {
-                    EffectsWorkspaceTimecodesTab.Visibility = System.Windows.Visibility.Collapsed;
-                    EffectsWorkspaceCommunityTab.Visibility = System.Windows.Visibility.Collapsed;
-                    if (ToggleChatDockButton is not null)
-                    {
-                        ToggleChatDockButton.Visibility = System.Windows.Visibility.Collapsed;
-                    }
-                    if (ToggleCommentsDockButton is not null)
-                    {
-                        ToggleCommentsDockButton.Visibility = System.Windows.Visibility.Collapsed;
-                    }
-                }
-                else
-                {
-                    EffectsWorkspaceCommunityTab.Visibility = System.Windows.Visibility.Collapsed;
-                    _ = LoadVideoTimecodesAsync();
-                }
+                EffectsWorkspaceCommunityTab.Visibility = System.Windows.Visibility.Collapsed;
+                _ = LoadVideoTimecodesAsync();
                 if (PlayerSfxSpamToggle is not null)
                 {
                     PlayerSfxSpamToggle.IsChecked = _appSettings.SoundSpamMode;
@@ -72,9 +59,7 @@ namespace JokerDBDTracker
                 _isPlayerNavigationInProgress = true;
                 _isPlayerRuntimeReady = false;
                 SetPlayerInteractionsEnabled(false);
-                SetPlayerLoadingOverlay(visible: true, _video.IsTwitchStream
-                    ? PT("Загрузка Twitch...", "Loading Twitch...")
-                    : PT("Подготовка YouTube...", "Preparing YouTube..."));
+                SetPlayerLoadingOverlay(visible: true, PT("Подготовка YouTube...", "Preparing YouTube..."));
                 SetPlayerSurfaceVisible(false);
 
                 try
@@ -93,20 +78,13 @@ namespace JokerDBDTracker
                     Player.CoreWebView2.Settings.AreDevToolsEnabled = false;
                     Player.CoreWebView2.Settings.IsZoomControlEnabled = false;
                     Player.ZoomFactor = 1.0;
-                    if (_video.IsTwitchStream)
-                    {
-                        await Player.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(
-                            BuildWebInputStateBridgeScript());
-                    }
-                    else
-                    {
-                        await Player.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(
-                            BuildEarlyKioskBootstrapScript(_video.VideoId));
-                        await Player.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(
-                            BuildSeekBridgeScript());
-                        await Player.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(
-                            BuildMediaDiagnosticsScript());
-                    }
+                    await Player.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(
+                        BuildEarlyKioskBootstrapScript(_video.VideoId));
+                    await Player.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(
+                        BuildSeekBridgeScript());
+                    await Player.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(BuildWebInputStateBridgeScript());
+                    await Player.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(
+                        BuildMediaDiagnosticsScript());
                     Player.CoreWebView2.ContainsFullScreenElementChanged += CoreWebView2_ContainsFullScreenElementChanged;
                     Player.CoreWebView2.NavigationStarting += CoreWebView2_NavigationStarting;
                     Player.CoreWebView2.NewWindowRequested += CoreWebView2_NewWindowRequested;
@@ -168,12 +146,6 @@ namespace JokerDBDTracker
             _soundEffectsPrewarmedForCurrentNavigation = false;
             _lastSoundParamsJson = string.Empty;
 
-            if (_video.IsTwitchStream)
-            {
-                // Twitch: don't hide the surface during navigations (login redirects, page loads).
-                SetPlayerInteractionsEnabled(false);
-                return;
-            }
 
             SetPlayerInteractionsEnabled(false);
             SetPlayerLoadingOverlay(visible: true, PT("Загрузка видео...", "Loading video..."));
@@ -192,36 +164,7 @@ namespace JokerDBDTracker
             DiagnosticsService.LogInfo("Player.Navigation", $"Completed: success={e.IsSuccess}, status={e.WebErrorStatus}.");
             var navigationVersion = _playerNavigationVersion;
 
-            // Twitch mode: handle before YouTube error-recovery logic.
             // Login redirects may have e.IsSuccess = false; we never want to recover to a URL here.
-            if (_video.IsTwitchStream)
-            {
-                if (Player.CoreWebView2 is null)
-                {
-                    return;
-                }
-
-                _navigationCompletedFailureCount = 0;
-                _isPlayerNavigationInProgress = false;
-                _isPlayerRuntimeReady = true;
-                SetPlayerInteractionsEnabled(true);
-                SetPlayerSurfaceVisible(true);
-                SetPlayerLoadingOverlay(visible: false);
-
-                try
-                {
-                    Player.ZoomFactor = 1.0;
-                    _lastAppliedEffectsSignature = string.Empty;
-                    await ApplyEffectsSafelyAsync(force: true);
-                    FlushPendingEffectsApplyRequests();
-                    _ = PrewarmWebViewSoundEffectsAsync();
-                }
-                catch
-                {
-                    // Effects apply failures are non-fatal for Twitch.
-                }
-                return;
-            }
 
             if (!e.IsSuccess || Player.CoreWebView2 is null)
             {
@@ -326,7 +269,7 @@ namespace JokerDBDTracker
 
         private void CoreWebView2_SourceChanged(object? sender, CoreWebView2SourceChangedEventArgs e)
         {
-            if (_isPlayerClosing || _video.IsTwitchStream) return;
+            if (_isPlayerClosing) return;
             UpdateJokerVideoState();
             if (Player.CoreWebView2 is not null && !IsAllowedPlayerNavigation(Player.CoreWebView2.Source))
                 _ = RecoverLockedVideoAsync();
@@ -334,12 +277,6 @@ namespace JokerDBDTracker
 
         private void UpdateJokerVideoState()
         {
-            if (_video.IsTwitchStream)
-            {
-                _isOnJokerVideo = true;
-                SetNonJokerBannerVisible(false);
-                return;
-            }
 
             var currentUrl = Player.CoreWebView2?.Source;
             bool isJoker = false;
@@ -367,9 +304,7 @@ namespace JokerDBDTracker
         {
             message = string.Empty;
             if (!Uri.TryCreate(e.Source, UriKind.Absolute, out var source) || source.Scheme != Uri.UriSchemeHttps) return false;
-            var trusted = _video.IsTwitchStream
-                ? source.Host == "www.twitch.tv" || source.Host == "twitch.tv"
-                : source.Host == "www.youtube.com" && source.AbsolutePath == "/watch" &&
+            var trusted = source.Host == "www.youtube.com" && source.AbsolutePath == "/watch" &&
                   string.Equals(HttpUtility.ParseQueryString(source.Query).Get("v"), _video.VideoId, StringComparison.Ordinal);
             if (!trusted) return false;
             try { message = e.TryGetWebMessageAsString(); return !string.IsNullOrEmpty(message) && message.Length <= 512; }
@@ -671,10 +606,6 @@ namespace JokerDBDTracker
 
         private string BuildLockedWatchUrl(int startSeconds)
         {
-            if (_video.IsTwitchStream)
-            {
-                return "https://www.twitch.tv/";
-            }
 
             var query = HttpUtility.ParseQueryString(string.Empty);
             query["v"] = _video.VideoId;
@@ -1008,15 +939,6 @@ namespace JokerDBDTracker
 
             var host = uri.Host.ToLowerInvariant();
 
-            // Allow all Twitch infrastructure when playing a Twitch stream.
-            if (_video.IsTwitchStream)
-            {
-                static bool HostMatches(string value, string expected) =>
-                    value == expected || value.EndsWith($".{expected}", StringComparison.Ordinal);
-
-                var isTwitchHost = HostMatches(host, "twitch.tv") || host == "www.amazon.com" || host == "accounts.google.com" || host == "appleid.apple.com";
-                return isTwitchHost;
-            }
 
             if (host is "accounts.google.com" or "consent.google.com") return true;
 

@@ -18,8 +18,10 @@ using JokerDBDTracker.Services;
 
 namespace JokerDBDTracker
 {
-    public partial class PlayerWindow : Window
+    public partial class PlayerWindow : System.Windows.Controls.UserControl
     {
+        public bool PlaybackStarted { get; private set; }
+
         private async void PositionTimer_Tick(object? sender, EventArgs e)
         {
             if (Player.CoreWebView2 is null || _isPlayerClosing || _isPlayerNavigationInProgress)
@@ -27,14 +29,6 @@ namespace JokerDBDTracker
                 return;
             }
 
-            // Twitch mode: no XP, no playback position tracking.
-            if (_video.IsTwitchStream)
-            {
-                if (!CanProcessPlayerCommands()) return;
-                var missing = await ExecuteWebScriptWithTimeoutAsync("Boolean(document.querySelector('video') && (!window.__stwfxRuntime?.video?.isConnected || window.__stwfxRuntime.video !== document.querySelector('video')))", 500, "Twitch.VideoChanged");
-                if (missing == "true") await ApplyEffectsSafelyAsync(force: true);
-                return;
-            }
 
             if (_positionTickRunning) return;
             _positionTickRunning = true;
@@ -115,7 +109,7 @@ namespace JokerDBDTracker
                                 }
                             }
 
-                            return best || nodes[0] || null;
+                            return best;
                         };
 
                         const video = pickMainVideo();
@@ -153,6 +147,7 @@ namespace JokerDBDTracker
                     return;
                 }
 
+                if (_isOnJokerVideo && !paused && !seeking) PlaybackStarted = true;
                 if (_isOnJokerVideo) LastPlaybackSeconds = (int)Math.Floor(current);
                 if (current > 0.15)
                 {

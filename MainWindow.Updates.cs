@@ -7,6 +7,29 @@ namespace JokerDBDTracker
 {
     public partial class MainWindow
     {
+        private void ShowPreviousUpdateResult()
+        {
+            var path = Path.Combine(AppContext.BaseDirectory, "update_result.txt");
+            try
+            {
+                if (!File.Exists(path)) return;
+                var result = File.ReadAllText(path).Trim();
+                File.Delete(path);
+                var version = GetCurrentAppVersion();
+                var message = result switch
+                {
+                    "installed" => T($"Установлена версия {version}.", $"Version {version} installed."),
+                    "restored" => T($"Обновление отменено. Восстановлена версия {version}.", $"Update rolled back to version {version}."),
+                    _ => T("Обновление не установлено.", "The update was not installed.")
+                };
+                MessageBox.Show(message, T("Обновления", "Updates"));
+            }
+            catch (Exception ex)
+            {
+                DiagnosticsService.LogException("Update.Result", ex);
+            }
+        }
+
         private async Task CheckForUpdatesDuringStartupAsync()
         {
             GitHubUpdateInfo updateInfo;
@@ -129,10 +152,7 @@ namespace JokerDBDTracker
                         $"Downloading update {targetVersionText}..."),
                     isIndeterminate: false);
 
-                var updatesFolder = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    AppStoragePaths.CurrentFolderName,
-                    "Updates");
+                var updatesFolder = Path.Combine(AppStoragePaths.GetCurrentLocalAppDataDirectory(), "Updates");
                 Directory.CreateDirectory(updatesFolder);
                 var destinationPath = BuildUpdateAssetDestinationPath(updatesFolder, _lastUpdateInfo);
 

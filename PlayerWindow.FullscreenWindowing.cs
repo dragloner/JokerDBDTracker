@@ -17,38 +17,11 @@ using JokerDBDTracker.Services;
 
 namespace JokerDBDTracker
 {
-    public partial class PlayerWindow : Window
+    public partial class PlayerWindow : System.Windows.Controls.UserControl
     {
-        internal void PrepareForDisplay()
-        {
-            PositionWindowToOwnerMonitor();
-            Topmost = false;
-            ResizeMode = ResizeMode.CanResize;
-            WindowState = WindowState.Maximized;
-        }
+        private System.Windows.Rect _boundsBeforeFullscreen;
 
-        private void PositionWindowToOwnerMonitor()
-        {
-            if (Owner is null)
-            {
-                return;
-            }
-
-            System.Windows.Rect ownerBounds = Owner.WindowState == WindowState.Minimized
-                ? Owner.RestoreBounds
-                : new System.Windows.Rect(Owner.Left, Owner.Top, Owner.ActualWidth, Owner.ActualHeight);
-
-            if (ownerBounds.Width < 10 || ownerBounds.Height < 10)
-            {
-                return;
-            }
-
-            WindowState = WindowState.Normal;
-            Left = ownerBounds.Left;
-            Top = ownerBounds.Top;
-            Width = Math.Max(MinWidth, ownerBounds.Width);
-            Height = Math.Max(MinHeight, ownerBounds.Height);
-        }
+        private bool IsActive => _host.IsActive;
 
         private void CoreWebView2_ContainsFullScreenElementChanged(object? sender, object e)
         {
@@ -66,19 +39,20 @@ namespace JokerDBDTracker
             _isPlayerElementFullScreen = shouldBeFullscreen;
             if (shouldBeFullscreen)
             {
-                _windowStateBeforePlayerFullscreen = WindowState;
-                _resizeModeBeforePlayerFullscreen = ResizeMode;
+                _windowStateBeforePlayerFullscreen = _host.WindowState;
+                _boundsBeforeFullscreen = _host.RestoreBounds;
+                _resizeModeBeforePlayerFullscreen = _host.ResizeMode;
                 _mainRootMarginBeforePlayerFullscreen = MainRootGrid.Margin;
                 _playerHostMarginBeforeFullscreen = PlayerHostBorder.Margin;
                 _playerHostCornerRadiusBeforeFullscreen = PlayerHostBorder.CornerRadius;
                 ApplyPlayerFullscreenChrome(isFullscreen: true);
-                ResizeMode = ResizeMode.NoResize;
+                _host.ResizeMode = ResizeMode.NoResize;
                 if (_appSettings.FullscreenBehavior != "windowed")
                 {
-                    WindowState = WindowState.Normal;
+                    _host.WindowState = WindowState.Normal;
                     ApplyFullMonitorBounds();
                 }
-                Activate();
+                _host.Activate();
                 PulseTopmost();
                 RequestApplyEffects(immediate: false);
                 return;
@@ -90,10 +64,17 @@ namespace JokerDBDTracker
         private void RestoreWindowAfterPlayerFullscreen()
         {
             ApplyPlayerFullscreenChrome(isFullscreen: false);
-            ResizeMode = _resizeModeBeforePlayerFullscreen == ResizeMode.NoResize
+            _host.ResizeMode = _resizeModeBeforePlayerFullscreen == ResizeMode.NoResize
                 ? ResizeMode.CanResize
                 : _resizeModeBeforePlayerFullscreen;
-            WindowState = _windowStateBeforePlayerFullscreen == WindowState.Minimized
+            if (_host.WindowState == WindowState.Normal && !_boundsBeforeFullscreen.IsEmpty)
+            {
+                _host.Left = _boundsBeforeFullscreen.Left;
+                _host.Top = _boundsBeforeFullscreen.Top;
+                _host.Width = _boundsBeforeFullscreen.Width;
+                _host.Height = _boundsBeforeFullscreen.Height;
+            }
+            _host.WindowState = _windowStateBeforePlayerFullscreen == WindowState.Minimized
                 ? WindowState.Maximized
                 : _windowStateBeforePlayerFullscreen;
             // Re-apply panel layout after window state transition settles to ensure column widths stick.
@@ -126,9 +107,9 @@ namespace JokerDBDTracker
             }
 
             // WindowChrome keeps a ResizeBorderThickness hit-test strip around the window edges even
-            // when ResizeMode = NoResize. In fullscreen that 12 px strip sits on top of the WebView2
+            // when _host.ResizeMode = NoResize. In fullscreen that 12 px strip sits on top of the WebView2
             // and swallows clicks intended for YouTube's bottom/right player controls. Zero it out.
-            var chrome = System.Windows.Shell.WindowChrome.GetWindowChrome(this);
+            var chrome = System.Windows.Shell.WindowChrome.GetWindowChrome(_host);
             if (chrome is not null)
             {
                 if (isFullscreen)
@@ -232,10 +213,10 @@ namespace JokerDBDTracker
 
         private void PulseTopmost()
         {
-            Topmost = true;
+            _host.Topmost = true;
             Dispatcher.BeginInvoke(() =>
             {
-                Topmost = false;
+                _host.Topmost = false;
             }, DispatcherPriority.ApplicationIdle);
         }
 
@@ -249,33 +230,33 @@ namespace JokerDBDTracker
             _isApplyingFullMonitorBounds = true;
             try
             {
-                var hwnd = new WindowInteropHelper(this).Handle;
+                var hwnd = new WindowInteropHelper(_host).Handle;
                 if (hwnd == IntPtr.Zero)
                 {
-                    Left = 0;
-                    Top = 0;
-                    Width = SystemParameters.PrimaryScreenWidth;
-                    Height = SystemParameters.PrimaryScreenHeight;
+                    _host.Left = 0;
+                    _host.Top = 0;
+                    _host.Width = SystemParameters.PrimaryScreenWidth;
+                    _host.Height = SystemParameters.PrimaryScreenHeight;
                     return;
                 }
 
                 var monitor = MonitorFromWindow(hwnd, MonitorDefaultToNearest);
                 if (monitor == IntPtr.Zero)
                 {
-                    Left = 0;
-                    Top = 0;
-                    Width = SystemParameters.PrimaryScreenWidth;
-                    Height = SystemParameters.PrimaryScreenHeight;
+                    _host.Left = 0;
+                    _host.Top = 0;
+                    _host.Width = SystemParameters.PrimaryScreenWidth;
+                    _host.Height = SystemParameters.PrimaryScreenHeight;
                     return;
                 }
 
                 var monitorInfo = new MonitorInfo { cbSize = Marshal.SizeOf<MonitorInfo>() };
                 if (!GetMonitorInfo(monitor, ref monitorInfo))
                 {
-                    Left = 0;
-                    Top = 0;
-                    Width = SystemParameters.PrimaryScreenWidth;
-                    Height = SystemParameters.PrimaryScreenHeight;
+                    _host.Left = 0;
+                    _host.Top = 0;
+                    _host.Width = SystemParameters.PrimaryScreenWidth;
+                    _host.Height = SystemParameters.PrimaryScreenHeight;
                     return;
                 }
 
@@ -290,17 +271,17 @@ namespace JokerDBDTracker
                     var transform = source.CompositionTarget.TransformFromDevice;
                     var topLeftDip = transform.Transform(new System.Windows.Point(leftPx, topPx));
                     var bottomRightDip = transform.Transform(new System.Windows.Point(rightPx, bottomPx));
-                    Left = topLeftDip.X;
-                    Top = topLeftDip.Y;
-                    Width = Math.Max(1, bottomRightDip.X - topLeftDip.X);
-                    Height = Math.Max(1, bottomRightDip.Y - topLeftDip.Y);
+                    _host.Left = topLeftDip.X;
+                    _host.Top = topLeftDip.Y;
+                    _host.Width = Math.Max(1, bottomRightDip.X - topLeftDip.X);
+                    _host.Height = Math.Max(1, bottomRightDip.Y - topLeftDip.Y);
                     return;
                 }
 
-                Left = monitorInfo.rcMonitor.left;
-                Top = monitorInfo.rcMonitor.top;
-                Width = Math.Max(1, monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left);
-                Height = Math.Max(1, monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top);
+                _host.Left = monitorInfo.rcMonitor.left;
+                _host.Top = monitorInfo.rcMonitor.top;
+                _host.Width = Math.Max(1, monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left);
+                _host.Height = Math.Max(1, monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top);
             }
             finally
             {
@@ -317,7 +298,7 @@ namespace JokerDBDTracker
         private async void MinimizeButton_Click(object sender, RoutedEventArgs e)
         {
             await AnimatePlayerMinimizeAsync();
-            WindowState = WindowState.Minimized;
+            _host.WindowState = WindowState.Minimized;
         }
 
         private async void ToggleWindowSizeButton_Click(object sender, RoutedEventArgs e)
@@ -333,7 +314,7 @@ namespace JokerDBDTracker
                 return;
             }
 
-            WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+            _host.WindowState = _host.WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
         }
 
         private void UpdateWindowSizeButtonState()
@@ -343,12 +324,12 @@ namespace JokerDBDTracker
                 return;
             }
 
-            WindowSizeButton.Content = WindowState == WindowState.Maximized ? "\uE923" : "\uE922";
+            WindowSizeButton.Content = _host.WindowState == WindowState.Maximized ? "\uE923" : "\uE922";
         }
 
         private void CloseWindowButton_Click(object sender, RoutedEventArgs e)
         {
-            Close();
+            _host.Close();
         }
 
         private void TopBarPanel_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -384,13 +365,13 @@ namespace JokerDBDTracker
                     return;
                 }
 
-                WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+                _host.WindowState = _host.WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
 
                 e.Handled = true;
                 return;
             }
 
-            if (WindowState == WindowState.Maximized)
+            if (_host.WindowState == WindowState.Maximized)
             {
                 BeginPendingRestoreDrag(e.GetPosition(this));
                 e.Handled = true;
@@ -399,7 +380,7 @@ namespace JokerDBDTracker
 
             try
             {
-                DragMove();
+                _host.DragMove();
                 e.Handled = true;
             }
             catch
@@ -429,11 +410,10 @@ namespace JokerDBDTracker
             return false;
         }
 
-        private async void PlayerWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
+        internal async void Close()
         {
             if (!_closingAfterCheckpoint)
             {
-                e.Cancel = true;
                 if (_isPlayerClosing) return;
                 _isPlayerClosing = true;
                 _positionTimer.Stop();
@@ -444,8 +424,6 @@ namespace JokerDBDTracker
                     MessageBox.Show(PT("Не удалось сохранить прогресс: ", "Could not save progress: ") + ex.Message);
                 }
                 _closingAfterCheckpoint = true;
-                _ = Dispatcher.BeginInvoke(new Action(Close));
-                return;
             }
             try
             {
@@ -454,7 +432,7 @@ namespace JokerDBDTracker
                 _isPlayerNavigationInProgress = false;
                 _isPlayerRuntimeReady = false;
                 SetPlayerInteractionsEnabled(false);
-                Topmost = false;
+                _host.Topmost = false;
                 _positionTimer.Stop();
                 _effectsApplyTimer.Stop();
                 _resizeSettleDebounceTimer.Stop();
@@ -467,10 +445,14 @@ namespace JokerDBDTracker
                 _hotkeySource?.RemoveHook(HotkeyWndProc);
                 _hotkeySource = null;
                 Loaded -= PlayerWindow_Loaded;
-                Closing -= PlayerWindow_Closing;
-                Activated -= PlayerWindow_Activated;
-                Deactivated -= PlayerWindow_Deactivated;
-                StateChanged -= PlayerWindow_StateChanged;
+                if (_isPlayerElementFullScreen)
+                {
+                    _isPlayerElementFullScreen = false;
+                    RestoreWindowAfterPlayerFullscreen();
+                }
+                _host.Activated -= PlayerWindow_Activated;
+                _host.Deactivated -= PlayerWindow_Deactivated;
+                _host.StateChanged -= PlayerWindow_StateChanged;
                 SizeChanged -= PlayerWindow_SizeChanged;
                 PreviewMouseMove -= PlayerWindow_PreviewMouseMove;
                 PreviewMouseLeftButtonUp -= PlayerWindow_PreviewMouseLeftButtonUp;
@@ -494,6 +476,10 @@ namespace JokerDBDTracker
             catch
             {
                 // Ignore teardown errors.
+            }
+            finally
+            {
+                Closed?.Invoke(this, EventArgs.Empty);
             }
         }
 
@@ -540,16 +526,16 @@ namespace JokerDBDTracker
             var screenPosition = PointToScreen(currentPoint);
             var widthRatio = ActualWidth > 0 ? currentPoint.X / ActualWidth : 0.5;
             widthRatio = Math.Clamp(widthRatio, 0.0, 1.0);
-            var restoreWidth = RestoreBounds.Width > 0 ? RestoreBounds.Width : Math.Max(MinWidth, 1200);
+            var restoreWidth = _host.RestoreBounds.Width > 0 ? _host.RestoreBounds.Width : Math.Max(MinWidth, 1200);
 
-            WindowState = WindowState.Normal;
-            Left = screenPosition.X - restoreWidth * widthRatio;
-            Top = screenPosition.Y - 20;
+            _host.WindowState = WindowState.Normal;
+            _host.Left = screenPosition.X - restoreWidth * widthRatio;
+            _host.Top = screenPosition.Y - 20;
             CancelPendingRestoreDrag();
 
             try
             {
-                DragMove();
+                _host.DragMove();
             }
             catch
             {
@@ -585,7 +571,7 @@ namespace JokerDBDTracker
 
                 _shouldStartDragAfterExitingPlayerFullscreen = false;
 
-                if (WindowState == WindowState.Maximized)
+                if (_host.WindowState == WindowState.Maximized)
                 {
                     BeginPendingRestoreDrag(Mouse.GetPosition(this));
                     return;
@@ -593,7 +579,7 @@ namespace JokerDBDTracker
 
                 try
                 {
-                    DragMove();
+                    _host.DragMove();
                 }
                 catch
                 {

@@ -7,7 +7,7 @@ namespace JokerDBDTracker.Services
     {
         private static readonly HttpClient HttpClient = new()
         {
-            Timeout = TimeSpan.FromSeconds(6)
+            Timeout = TimeSpan.FromSeconds(1.2)
         };
 
         private static readonly string[] Endpoints =
@@ -20,7 +20,7 @@ namespace JokerDBDTracker.Services
         static NetworkTimeService()
         {
             HttpClient.DefaultRequestHeaders.UserAgent.Add(
-                new ProductInfoHeaderValue("JokerDBDTracker", "1.2.0.1"));
+                new ProductInfoHeaderValue("JokerDBDTracker", typeof(NetworkTimeService).Assembly.GetName().Version?.ToString() ?? "1.0"));
         }
 
         public async Task<DateTime?> GetUtcNowAsync(CancellationToken cancellationToken = default)
@@ -31,7 +31,7 @@ namespace JokerDBDTracker.Services
                 {
                     using var request = new HttpRequestMessage(HttpMethod.Head, endpoint);
                     using var response = await HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-                    if (!response.Headers.Date.HasValue)
+                    if (!response.IsSuccessStatusCode || !response.Headers.Date.HasValue)
                     {
                         continue;
                     }

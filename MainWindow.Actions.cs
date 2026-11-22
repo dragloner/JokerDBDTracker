@@ -6,11 +6,14 @@ namespace JokerDBDTracker
 {
     public partial class MainWindow
     {
-        private async Task OpenVideoAsync(YouTubeVideo video)
+        private PlayerWindow? _activePlayer;
+        private bool _closeAfterPlayer;
+
+        private async Task<bool> OpenVideoAsync(YouTubeVideo video, int? startSeconds = null)
         {
             if (_isOpeningVideo || video is null)
             {
-                return;
+                return false;
             }
 
             _isOpeningVideo = true;
@@ -18,51 +21,47 @@ namespace JokerDBDTracker
             try
             {
 
-                var player = new PlayerWindow(video, video.LastPlaybackSeconds, GetTrustedUtcNow)
-                {
-                    Owner = this
-                };
-
+                var player = new PlayerWindow(this, video, startSeconds ?? video.LastPlaybackSeconds, GetTrustedUtcNow);
                 ConnectPlayerProgress(player, video);
-                player.PrepareForDisplay();
+                var exited = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                player.Closed += (_, _) => exited.TrySetResult();
+                _activePlayer = player;
                 try
                 {
-                    await AnimateWindowOpacityAsync(0.0, 220);
-                    Hide();
-                    player.ShowDialog();
+                    await AnimateCoverToPlayerAsync(video);
+                    LibraryWorkspace.Visibility = Visibility.Collapsed;
+                    LibraryNavigation.Visibility = Visibility.Collapsed;
+                    PlayerWorkspace.Visibility = Visibility.Visible;
+                    PlayerWorkspace.Content = player;
+                    player.Focus();
+                    await exited.Task;
                 }
                 finally
                 {
-                    if (!IsVisible)
-                    {
-                        Show();
-                    }
-
-                    if (AreAnimationsEnabled)
-                    {
-                        Opacity = 0;
-                    }
-
-                    if (WindowState == WindowState.Minimized)
-                    {
-                        WindowState = WindowState.Normal;
-                    }
-
-                    Activate();
-                    await AnimateWindowOpacityAsync(1.0, 260);
+                    PlayerWorkspace.Content = null;
+                    PlayerWorkspace.Visibility = Visibility.Collapsed;
+                    LibraryNavigation.Visibility = Visibility.Visible;
+                    LibraryWorkspace.Visibility = Visibility.Visible;
+                    _activePlayer = null;
+                    AnimatePanelEntrance(LibraryWorkspace);
                 }
 
-                video.LastPlaybackSeconds = player.LastPlaybackSeconds;
-                _playbackSecondsHistory[video.VideoId] = player.LastPlaybackSeconds;
-                await LoadAndApplySettingsAsync();
+                if (player.PlaybackStarted)
+                {
+                    video.LastPlaybackSeconds = player.LastPlaybackSeconds;
+                    _playbackSecondsHistory[video.VideoId] = player.LastPlaybackSeconds;
+                }
+                if (!_settingsReadFailed) await LoadAndApplySettingsAsync();
                 await RefreshFavoritesClipsAsync();
 
                 await SaveHistoryAsync();
                 RefreshRecommendations();
                 RefreshProfile();
                 RefreshHomeSummary();
-                RefreshVisibleVideos();
+                VideoList.Items.Refresh();
+                RefreshStartCard();
                 ClearAllSelections();
+                return player.PlaybackStarted;
             }
             catch (Exception ex)
             {
@@ -82,10 +81,12 @@ namespace JokerDBDTracker
                     T("Ошибка", "Error"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
+                return false;
             }
             finally
             {
                 _isOpeningVideo = false;
+                if (_closeAfterPlayer) Close();
             }
         }
 

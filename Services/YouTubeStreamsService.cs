@@ -108,37 +108,53 @@ namespace JokerDBDTracker.Services
             return await response.Content.ReadAsStringAsync(cancellationToken);
         }
 
-        public async Task<List<YouTubeVideo>> GetAllStreamsAsync(string streamsUrl, CancellationToken cancellationToken = default)
+        private static string CachePath => Path.Combine(AppStoragePaths.GetCurrentLocalAppDataDirectory(), "catalog.json");
+
+        public sealed record CatalogResult(List<YouTubeVideo> Videos, bool IsComplete, DateTime? CachedAtUtc = null);
+
+        public async Task<CatalogResult?> ReadCachedCatalogAsync()
         {
-            var cache = Path.Combine(AppStoragePaths.GetCurrentLocalAppDataDirectory(), "catalog.json");
-            try
+            foreach (var path in new[] { CachePath, CachePath + ".bak" })
             {
-                List<YouTubeVideo> videos;
-                try { videos = await GetAllStreamsCoreAsync(SharedHttpClient.Value, streamsUrl, cancellationToken); }
-                catch (HttpRequestException) when (!cancellationToken.IsCancellationRequested)
+                if (!File.Exists(path)) continue;
+                try
                 {
-                    using var fresh = CreateHttpClient(forceFreshSockets: true);
-                    videos = await GetAllStreamsCoreAsync(fresh, streamsUrl, cancellationToken);
+                    var videos = JsonSerializer.Deserialize<List<YouTubeVideo>>(await File.ReadAllBytesAsync(path));
+                    if (videos is { Count: > 0 } && videos.All(v => v is not null && v.VideoId?.Length == YouTubeVideoIdLength))
+                        return new CatalogResult(videos, true, File.GetLastWriteTimeUtc(path));
                 }
-                if (videos.Count > 0)
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
                 {
-                    try { await AtomicFile.WriteAsync(cache, JsonSerializer.SerializeToUtf8Bytes(videos), CancellationToken.None); }
-                    catch (IOException ex) { DiagnosticsService.LogException("Catalog.CacheWrite", ex); }
-                    catch (UnauthorizedAccessException ex) { DiagnosticsService.LogException("Catalog.CacheWrite", ex); }
+                    DiagnosticsService.LogException("Catalog.CacheRead", ex);
                 }
-                return videos;
             }
-            catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException or InvalidOperationException or JsonException)
-            {
-                DiagnosticsService.LogException("Catalog.Load", ex);
-                if (!File.Exists(cache)) throw;
-                var cached = JsonSerializer.Deserialize<List<YouTubeVideo>>(await File.ReadAllTextAsync(cache)) ?? [];
-                DiagnosticsService.LogInfo("Catalog", "Using the last saved stream catalog while the network is unavailable.");
-                return cached;
-            }
+            return null;
         }
 
-        private static async Task<List<YouTubeVideo>> GetAllStreamsCoreAsync(HttpClient httpClient, string streamsUrl, CancellationToken cancellationToken)
+        public async Task<CatalogResult> GetAllStreamsAsync(string streamsUrl, CancellationToken cancellationToken = default)
+        {
+            CatalogResult result;
+            try { result = await GetAllStreamsCoreAsync(SharedHttpClient.Value, streamsUrl, cancellationToken); }
+            catch (HttpRequestException) when (!cancellationToken.IsCancellationRequested)
+            {
+                using var fresh = CreateHttpClient(forceFreshSockets: true);
+                result = await GetAllStreamsCoreAsync(fresh, streamsUrl, cancellationToken);
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            if (result.Videos.Count == 0) throw new InvalidOperationException("No stream entries were found in the YouTube response.");
+            if (result.IsComplete)
+            {
+                try { await AtomicFile.WriteAsync(CachePath, JsonSerializer.SerializeToUtf8Bytes(result.Videos), cancellationToken); }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    DiagnosticsService.LogException("Catalog.CacheWrite", ex);
+                }
+            }
+            return result;
+        }
+
+        private static async Task<CatalogResult> GetAllStreamsCoreAsync(HttpClient httpClient, string streamsUrl, CancellationToken cancellationToken)
         {
             var candidateUrls = BuildCandidateUrls(streamsUrl);
             var html = await DownloadFirstParsableHtmlAsync(httpClient, candidateUrls, cancellationToken);
@@ -218,7 +234,8 @@ namespace JokerDBDTracker.Services
                 }
             }
 
-            return videosById.Values.OrderBy(v => v.OriginalOrder).ToList();
+            cancellationToken.ThrowIfCancellationRequested();
+            return new CatalogResult(videosById.Values.OrderBy(v => v.OriginalOrder).ToList(), string.IsNullOrWhiteSpace(continuationToken));
         }
 
         private static async Task<string> DownloadFirstParsableHtmlAsync(

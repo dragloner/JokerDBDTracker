@@ -29,6 +29,7 @@ public sealed class TimecodeService
             {
                 var list = JsonSerializer.Deserialize<List<Timecode>>(await File.ReadAllTextAsync(path, cancellationToken)) ?? throw new InvalidDataException("Timecodes are empty.");
                 if (list.Any(t => t is null || string.IsNullOrWhiteSpace(t.VideoId) || t.Seconds < 0)) throw new InvalidDataException("Invalid timecode entry.");
+                if (path != _path) await AtomicFile.RestoreAsync(_path, JsonSerializer.SerializeToUtf8Bytes(list), cancellationToken);
                 return list;
             }
             catch (Exception ex) when (ex is JsonException or IOException or InvalidDataException)

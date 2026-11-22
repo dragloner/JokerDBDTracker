@@ -403,7 +403,7 @@ namespace JokerDBDTracker
                 slot.Name = string.Empty;
                 slot.PayloadJson = string.Empty;
                 SyncCustomPresetSlotsBackToSettings();
-                await _settingsService.SaveAsync(_appSettings);
+                if (_canSavePlayerSettings) await _settingsService.SaveAsync(_appSettings);
                 RefreshCustomPresetSlotComboBox();
                 RefreshCustomPresetEditor();
                 UpdatePresetStatusText(PT("Слот очищен.", "Slot cleared."));

@@ -18,6 +18,8 @@ namespace JokerDBDTracker
             PlayerLoadingHeaderText.Text = PT("Загрузка плеера", "Loading player");
             EffectsHeaderText.Text = PT("Управление", "Controls");
             ShowAudioWorkspaceButton.Content = PT("Звук", "Audio");
+            WorkspaceChatTab.Header = PT("Чат", "Chat");
+            WorkspaceCommentsTab.Header = PT("Комментарии", "Comments");
             EffectsWorkspaceAudioTab.Header = PT("Звук", "Audio");
             EffectsHintText.Text = PT(
                 "Включайте эффекты и настраивайте силу прямо под каждым эффектом.",

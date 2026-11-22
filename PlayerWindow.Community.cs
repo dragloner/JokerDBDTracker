@@ -12,10 +12,9 @@ namespace JokerDBDTracker
 {
     public partial class PlayerWindow
     {
-        private const double CommunityChatDockWidth = 356;
-        private const double CommunityCommentsDockHeight = 258;
+        private bool _selectingCommunityTab;
 
-        private void EffectsWorkspaceTabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private async void EffectsWorkspaceTabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (!ReferenceEquals(sender, e.OriginalSource))
             {
@@ -23,6 +22,14 @@ namespace JokerDBDTracker
             }
 
             UpdatePresetWorkspaceSwitcherState();
+            if (!IsLoaded || _selectingCommunityTab) return;
+
+            var kind = WorkspaceChatTab.IsSelected ? PlayerCommunityDockKind.Chat
+                : WorkspaceCommentsTab.IsSelected ? PlayerCommunityDockKind.Comments : (PlayerCommunityDockKind?)null;
+            _isCommunityChatOpen = false;
+            _isCommunityCommentsOpen = false;
+            if (kind.HasValue) await OpenCommunityDockAsync(kind.Value, forceReload: false);
+            else ApplyCommunityDockLayout();
 
             if (EffectsWorkspaceTimecodesTab?.IsSelected == true)
             {
@@ -99,10 +106,6 @@ namespace JokerDBDTracker
 
         private async Task ToggleCommunityDockAsync(PlayerCommunityDockKind kind)
         {
-            if (_video.IsTwitchStream)
-            {
-                return;
-            }
 
             if (IsCommunityDockOpen(kind))
             {
@@ -118,13 +121,21 @@ namespace JokerDBDTracker
 
         private async Task OpenCommunityDockAsync(PlayerCommunityDockKind kind, bool forceReload)
         {
-            if (_video.IsTwitchStream || _isPlayerClosing)
+            if (_isPlayerClosing)
             {
                 return;
             }
 
-            SetCommunityDockOpen(kind, true);
-            ApplyCommunityDockLayout();
+            _selectingCommunityTab = true;
+            try
+            {
+                EffectsWorkspaceTabs.SelectedItem = kind == PlayerCommunityDockKind.Chat ? WorkspaceChatTab : WorkspaceCommentsTab;
+                if (!_effectsPanelExpanded) ToggleEffectsPanelStateCore();
+                _isCommunityChatOpen = kind == PlayerCommunityDockKind.Chat;
+                _isCommunityCommentsOpen = kind == PlayerCommunityDockKind.Comments;
+            }
+            finally { _selectingCommunityTab = false; }
+            ApplyCommunityDockLayout(animate: true);
             UpdateCommunityUiState();
 
             var browser = await EnsureCommunityBrowserAsync(kind);
@@ -162,7 +173,7 @@ namespace JokerDBDTracker
         private async Task<WebView2?> EnsureCommunityBrowserAsync(PlayerCommunityDockKind kind)
         {
             var browser = GetCommunityBrowser(kind);
-            if (_video.IsTwitchStream || browser is null)
+            if (browser is null)
             {
                 return null;
             }
@@ -250,7 +261,7 @@ namespace JokerDBDTracker
                 navUri.AbsolutePath.Equals("/watch", StringComparison.OrdinalIgnoreCase))
             {
                 var q = System.Web.HttpUtility.ParseQueryString(navUri.Query);
-                if (!string.Equals(q.Get("v"), _video.VideoId, StringComparison.OrdinalIgnoreCase))
+                if (!string.Equals(q.Get("v"), _video.VideoId, StringComparison.Ordinal))
                 {
                     e.Cancel = true;
                     return;
@@ -451,116 +462,44 @@ namespace JokerDBDTracker
 
         private void ApplyCommunityDockLayout(bool animate = false)
         {
-            var canShowCommunity = !_video.IsTwitchStream && !_isPlayerElementFullScreen;
+            var canShowCommunity = !_isPlayerElementFullScreen;
             ApplyCommunityChatDockLayout(canShowCommunity && _isCommunityChatOpen, animate);
             ApplyCommunityCommentsDockLayout(canShowCommunity && _isCommunityCommentsOpen, animate);
             UpdateCommunityUiState();
         }
 
-        private void ApplyCommunityChatDockLayout(bool open, bool animate)
+        private void ApplyCommunityChatDockLayout(bool open, bool animate) =>
+            ApplyCommunityTabLayout(CommunityChatDock, open, animate);
+
+        private void ApplyCommunityCommentsDockLayout(bool open, bool animate) =>
+            ApplyCommunityTabLayout(CommunityCommentsDock, open, animate);
+
+        private void ApplyCommunityTabLayout(FrameworkElement? dock, bool open, bool animate)
         {
-            if (CommunityChatDock is null || CommunityChatColumn is null)
-            {
-                return;
-            }
-
-            CommunityChatDock.BeginAnimation(UIElement.OpacityProperty, null);
-
-            if (open)
-            {
-                CommunityChatDock.Visibility = Visibility.Visible;
-                CommunityChatDock.IsHitTestVisible = true;
-                CommunityChatColumn.Width = new GridLength(CommunityChatDockWidth);
-                if (animate && _appSettings.AnimationsEnabled)
-                {
-                    CommunityChatDock.Opacity = 0;
-                    CommunityChatDock.BeginAnimation(
-                        UIElement.OpacityProperty,
-                        new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(180)));
-                }
-                else
-                {
-                    CommunityChatDock.Opacity = 1;
-                }
-
-                return;
-            }
-
-            CommunityChatDock.IsHitTestVisible = false;
-            CommunityChatColumn.Width = new GridLength(0);
-            if (animate && _appSettings.AnimationsEnabled && CommunityChatDock.Visibility == Visibility.Visible)
-            {
-                var fade = new DoubleAnimation(CommunityChatDock.Opacity, 0, TimeSpan.FromMilliseconds(160));
-                fade.Completed += (_, _) => CommunityChatDock.Visibility = Visibility.Collapsed;
-                CommunityChatDock.BeginAnimation(UIElement.OpacityProperty, fade);
-            }
-            else
-            {
-                CommunityChatDock.Visibility = Visibility.Collapsed;
-                CommunityChatDock.Opacity = 0;
-            }
-        }
-
-        private void ApplyCommunityCommentsDockLayout(bool open, bool animate)
-        {
-            if (CommunityCommentsDock is null || CommunityCommentsRow is null)
-            {
-                return;
-            }
-
-            CommunityCommentsDock.BeginAnimation(UIElement.OpacityProperty, null);
-
-            if (open)
-            {
-                CommunityCommentsDock.Visibility = Visibility.Visible;
-                CommunityCommentsDock.IsHitTestVisible = true;
-                CommunityCommentsRow.Height = new GridLength(CommunityCommentsDockHeight);
-                if (animate && _appSettings.AnimationsEnabled)
-                {
-                    CommunityCommentsDock.Opacity = 0;
-                    CommunityCommentsDock.BeginAnimation(
-                        UIElement.OpacityProperty,
-                        new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(180)));
-                }
-                else
-                {
-                    CommunityCommentsDock.Opacity = 1;
-                }
-
-                return;
-            }
-
-            CommunityCommentsDock.IsHitTestVisible = false;
-            CommunityCommentsRow.Height = new GridLength(0);
-            if (animate && _appSettings.AnimationsEnabled && CommunityCommentsDock.Visibility == Visibility.Visible)
-            {
-                var fade = new DoubleAnimation(CommunityCommentsDock.Opacity, 0, TimeSpan.FromMilliseconds(160));
-                fade.Completed += (_, _) => CommunityCommentsDock.Visibility = Visibility.Collapsed;
-                CommunityCommentsDock.BeginAnimation(UIElement.OpacityProperty, fade);
-            }
-            else
-            {
-                CommunityCommentsDock.Visibility = Visibility.Collapsed;
-                CommunityCommentsDock.Opacity = 0;
-            }
+            if (dock is null) return;
+            dock.BeginAnimation(OpacityProperty, null);
+            dock.Visibility = open ? Visibility.Visible : Visibility.Collapsed;
+            dock.IsHitTestVisible = open;
+            if (open && animate && ArePlayerAnimationsEnabled)
+                dock.BeginAnimation(OpacityProperty, new DoubleAnimation(.75, 1, TimeSpan.FromMilliseconds(160)));
         }
 
         private void UpdateCommunityUiState()
         {
             if (ToggleChatDockButton is not null)
             {
-                ToggleChatDockButton.Visibility = _video.IsTwitchStream ? Visibility.Collapsed : Visibility.Visible;
+                ToggleChatDockButton.Visibility = Visibility.Visible;
                 ToggleChatDockButton.Content = _isCommunityChatOpen
                     ? PT("Закрыть чат", "Close chat")
-                    : PT("Чат слева", "Left chat");
+                    : PT("Чат", "Chat");
             }
 
             if (ToggleCommentsDockButton is not null)
             {
-                ToggleCommentsDockButton.Visibility = _video.IsTwitchStream ? Visibility.Collapsed : Visibility.Visible;
+                ToggleCommentsDockButton.Visibility = Visibility.Visible;
                 ToggleCommentsDockButton.Content = _isCommunityCommentsOpen
                     ? PT("Закрыть комментарии", "Close comments")
-                    : PT("Комментарии снизу", "Bottom comments");
+                    : PT("Комментарии", "Comments");
             }
 
             if (CommunityChatStatusText is not null)
@@ -710,10 +649,6 @@ namespace JokerDBDTracker
 
         private void ApplyCommunityFullscreenState(bool isFullscreen)
         {
-            if (_video.IsTwitchStream)
-            {
-                return;
-            }
 
             if (isFullscreen)
             {
@@ -1125,6 +1060,8 @@ namespace JokerDBDTracker
 
         private void SetCommunityDockOpen(PlayerCommunityDockKind kind, bool isOpen)
         {
+            if (!isOpen && (kind == PlayerCommunityDockKind.Chat ? WorkspaceChatTab.IsSelected : WorkspaceCommentsTab.IsSelected))
+                EffectsWorkspaceTabs.SelectedItem = EffectsWorkspaceEffectsTab;
             if (kind == PlayerCommunityDockKind.Chat)
             {
                 _isCommunityChatOpen = isOpen;
@@ -1239,7 +1176,7 @@ namespace JokerDBDTracker
             }
 
             var q = System.Web.HttpUtility.ParseQueryString(uri.Query);
-            return string.Equals(q.Get("v"), _video.VideoId, StringComparison.OrdinalIgnoreCase);
+            return string.Equals(q.Get("v"), _video.VideoId, StringComparison.Ordinal);
         }
     }
 }

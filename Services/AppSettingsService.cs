@@ -66,20 +66,8 @@ namespace JokerDBDTracker.Services
             Directory.CreateDirectory(appFolder);
             _settingsPath = Path.Combine(appFolder, "settings.json");
             var legacyFolder = AppStoragePaths.GetLegacyAppDataDirectory();
-            Directory.CreateDirectory(legacyFolder);
             _legacySettingsPath = Path.Combine(legacyFolder, "settings.json");
 
-            if (!File.Exists(_settingsPath) && File.Exists(_legacySettingsPath))
-            {
-                try
-                {
-                    File.Copy(_legacySettingsPath, _settingsPath, overwrite: false);
-                }
-                catch
-                {
-                    // Best-effort migration; defaults are used on read failure.
-                }
-            }
         }
 
         public async Task<AppSettingsData> LoadAsync(CancellationToken cancellationToken = default)
@@ -87,41 +75,29 @@ namespace JokerDBDTracker.Services
             await FileAccessLock.WaitAsync(cancellationToken);
             try
             {
-                if (!File.Exists(_settingsPath))
+                Exception? failure = null;
+                foreach (var path in new[] { _settingsPath, _settingsPath + ".bak", _legacySettingsPath })
                 {
-                    if (File.Exists(_legacySettingsPath))
+                    if (!File.Exists(path)) continue;
+                    byte[] payload;
+                    AppSettingsData settings;
+                    try
                     {
-                        try
-                        {
-                            File.Copy(_legacySettingsPath, _settingsPath, overwrite: false);
-                        }
-                        catch
-                        {
-                            // Ignore and continue with default settings.
-                        }
+                        payload = await File.ReadAllBytesAsync(path, cancellationToken);
+                        settings = Normalize(DeserializeSettingsPayload(payload) ?? throw new InvalidDataException("Missing settings."));
                     }
-
-                    if (!File.Exists(_settingsPath))
+                    catch (Exception ex) when (ex is not OperationCanceledException)
                     {
-                        if (File.Exists(_settingsPath + ".bak"))
-                            return Normalize(DeserializeSettingsPayload(await File.ReadAllBytesAsync(_settingsPath + ".bak", cancellationToken)) ?? new AppSettingsData());
-                        return new AppSettingsData();
+                        failure = ex;
+                        DiagnosticsService.LogException("Settings.Load", ex);
+                        continue;
                     }
+                    if (path != _settingsPath)
+                        await AtomicFile.RestoreAsync(_settingsPath, payload, cancellationToken);
+                    return settings;
                 }
-
-                var payload = await File.ReadAllBytesAsync(_settingsPath, cancellationToken);
-                var loaded = DeserializeSettingsPayload(payload);
-                return Normalize(loaded ?? new AppSettingsData());
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                DiagnosticsService.LogException("Settings.Load", ex);
-                if (File.Exists(_settingsPath + ".bak"))
-                {
-                    var backup = await File.ReadAllBytesAsync(_settingsPath + ".bak", cancellationToken);
-                    return Normalize(DeserializeSettingsPayload(backup) ?? new AppSettingsData());
-                }
-                throw new InvalidDataException("Settings could not be read. Original files were preserved.", ex);
+                if (failure is not null) throw new InvalidDataException("Settings recovery failed.", failure);
+                return new AppSettingsData();
             }
             finally
             {
@@ -163,6 +139,8 @@ namespace JokerDBDTracker.Services
                 document.RootElement.TryGetProperty("Payload", out var encryptedPayloadElement) &&
                 encryptedPayloadElement.ValueKind == JsonValueKind.String)
             {
+                if (document.RootElement.TryGetProperty("Version", out var version) && (!version.TryGetInt32(out var number) || number is < 1 or > 2))
+                    throw new InvalidDataException("Unsupported settings version.");
                 var encryptedPayloadText = encryptedPayloadElement.GetString();
                 if (string.IsNullOrWhiteSpace(encryptedPayloadText))
                 {
@@ -183,6 +161,7 @@ namespace JokerDBDTracker.Services
                 return JsonSerializer.Deserialize<AppSettingsData>(rawPayload);
             }
 
+            if (document.RootElement.TryGetProperty("Protected", out _)) throw new InvalidDataException("Missing settings payload.");
             return document.RootElement.Deserialize<AppSettingsData>();
         }
 
@@ -222,16 +201,6 @@ namespace JokerDBDTracker.Services
             settings.Effect14Bind = NormalizeBind(settings.Effect14Bind, "R");
             settings.Effect15Bind = NormalizeBind(settings.Effect15Bind, "T");
 
-            if (string.Equals(settings.AuraFarmSoundBind, "F1", StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(settings.LaughSoundBind, "F2", StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(settings.PsiSoundBind, "F3", StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(settings.RespectSoundBind, "F4", StringComparison.OrdinalIgnoreCase))
-            {
-                settings.AuraFarmSoundBind = "Y";
-                settings.LaughSoundBind = "U";
-                settings.PsiSoundBind = "I";
-                settings.RespectSoundBind = "O";
-            }
 
             var defaults = new AppSettingsData();
             var used = new HashSet<Key>();

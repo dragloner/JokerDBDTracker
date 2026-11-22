@@ -7,14 +7,14 @@ using System.Windows.Interop;
 
 namespace JokerDBDTracker
 {
-    public partial class PlayerWindow : Window
+    public partial class PlayerWindow : System.Windows.Controls.UserControl
     {
         private const int WmHotkey = 0x0312;
         private const uint ModNone = 0x0000;
 
         private void RegisterGlobalHotkeys()
         {
-            var windowHandle = new WindowInteropHelper(this).Handle;
+            var windowHandle = new WindowInteropHelper(_host).Handle;
             if (windowHandle == IntPtr.Zero)
             {
                 return;
@@ -43,7 +43,7 @@ namespace JokerDBDTracker
 
         private void UnregisterGlobalHotkeys()
         {
-            var windowHandle = new WindowInteropHelper(this).Handle;
+            var windowHandle = new WindowInteropHelper(_host).Handle;
             if (windowHandle != IntPtr.Zero)
             {
                 foreach (var (id, _) in _registeredHotkeys)

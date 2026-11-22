@@ -6,12 +6,12 @@ namespace JokerDBDTracker.Services
 {
     public class WatchHistoryData
     {
-        public Dictionary<string, DateTime> LastWatchedByVideoId { get; set; } = new(StringComparer.OrdinalIgnoreCase);
-        public Dictionary<string, int> LastPlaybackSecondsByVideoId { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, DateTime> LastWatchedByVideoId { get; set; } = new(StringComparer.Ordinal);
+        public Dictionary<string, int> LastPlaybackSecondsByVideoId { get; set; } = new(StringComparer.Ordinal);
         public HashSet<string> WatchedDays { get; set; } = new(StringComparer.Ordinal);
-        public HashSet<string> FavoriteVideoIds { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+        public HashSet<string> FavoriteVideoIds { get; set; } = new(StringComparer.Ordinal);
         public HashSet<string> Achievements { get; set; } = new(StringComparer.OrdinalIgnoreCase);
-        public HashSet<string> FirstViewRewardedVideoIds { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+        public HashSet<string> FirstViewRewardedVideoIds { get; set; } = new(StringComparer.Ordinal);
         public Dictionary<string, HashSet<string>> WatchedVideoIdsByDay { get; set; } = new(StringComparer.Ordinal);
         public int ClaimedQuestCount { get; set; }
         public int TotalXp { get; set; }

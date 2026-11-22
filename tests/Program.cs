@@ -180,6 +180,21 @@ await Test("Empty settings recover the last good backup", async () =>
     await File.WriteAllTextAsync(Path.Combine(AppStoragePaths.GetCurrentAppDataDirectory(), "settings.json"), string.Empty);
     Check((await service.LoadAsync()).UiScale == 1.1);
     await service.SaveAsync(settings);
+    await File.WriteAllTextAsync(Path.Combine(AppStoragePaths.GetCurrentAppDataDirectory(), "settings.json"), "{\"Protected\":true}");
+    Check((await service.LoadAsync()).UiScale == 1.1);
+});
+await Test("Custom F1–F4 bindings survive a save and restart", async () =>
+{
+    var service = new AppSettingsService();
+    var settings = await service.LoadAsync();
+    settings.AuraFarmSoundBind = "F1";
+    settings.LaughSoundBind = "F2";
+    settings.PsiSoundBind = "F3";
+    settings.RespectSoundBind = "F4";
+    await service.SaveAsync(settings);
+    var restored = await service.LoadAsync();
+    Check(restored.AuraFarmSoundBind == "F1" && restored.LaughSoundBind == "F2" &&
+          restored.PsiSoundBind == "F3" && restored.RespectSoundBind == "F4");
 });
 await Test("Wrong update size rejected", async () =>
 {
@@ -270,7 +285,7 @@ async Task RunUpdater(string source, string target)
 {
     var script = (string)Invoke(typeof(MainWindow), "BuildApplyUpdateScript", int.MaxValue, source, target, "no-executable-in-fixture.exe")!;
     var path = Path.Combine(Path.GetDirectoryName(source)!, "apply.ps1");
-    await File.WriteAllTextAsync(path, script);
+    await File.WriteAllTextAsync(path, script, new System.Text.UTF8Encoding(true));
     using var process = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
     {
         FileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "WindowsPowerShell", "v1.0", "powershell.exe"),
@@ -286,7 +301,7 @@ async Task RunUpdater(string source, string target)
 }
 await Test("Updater applies files using literal paths containing special characters", async () =>
 {
-    var dir = Fixture("updater A&B [literal]");
+    var dir = Fixture("updater A&B [кириллица]");
     var source = Path.Combine(dir, "stage"); var target = Path.Combine(dir, "app");
     Directory.CreateDirectory(source); Directory.CreateDirectory(target);
     await File.WriteAllTextAsync(Path.Combine(source, "app.dll"), "new");
@@ -322,5 +337,76 @@ await Test("Updater restores the old version after a failed copy", async () =>
     Check(!File.Exists(Path.Combine(target, "introduced.dll")));
     Check((await File.ReadAllTextAsync(Path.Combine(target, "update_apply.log"))).Contains("restoring backup"));
 });
+await Test("Updater rolls back even when its log cannot be written", async () =>
+{
+    var dir = Fixture("updater-unwritable-log");
+    var source = Path.Combine(dir, "stage");
+    var target = Path.Combine(dir, "app");
+    Directory.CreateDirectory(source);
+    Directory.CreateDirectory(Path.Combine(target, "update_apply.log"));
+    var lockedSource = Path.Combine(source, "app.dll");
+    await File.WriteAllTextAsync(lockedSource, "new");
+    await File.WriteAllTextAsync(Path.Combine(target, "app.dll"), "old");
+    using var hold = new FileStream(lockedSource, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+    await RunUpdater(source, target);
+    Check(await File.ReadAllTextAsync(Path.Combine(target, "app.dll")) == "old");
+    Check((await File.ReadAllTextAsync(Path.Combine(target, "update_result.txt"))).Trim() == "restored");
+});
+
+await Test("Updater removes only obsolete package-owned files", async () =>
+{
+    var dir = Fixture("updater-manifest");
+    var source = Path.Combine(dir, "stage");
+    var target = Path.Combine(dir, "app");
+    Directory.CreateDirectory(source);
+    Directory.CreateDirectory(target);
+    await File.WriteAllTextAsync(Path.Combine(source, "obsolete.dll"), "v1");
+    await File.WriteAllTextAsync(Path.Combine(source, "edited.txt"), "v1");
+    await RunUpdater(source, target);
+    await File.WriteAllTextAsync(Path.Combine(target, "edited.txt"), "my text");
+    await File.WriteAllTextAsync(Path.Combine(target, "personal.txt"), "personal");
+    File.Delete(Path.Combine(source, "obsolete.dll"));
+    File.Delete(Path.Combine(source, "edited.txt"));
+    await File.WriteAllTextAsync(Path.Combine(source, "current.dll"), "v2");
+    await RunUpdater(source, target);
+    Check(!File.Exists(Path.Combine(target, "obsolete.dll")));
+    Check(await File.ReadAllTextAsync(Path.Combine(target, "edited.txt")) == "my text");
+    Check(File.Exists(Path.Combine(target, "personal.txt")));
+    Check(File.Exists(Path.Combine(target, "current.dll")));
+});
+
+await Test("The player can be hosted inside the main WPF window", async () =>
+{
+    var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    var ui = new Thread(() =>
+    {
+        try
+        {
+            var app = new App();
+            app.InitializeComponent();
+            var shell = new MainWindow();
+            var workspace = (System.Windows.Controls.ContentControl)shell.FindName("PlayerWorkspace");
+            var player = (PlayerWindow)Activator.CreateInstance(typeof(PlayerWindow),
+                BindingFlags.Instance | BindingFlags.NonPublic, null,
+                [shell, new YouTubeVideo { VideoId = "abcdefghijk", Title = "Layout fixture" }, 0, null], null)!;
+            workspace.Content = player;
+            workspace.Visibility = System.Windows.Visibility.Visible;
+            var rootView = (System.Windows.FrameworkElement)shell.Content;
+            rootView.Measure(new System.Windows.Size(1366, 768));
+            rootView.Arrange(new System.Windows.Rect(0, 0, 1366, 768));
+            Check(player.ActualWidth > 1000, $"Player width: {player.ActualWidth}. Workspace width: {workspace.ActualWidth}.");
+            Check(player.FindName("Player") is not null, "Embedded WebView is missing");
+            workspace.Content = null;
+            shell.Close();
+            completed.SetResult();
+        }
+        catch (Exception ex) { completed.SetException(ex); }
+    });
+    ui.IsBackground = true;
+    ui.SetApartmentState(ApartmentState.STA);
+    ui.Start();
+    await completed.Task.WaitAsync(TimeSpan.FromSeconds(15));
+});
+
 Console.WriteLine($"RESULT: {passed} passed, {failed} failed");
 Environment.ExitCode = failed == 0 ? 0 : 1;

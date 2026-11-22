@@ -10,6 +10,26 @@ namespace JokerDBDTracker
             await LoadVideosAsync();
         }
 
+        private System.Windows.DataTemplate? _catalogListTemplate;
+        private System.Windows.Controls.ItemsPanelTemplate? _catalogListPanel;
+        private bool _catalogUsesGrid;
+
+        private void CatalogLayoutButton_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            _catalogListTemplate ??= VideoList.ItemTemplate;
+            _catalogListPanel ??= VideoList.ItemsPanel;
+            _catalogUsesGrid = !_catalogUsesGrid;
+            VideoList.ItemTemplate = _catalogUsesGrid
+                ? (System.Windows.DataTemplate)VideoList.Resources["CatalogGridCard"] : _catalogListTemplate;
+            VideoList.ItemsPanel = _catalogUsesGrid
+                ? (ItemsPanelTemplate)VideoList.Resources["CatalogGridPanel"] : _catalogListPanel;
+            System.Windows.Controls.ScrollViewer.SetCanContentScroll(VideoList, !_catalogUsesGrid);
+            RefreshCatalogLayoutLabel();
+        }
+
+        private void RefreshCatalogLayoutLabel() => CatalogLayoutButton.Content =
+            _catalogUsesGrid ? T("Список", "List") : T("Сетка", "Grid");
+
         private void SearchDebounceTimer_Tick(object? sender, EventArgs e)
         {
             _searchDebounceTimer.Stop();
@@ -186,6 +206,7 @@ namespace JokerDBDTracker
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             _searchText = SearchBox.Text.Trim();
+            if (_searchText.Length > 0 && TopTabControl.SelectedIndex == 0) SelectTopTab(5);
             _searchDebounceTimer.Stop();
             _searchDebounceTimer.Start();
         }
@@ -309,7 +330,7 @@ namespace JokerDBDTracker
             }
 
             return GetFavoriteClipsSource().Any(timecode =>
-                string.Equals(timecode.VideoId, video.VideoId, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(timecode.VideoId, video.VideoId, StringComparison.Ordinal) &&
                 MatchesTimecodeSearch(timecode, query));
         }
 
@@ -328,19 +349,36 @@ namespace JokerDBDTracker
             await PlayNextInQueueAsync();
         }
 
+        private bool _playingQueue;
+
         private async Task PlayNextInQueueAsync()
         {
-            if (_watchQueue.Count == 0) return;
-            var video = _watchQueue[0];
-            _watchQueue.RemoveAt(0);
-            UpdateWatchQueueUI();
-            await OpenVideoAsync(video);
-            // After player closes, continue with next if queue still has items.
-            if (_watchQueue.Count > 0)
+            if (_playingQueue || _isOpeningVideo) return;
+            _playingQueue = true;
+            PlayQueueButton.IsEnabled = false;
+            try
             {
-                await PlayNextInQueueAsync();
+                while (_watchQueue.Count > 0)
+                {
+                    var video = _watchQueue[0];
+                    if (!await OpenVideoAsync(video)) break;
+                    _watchQueue.Remove(video);
+                    UpdateWatchQueueUI();
+                    if (!_continueQueue || _closeAfterPlayer) break;
+                }
+            }
+            finally
+            {
+                _playingQueue = false;
+                _continueQueue = true;
+                PlayQueueButton.IsEnabled = true;
             }
         }
+
+        private bool _continueQueue = true;
+
+        internal bool IsPlayingQueue => _playingQueue;
+        internal void StopAfterCurrentVideo() => _continueQueue = false;
 
         private void UpdateWatchQueueUI()
         {

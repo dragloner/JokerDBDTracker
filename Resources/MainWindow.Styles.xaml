@@ -3,9 +3,9 @@
                     xmlns:ui="clr-namespace:JokerDBDTracker">
     <ResourceDictionary.MergedDictionaries><ResourceDictionary Source="Brand.xaml"/></ResourceDictionary.MergedDictionaries>
         <LinearGradientBrush x:Key="AppBackground" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#131611" Offset="0"/>
-            <GradientStop Color="#181C15" Offset="0.45"/>
-            <GradientStop Color="#1D2119" Offset="1"/>
+            <GradientStop Color="#101218" Offset="0"/>
+            <GradientStop Color="#12151C" Offset="0.45"/>
+            <GradientStop Color="#161923" Offset="1"/>
         </LinearGradientBrush>
 
         <SolidColorBrush x:Key="{x:Static SystemColors.WindowBrushKey}" Color="#EFEEEB"/>
@@ -452,7 +452,8 @@
                             </Grid>
                         </Border>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Plate" Property="BorderBrush" Value="#D8D5CD"/></Trigger>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Plate" Property="Background" Value="#31303B"/></Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Plate" Property="BorderThickness" Value="1"/><Setter TargetName="Plate" Property="BorderBrush" Value="#F1C47E"/></Trigger>
                             <Trigger Property="IsPressed" Value="True"><Setter TargetName="Plate" Property="Opacity" Value="0.7"/></Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>

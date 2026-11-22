@@ -322,15 +322,11 @@ namespace JokerDBDTracker
                 return true;
             }
 
-            if (ShouldBypassPlayerKeyHandlingBecauseTyping())
+            if (_isWebViewTextInputActive || ShouldBypassPlayerKeyHandlingBecauseTyping())
             {
                 return true;
             }
 
-            if (_video.IsTwitchStream && _isWebViewTextInputActive)
-            {
-                return true;
-            }
 
             return false;
         }
@@ -1046,7 +1042,7 @@ namespace JokerDBDTracker
             _appSettings.SoundSpamMode = PlayerSfxSpamToggle?.IsChecked == true;
             try
             {
-                await _settingsService.SaveAsync(_appSettings);
+                if (_canSavePlayerSettings) await _settingsService.SaveAsync(_appSettings);
             }
             catch
             {

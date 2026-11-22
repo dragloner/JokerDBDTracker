@@ -28,7 +28,7 @@ public partial class PlayerWindow
 
     private async Task PersistPlaybackPositionAsync(bool force)
     {
-        if (_video.IsTwitchStream || ProgressCheckpoint is null) return;
+        if (ProgressCheckpoint is null) return;
         if (!force && (_lastPlaybackPersistTimestamp == 0 ? double.PositiveInfinity : Stopwatch.GetElapsedTime(_lastPlaybackPersistTimestamp).TotalSeconds) < PlaybackPersistIntervalSeconds) return;
         await _checkpointGate.WaitAsync();
         try

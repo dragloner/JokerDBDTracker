@@ -23,6 +23,7 @@ namespace JokerDBDTracker
 
         private void UpdateTopNavButtonsVisualState()
         {
+            ApplyTopNavState(CatalogNavButton, TopTabControl.SelectedIndex == 5);
             ApplyTopNavState(HomeNavButton, TopTabControl.SelectedIndex == 0);
             ApplyTopNavState(FavoritesNavButton, TopTabControl.SelectedIndex == 1);
             ApplyTopNavState(ProfileNavButton, TopTabControl.SelectedIndex == 2 || TopTabControl.SelectedIndex == 3);
@@ -45,32 +46,32 @@ namespace JokerDBDTracker
 
         private void TopTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (!IsLoaded)
+            if (!IsLoaded || e.OriginalSource != TopTabControl)
             {
                 return;
             }
 
             UpdateTopNavButtonsVisualState();
+            RefreshLibraryPageTitle();
 
             var profileMode = IsProfileTabSelected();
             var questsMode = IsQuestsTabSelected();
             var settingsMode = IsSettingsTabSelected();
             var favoritesMode = IsFavoritesTabSelected();
             var isOverlayTab = profileMode || questsMode || settingsMode;
-            StreamsPanel.Visibility = isOverlayTab ? Visibility.Collapsed : Visibility.Visible;
-            RecommendationsPanel.Visibility = (!isOverlayTab && !favoritesMode) ? Visibility.Visible : Visibility.Collapsed;
+            var catalogMode = TopTabControl.SelectedIndex == 5;
+            StreamsPanel.Visibility = catalogMode || favoritesMode ? Visibility.Visible : Visibility.Collapsed;
+            RecommendationsPanel.Visibility = (!isOverlayTab && !favoritesMode && !catalogMode) ? Visibility.Visible : Visibility.Collapsed;
             FavoritesClipsPanel.Visibility = (!isOverlayTab && favoritesMode) ? Visibility.Visible : Visibility.Collapsed;
             FavoritesSummaryPanel.Visibility = (!isOverlayTab && favoritesMode) ? Visibility.Visible : Visibility.Collapsed;
-            LibraryHero.Visibility = isOverlayTab || favoritesMode ? Visibility.Collapsed : Visibility.Visible;
-            HomeSummaryPanel.Visibility = isOverlayTab || favoritesMode ? Visibility.Collapsed : Visibility.Visible;
+            LibraryHero.Visibility = isOverlayTab || favoritesMode || catalogMode ? Visibility.Collapsed : Visibility.Visible;
             ProfilePanel.Visibility = profileMode ? Visibility.Visible : Visibility.Collapsed;
             QuestsPanel.Visibility = questsMode ? Visibility.Visible : Visibility.Collapsed;
             SettingsPanel.Visibility = settingsMode ? Visibility.Visible : Visibility.Collapsed;
-            TwitchWatchButton.Visibility = (!isOverlayTab && !favoritesMode) ? Visibility.Visible : Visibility.Collapsed;
-            RecommendationsColumn.Width = isOverlayTab
+            RecommendationsColumn.Width = !favoritesMode
                 ? new GridLength(0)
-                : new GridLength(favoritesMode ? 340 : (MainRootBorder.ActualHeight < CompactLayoutHeight ? 290 : 320));
-            MainColumnsSpacer.Width = isOverlayTab
+                : new GridLength(340);
+            MainColumnsSpacer.Width = !favoritesMode
                 ? new GridLength(0)
                 : new GridLength(12);
 
@@ -96,6 +97,7 @@ namespace JokerDBDTracker
             }
 
             RefreshSearchPlaceholderText();
+            AnimatePanelEntrance(LibraryHero);
 
             foreach (var panel in new FrameworkElement[]
                      {
@@ -112,6 +114,21 @@ namespace JokerDBDTracker
                 AnimatePanelEntrance(panel);
             }
         }
+
+        private void RefreshLibraryPageTitle()
+        {
+            LibraryPageTitle.Text = TopTabControl.SelectedIndex switch
+            {
+                1 => T("Избранное", "Favorites"),
+                2 => T("Профиль", "Profile"),
+                3 => T("Задания", "Quests"),
+                4 => T("Настройки", "Settings"),
+                5 => T("Каталог", "Catalog"),
+                _ => T("Главная", "Home")
+            };
+        }
+
+        private void CatalogNavButton_Click(object sender, RoutedEventArgs e) => SelectTopTab(5);
 
         private void HomeNavButton_Click(object sender, RoutedEventArgs e)
         {

@@ -24,12 +24,12 @@ namespace JokerDBDTracker
             {
                 _timecodes = await _timecodeService.LoadAsync();
             }
-            catch
+            catch (Exception ex)
             {
-                _timecodes = [];
+                DiagnosticsService.LogException("Timecodes.Load", ex);
+                MessageBox.Show(T("Не удалось прочитать сохранённые моменты.", "Saved moments could not be read."));
             }
 
-            List<Models.YouTubeVideo> videos = [];
             try
             {
                 var history = await _watchHistoryService.LoadAsync();
@@ -169,28 +169,39 @@ namespace JokerDBDTracker
                     T("Ошибка", "Error"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
-                return;
             }
 
+            var cached = await _streamsService.ReadCachedCatalogAsync();
+            if (_allVideos.Count == 0 && cached is not null)
+                ApplyCatalog(cached.Videos);
             try
             {
                 using var streamsLoadCts = new CancellationTokenSource(TimeSpan.FromSeconds(35));
-                videos = await _streamsService.GetAllStreamsAsync(StreamsUrl, streamsLoadCts.Token);
+                var result = await _streamsService.GetAllStreamsAsync(StreamsUrl, streamsLoadCts.Token);
+                if (result.IsComplete || _allVideos.Count == 0)
+                    ApplyCatalog(result.Videos);
+                StatusText.Text = T("YouTube вернул только часть каталога.", "YouTube returned a partial catalog.");
+                StatusText.Visibility = result.IsComplete ? Visibility.Collapsed : Visibility.Visible;
             }
             catch (Exception ex)
             {
                 DiagnosticsService.LogException("Catalog", ex);
                 StatusText.Text = T("Каталог недоступен. Проверьте подключение и нажмите «Обновить каталог».", "Catalog unavailable. Check your connection and refresh the catalog.");
                 StatusText.Visibility = Visibility.Visible;
-                videos = [];
+                if (cached?.CachedAtUtc is DateTime cachedAt)
+                    StatusText.Text = T($"Сохранённый каталог от {cachedAt.ToLocalTime():g}", $"Cached catalog from {cachedAt.ToLocalTime():g}");
             }
 
+        }
+
+        private void ApplyCatalog(List<Models.YouTubeVideo> videos)
+        {
             try
             {
                 // Build a per-video timecode count lookup.
                 var timecodeCountsByVideoId = _timecodes
-                    .GroupBy(t => t.VideoId, StringComparer.OrdinalIgnoreCase)
-                    .ToDictionary(g => g.Key, g => g.Count(), StringComparer.OrdinalIgnoreCase);
+                    .GroupBy(t => t.VideoId, StringComparer.Ordinal)
+                    .ToDictionary(g => g.Key, g => g.Count(), StringComparer.Ordinal);
 
                 if (videos.Count > 0) StatusText.Visibility = Visibility.Collapsed;
                 _allVideos.Clear();
@@ -220,6 +231,7 @@ namespace JokerDBDTracker
                 RefreshProfile();
                 RefreshHomeSummary();
                 UpdateStreakText();
+                if (!_introDismissed && _allVideos.Count > 0) PsiIntro.SetCatalogState(true, false);
             }
             catch (Exception ex)
             {

@@ -17,7 +17,7 @@ using JokerDBDTracker.Services;
 
 namespace JokerDBDTracker
 {
-    public partial class PlayerWindow : Window
+    public partial class PlayerWindow : System.Windows.Controls.UserControl
     {
         private void UpdateEffectSessionStats()
         {

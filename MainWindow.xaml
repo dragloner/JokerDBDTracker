@@ -35,51 +35,29 @@
     </Window.Resources>
 
     <Border x:Name="MainRootBorder" SizeChanged="BrandShell_SizeChanged"
-            Margin="14"
-            Padding="20"
+            Margin="0"
+            Padding="0"
             BorderBrush="#383C31" BorderThickness="1"
             Background="{StaticResource AppBackground}"
-            CornerRadius="26"
+            CornerRadius="0"
             MouseLeftButtonDown="MainRootBorder_MouseLeftButtonDown">
         <Grid>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="174"/>
-                <ColumnDefinition Width="20"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-            <Grid Grid.ColumnSpan="3" IsHitTestVisible="False" ClipToBounds="True">
-                <Ellipse Width="720" Height="620" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-280,-220,0">
-                    <Ellipse.Fill><RadialGradientBrush><GradientStop Color="#24988F7A" Offset="0"/><GradientStop Color="#00988F7A" Offset="1"/></RadialGradientBrush></Ellipse.Fill>
-                </Ellipse>
-                <Ellipse Width="700" Height="760" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="-260,0,0,-300">
-                    <Ellipse.Fill><RadialGradientBrush><GradientStop Color="#30887E69" Offset="0"/><GradientStop Color="#00887E69" Offset="1"/></RadialGradientBrush></Ellipse.Fill>
-                </Ellipse>
-            </Grid>
-            <Border Grid.Column="0" CornerRadius="22" Background="#6431322B" BorderBrush="#28ECEBE7" BorderThickness="1" Padding="16,24">
-                <Grid>
-                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                    <StackPanel>
-                        <Border Width="66" Height="66" HorizontalAlignment="Left" CornerRadius="22" BorderBrush="#796344" BorderThickness="1">
-                            <Border.Background><ImageBrush ImageSource="{StaticResource Brand.Portrait}" Stretch="UniformToFill"/></Border.Background>
-                        </Border>
-                        <TextBlock Text="JOKERDBD" Foreground="#F4F0E7" FontSize="19" FontWeight="Bold" Margin="0,18,0,0"/>
-                        <TextBlock Text="Стримы и моменты" Foreground="#A9A99B" FontSize="11" Margin="0,5,0,30"/>
-                        <Button x:Name="HomeNavButton" Tag="&#xE80F;" Style="{StaticResource TopNavButtonStyle}" Content="Главная" Click="HomeNavButton_Click"/>
-                        <Button x:Name="FavoritesNavButton" Tag="&#xE734;" Style="{StaticResource TopNavButtonStyle}" Content="Избранное" Click="FavoritesNavButton_Click"/>
-                        <Button x:Name="ProfileNavButton" Tag="&#xE77B;" Style="{StaticResource TopNavButtonStyle}" Content="Профиль" Click="ProfileNavButton_Click"/>
-                        <Button x:Name="SettingsNavButton" Tag="&#xE713;" Style="{StaticResource TopNavButtonStyle}" Content="Настройки" Click="SettingsNavButton_Click"/>
+            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+            <Border x:Name="LibraryNavigation" Grid.Row="0" Height="56" Padding="14,5" Background="#13151C" BorderBrush="#262933" BorderThickness="0,0,0,1">
+                <DockPanel LastChildFill="False">
+                    <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                        <Border Width="38" Height="38" CornerRadius="19" Margin="0,0,10,0"><Border.Background><ImageBrush ImageSource="{StaticResource Brand.Portrait}" Stretch="UniformToFill"/></Border.Background></Border>
+                        <TextBlock Text="JOKERDBD" FontSize="18" FontWeight="Bold" Foreground="#FFF6EA" VerticalAlignment="Center" Margin="0,0,28,0"/>
+                        <Button x:Name="HomeNavButton" Tag="&#xE80F;" Margin="2,0" BorderThickness="0" Padding="12,5" Style="{StaticResource TopNavButtonStyle}" Content="Главная" Click="HomeNavButton_Click"/>
+                        <Button x:Name="CatalogNavButton" Tag="&#xE8A9;" Margin="2,0" BorderThickness="0" Padding="12,5" Style="{StaticResource TopNavButtonStyle}" Content="Каталог" Click="CatalogNavButton_Click"/>
+                        <Button x:Name="FavoritesNavButton" Tag="&#xE734;" Margin="2,0" BorderThickness="0" Padding="12,5" Style="{StaticResource TopNavButtonStyle}" Content="Избранное" Click="FavoritesNavButton_Click"/>
+                        <Button x:Name="ProfileNavButton" Tag="&#xE77B;" Margin="2,0" BorderThickness="0" Padding="12,5" Style="{StaticResource TopNavButtonStyle}" Content="Профиль" Click="ProfileNavButton_Click"/>
+                        <Button x:Name="SettingsNavButton" Tag="&#xE713;" Margin="2,0" BorderThickness="0" Padding="12,5" Style="{StaticResource TopNavButtonStyle}" Content="Настройки" Click="SettingsNavButton_Click"/>
                     </StackPanel>
-                    <StackPanel Grid.Row="2">
-                        <Border x:Name="SidebarPhoto" Height="126" CornerRadius="12" Margin="0,0,0,18" BorderBrush="#383B32" BorderThickness="1">
-                            <Border.Background><ImageBrush ImageSource="{StaticResource Brand.Mask}" Stretch="UniformToFill" AlignmentY="Top"/></Border.Background>
-                        </Border>
-                        <Border Height="1" Background="#22EBE9E5" Margin="0,0,0,18"/>
-                        <Button Content="Обновить каталог" x:Name="ReloadCatalogButton" FontSize="12" Padding="8,10" Click="ReloadCatalogButton_Click"/>
-                        <TextBlock Text="by dragloner" Foreground="#746C5A" FontSize="10" TextAlignment="Center" Margin="0,6,0,0"/>
-                    </StackPanel>
-                </Grid>
+                    <Button DockPanel.Dock="Right" x:Name="ReloadCatalogButton" Content="Обновить каталог" Click="ReloadCatalogButton_Click" Margin="10,0,0,0" Padding="12,4"/>
+                </DockPanel>
             </Border>
-            <Grid Grid.Column="2">
+            <Grid x:Name="LibraryWorkspace" Grid.Row="1" Margin="24,10,24,12">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="12"/>
@@ -93,11 +71,7 @@
             </Grid.RowDefinitions>
 
             <Border Grid.Row="0"
-                    Padding="18"
-                    CornerRadius="18"
-                    Background="#A5282924"
-                    BorderBrush="#35EAE8E3"
-                    BorderThickness="1"
+                    Padding="0,2" Background="Transparent"
                     MouseLeftButtonDown="TopHeaderBorder_MouseLeftButtonDown">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -108,43 +82,7 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <StackPanel VerticalAlignment="Center">
-                        <TextBlock Text="JokerDBD"
-                                   Foreground="#FAF9F8"
-                                   FontSize="23"
-                                   FontWeight="ExtraBold"/>
-                        <StackPanel Margin="3,-2,0,0" Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock x:Name="AppVersionText"
-                                       Text="v1.4.11"
-                                       Foreground="#C8C3B8"
-                                       FontSize="14"
-                                       FontWeight="SemiBold"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock x:Name="UpdateStatusText"
-                                       Margin="12,0,0,0"
-                                       Text="● Проверка обновлений..."
-                                       Foreground="#E2C17A"
-                                       FontSize="13"
-                                       FontWeight="SemiBold"
-                                       VerticalAlignment="Center"/>
-                            <Button x:Name="UpdateProgramButton"
-                                    Margin="12,0,0,0"
-                                    Padding="10,4"
-                                    FontSize="13"
-                                    FontWeight="Bold"
-                                    Content="Обновить программу"
-                                    Visibility="Collapsed"
-                                    Click="UpdateProgramButton_Click"/>
-                            <Button x:Name="RestartProgramButton"
-                                    Margin="8,0,0,0"
-                                    Padding="10,4"
-                                    FontSize="13"
-                                    FontWeight="Bold"
-                                    Content="Перезапустить программу"
-                                    Visibility="Collapsed"
-                                    Click="RestartProgramButton_Click"/>
-                        </StackPanel>
-                    </StackPanel>
+                    <TextBlock x:Name="LibraryPageTitle" Text="Главная" FontSize="24" FontWeight="SemiBold" Foreground="#F4F0E7" VerticalAlignment="Center"/>
 
                     <Border Grid.Column="1"
                             Margin="8,0,0,0"
@@ -219,34 +157,16 @@
                 </Grid>
             </Border>
 
-            <Border x:Name="LibraryHero" Grid.Row="2" CornerRadius="20" BorderBrush="#454333" BorderThickness="1" Background="#20221B" ClipToBounds="True">
-                <Grid x:Name="HeroLayout" MinHeight="190">
-                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="350"/></Grid.ColumnDefinitions>
-                    <StackPanel x:Name="HeroContent" Margin="26,20,18,20" VerticalAlignment="Center">
-                        <TextBlock x:Name="LibraryHeroTitle" Text="Библиотека стримов" Foreground="#F4F0E7" FontSize="30" FontWeight="SemiBold"/>
-                        <TextBlock x:Name="HeroStreamTitle" Text="Выберите стрим для просмотра" Foreground="#BBBBAA" FontSize="13" Margin="0,8,0,16" TextTrimming="CharacterEllipsis" MaxHeight="36" TextWrapping="Wrap"/>
-                        <StackPanel Orientation="Horizontal">
-                            <Button x:Name="HeroStartButton" Style="{StaticResource Brand.PrimaryButton}" IsEnabled="False" Click="HeroStartButton_Click">
-                                <StackPanel Orientation="Horizontal"><TextBlock Text="▶" FontSize="13" VerticalAlignment="Center" Margin="0,0,12,0"/><TextBlock x:Name="HeroStartText" Text="Старт"/></StackPanel>
-                            </Button>
-                            <Button x:Name="TwitchWatchButton" Margin="16,0,0,0" Padding="14,10" FontSize="13" Click="TwitchWatchButton_Click">
-                                <TextBlock x:Name="TwitchWatchButtonText" Text="Открыть Twitch"/>
-                            </Button>
-                            <TextBlock x:Name="HeroResumeText" Foreground="#A5A696" FontSize="12" Margin="16,0,0,0" VerticalAlignment="Center"/>
-                        </StackPanel>
+            <Border x:Name="LibraryHero" Grid.Row="2" Background="#191C26" ClipToBounds="True">
+                <Grid x:Name="HeroLayout" MinHeight="172">
+                    <Image Source="{StaticResource Brand.Medals}" HorizontalAlignment="Right" Width="680" Stretch="UniformToFill"/>
+                    <Image Source="{Binding ThumbnailUrl}" x:Name="HeroCover" HorizontalAlignment="Right" Width="680" Stretch="UniformToFill"/>
+                    <Rectangle><Rectangle.Fill><LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5"><GradientStop Color="#191C26" Offset="0.12"/><GradientStop Color="#F2191C26" Offset="0.38"/><GradientStop Color="#19191C26" Offset="0.88"/></LinearGradientBrush></Rectangle.Fill></Rectangle>
+                    <StackPanel x:Name="HeroContent" HorizontalAlignment="Left" VerticalAlignment="Center" MaxWidth="665" Margin="28,16">
+                        <TextBlock x:Name="LibraryHeroTitle" Text="ВИДЕО JOKERDBD" Foreground="#F1C47E" FontWeight="SemiBold"/>
+                        <TextBlock x:Name="HeroStreamTitle" Foreground="White" FontSize="30" FontWeight="SemiBold" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="84" Margin="0,5,0,12"/>
+                        <StackPanel Orientation="Horizontal"><Button x:Name="HeroStartButton" Style="{StaticResource Brand.PrimaryButton}" IsEnabled="False" Click="HeroStartButton_Click"><TextBlock x:Name="HeroStartText" Text="Смотреть"/></Button><TextBlock x:Name="HeroResumeText" Foreground="#E5E1DC" Margin="14,0" VerticalAlignment="Center"/></StackPanel>
                     </StackPanel>
-                    <Grid Grid.Column="1" Margin="10,16,18,16" IsHitTestVisible="False">
-                        <Grid.ColumnDefinitions><ColumnDefinition Width="1.1*"/><ColumnDefinition Width="10"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                        <Border CornerRadius="13" BorderBrush="#756345" BorderThickness="1" RenderTransformOrigin="0.5,0.5">
-                            <Border.RenderTransform><RotateTransform Angle="-4"/></Border.RenderTransform>
-                            <Border.Background><ImageBrush ImageSource="{StaticResource Brand.Medals}" Stretch="UniformToFill" AlignmentY="Top"/></Border.Background>
-                        </Border>
-                        <Grid Grid.Column="2" Margin="0,5,0,5">
-                            <Grid.RowDefinitions><RowDefinition/><RowDefinition Height="8"/><RowDefinition/></Grid.RowDefinitions>
-                            <Border CornerRadius="12"><Border.Background><ImageBrush ImageSource="{StaticResource Brand.Smile}" Stretch="UniformToFill"/></Border.Background></Border>
-                            <Border Grid.Row="2" CornerRadius="12"><Border.Background><ImageBrush ImageSource="{StaticResource Brand.Reaction}" Stretch="UniformToFill"/></Border.Background></Border>
-                        </Grid>
-                    </Grid>
                 </Grid>
             </Border>
 
@@ -261,7 +181,7 @@
                 <TabItem Header="Избранное"/>
                 <TabItem Header="Профиль"/>
                 <TabItem Header="Задания"/>
-                <TabItem Header="Настройки"/>
+                <TabItem Header="Настройки"/><TabItem Header="Каталог"/>
             </TabControl>
 
             <Grid Grid.Row="4" Grid.RowSpan="3" Margin="0,12,0,0">
@@ -273,15 +193,15 @@
                     </LinearGradientBrush>
                     <Style x:Key="HomeGlassPanelStyle" TargetType="Border">
                         <Setter Property="CornerRadius" Value="18"/>
-                        <Setter Property="BorderThickness" Value="1"/>
-                        <Setter Property="BorderBrush" Value="#30EAE8E3"/>
-                        <Setter Property="Background" Value="{StaticResource HomePanelBackgroundBrush}"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="BorderBrush" Value="#00232830"/>
+                        <Setter Property="Background" Value="Transparent"/>
                     </Style>
                     <Style x:Key="HomeInnerGlassStyle" TargetType="Border">
                         <Setter Property="CornerRadius" Value="14"/>
-                        <Setter Property="BorderThickness" Value="1"/>
+                        <Setter Property="BorderThickness" Value="0"/>
                         <Setter Property="BorderBrush" Value="#56574C"/>
-                        <Setter Property="Background" Value="#A91B1B18"/>
+                        <Setter Property="Background" Value="Transparent"/>
                     </Style>
                 </Grid.Resources>
                 <Grid.RowDefinitions>
@@ -290,12 +210,12 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition x:Name="RecommendationsColumn" Width="320"/>
-                    <ColumnDefinition x:Name="MainColumnsSpacer" Width="16"/>
+                    <ColumnDefinition x:Name="RecommendationsColumn" Width="0"/>
+                    <ColumnDefinition x:Name="MainColumnsSpacer" Width="0"/>
                     <ColumnDefinition x:Name="StreamsColumn" Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <Border x:Name="HomeSummaryPanel"
+                <Border x:Name="HomeSummaryPanel" Visibility="Collapsed"
                         Grid.Row="0"
                         Grid.ColumnSpan="3"
                         Padding="22,20"
@@ -560,7 +480,7 @@
                     </Grid>
                 </Border>
 
-                <Border x:Name="StreamsPanel"
+                <Border x:Name="StreamsPanel" Visibility="Collapsed"
                         Grid.Row="2"
                         Grid.Column="2"
                         Padding="14"
@@ -625,8 +545,9 @@
                                 </StackPanel>
 
                                 <!-- Random stream button -->
+                                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <Button x:Name="CatalogLayoutButton" Content="Сетка" Margin="0,0,8,0" Padding="10,5" Click="CatalogLayoutButton_Click"/>
                                 <Button x:Name="RandomStreamButton"
-                                        Grid.Column="1"
                                         Content="Случайный"
                                         Padding="10,5"
                                         FontSize="13"
@@ -637,6 +558,7 @@
                                         Foreground="#CFCAC0"
                                         ToolTip="Открыть случайный стрим из текущего списка"
                                         Click="RandomStreamButton_Click"/>
+                                </StackPanel>
                             </Grid>
                         </Border>
 
@@ -670,6 +592,20 @@
                                      SelectionChanged="VideoList_SelectionChanged">
                                 <ListBox.Resources>
                                     <Style TargetType="ScrollBar" BasedOn="{StaticResource UnifiedScrollBarStyle}"/>
+                                    <ItemsPanelTemplate x:Key="CatalogGridPanel"><WrapPanel/></ItemsPanelTemplate>
+                                    <DataTemplate x:Key="CatalogGridCard">
+                                        <StackPanel Width="244" Margin="3,5,5,9">
+                                            <Border Height="136" CornerRadius="9" Background="#202531" ClipToBounds="True">
+                                                <Image Source="{Binding ThumbnailUrl}" Stretch="UniformToFill"/>
+                                            </Border>
+                                            <TextBlock Text="{Binding Title}" Foreground="#F8F7F5" TextWrapping="Wrap" Height="42" FontSize="15" Margin="2,7,2,2"/>
+                                            <DockPanel Margin="0,3">
+                                                <Button DockPanel.Dock="Right" Content="{Binding FavoriteGlyph}" Tag="{Binding VideoId}" Padding="8,3" Click="ToggleFavoriteButton_Click"/>
+                                                <Button DockPanel.Dock="Right" Content="+" Tag="{Binding VideoId}" Padding="8,3" Margin="0,0,5,0" Click="AddToQueueButton_Click"/>
+                                                <TextBlock Text="{Binding PublishedAtText}" Foreground="#A7ACB9" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                                            </DockPanel>
+                                        </StackPanel>
+                                    </DataTemplate>
                                 </ListBox.Resources>
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
@@ -893,25 +829,19 @@
                     </Grid>
                 </Border>
 
-                <Border x:Name="RecommendationsPanel"
+                <Border x:Name="RecommendationsPanel" Grid.ColumnSpan="3"
                         Grid.Row="2"
                         Grid.Column="0"
                         Padding="14"
                         Style="{StaticResource HomeGlassPanelStyle}">
                     <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>   <!-- Continue Watching -->
-                            <RowDefinition Height="8"/>
-                            <RowDefinition Height="Auto"/>   <!-- Watch Queue -->
-                            <RowDefinition Height="8"/>
-                            <RowDefinition Height="*"/>      <!-- Recommendations -->
-                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition x:Name="QueueColumn" Width="Auto"/><ColumnDefinition/></Grid.ColumnDefinitions>
 
                         <!-- ── Continue Watching ── -->
                         <Border x:Name="ContinueWatchingSection"
-                                Grid.Row="0"
-                                Background="#70393A33"
-                                BorderBrush="#30EAE8E3"
+                                Margin="0,0,16,0"
+                                Background="#191D26"
+                                BorderBrush="#00232830"
                                 BorderThickness="1"
                                 CornerRadius="12"
                                 Padding="12,10"
@@ -927,18 +857,18 @@
                                          Background="Transparent"
                                          BorderThickness="0"
                                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                                         ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                         ScrollViewer.VerticalScrollBarVisibility="Auto"
                                          ItemContainerStyle="{StaticResource VideoItemStyle}"
                                          SelectionChanged="ContinueWatchingList_SelectionChanged">
                                     <ListBox.ItemTemplate>
                                         <DataTemplate>
                                             <Grid Margin="0,2,0,2">
                                                 <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="80"/>
+                                                    <ColumnDefinition Width="144"/>
                                                     <ColumnDefinition Width="8"/>
                                                     <ColumnDefinition Width="*"/>
                                                 </Grid.ColumnDefinitions>
-                                                <Border Width="80" Height="46"
+                                                <Border Width="144" Height="81"
                                                         CornerRadius="6"
                                                         Background="#A42B2C26"
                                                         BorderBrush="#4A4B41"
@@ -950,15 +880,15 @@
                                                         <Border VerticalAlignment="Bottom" Height="3" Background="#32332D" Opacity="0.7"/>
                                                         <Rectangle VerticalAlignment="Bottom"
                                                                    Height="3"
-                                                                   Fill="#CDC8BE"
+                                                                   Fill="#F1C47E"
                                                                    HorizontalAlignment="Left"
-                                                                   Width="{Binding ResumeBarWidthSmall}"/>
+                                                                   Width="{Binding ResumeBarWidth}"/>
                                                     </Grid>
                                                 </Border>
                                                 <StackPanel Grid.Column="2" VerticalAlignment="Center">
                                                     <TextBlock Text="{Binding Title}"
                                                                Foreground="#F8F7F5"
-                                                               FontSize="12"
+                                                               FontSize="14"
                                                                FontWeight="SemiBold"
                                                                TextWrapping="Wrap"
                                                                MaxHeight="36"/>
@@ -975,10 +905,10 @@
                         </Border>
 
                         <!-- ── Watch Queue ── -->
-                        <Border x:Name="WatchQueueSection"
+                        <Border x:Name="WatchQueueSection" Grid.Column="1" Width="240" Margin="0,0,16,0"
                                 Grid.Row="2"
-                                Background="#70393A33"
-                                BorderBrush="#30EAE8E3"
+                                Background="#191D26"
+                                BorderBrush="#00232830"
                                 BorderThickness="1"
                                 CornerRadius="12"
                                 Padding="12,10"
@@ -1063,8 +993,8 @@
                             </StackPanel>
                         </Border>
 
-                        <!-- ── Recommendations ── -->
-                        <Border Grid.Row="4"
+                        <!-- Recommendations -->
+                        <Border Grid.Column="2"
                                 Background="Transparent"
                                 BorderBrush="Transparent"
                                 BorderThickness="1"
@@ -1106,11 +1036,11 @@
                                             <DataTemplate>
                                                 <Grid Margin="0,2,0,2">
                                                     <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="76"/>
+                                                        <ColumnDefinition Width="144"/>
                                                         <ColumnDefinition Width="8"/>
                                                         <ColumnDefinition Width="*"/>
                                                     </Grid.ColumnDefinitions>
-                                                    <Border Width="76" Height="52"
+                                                    <Border Width="144" Height="81"
                                                             CornerRadius="6"
                                                             Background="#A42B2C26"
                                                             BorderBrush="#4A4B41"
@@ -1298,7 +1228,7 @@
                     Grid.RowSpan="3"
                     Padding="14"
                     CornerRadius="18"
-                    Background="#A5282924"
+                    Background="#151820"
                     BorderBrush="#35EAE8E3"
                     BorderThickness="1"
                     Visibility="Collapsed">
@@ -1309,7 +1239,7 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <Border Grid.Row="0" Background="#70393A33" BorderBrush="#30EAE8E3" BorderThickness="1" CornerRadius="14" Padding="16,14">
+                    <Border Grid.Row="0" Background="#191D26" BorderBrush="#00232830" BorderThickness="1" CornerRadius="14" Padding="16,14">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
@@ -1374,7 +1304,7 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
-                        <Border Grid.Column="0" Background="#70393A33" BorderBrush="#30EAE8E3" BorderThickness="1" CornerRadius="14" Padding="14">
+                        <Border Grid.Column="0" Background="#191D26" BorderBrush="#00232830" BorderThickness="1" CornerRadius="14" Padding="14">
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
@@ -1446,7 +1376,7 @@
                             </Grid>
                         </Border>
 
-                        <Border Grid.Column="2" Background="#70393A33" BorderBrush="#30EAE8E3" BorderThickness="1" CornerRadius="14" Padding="14">
+                        <Border Grid.Column="2" Background="#191D26" BorderBrush="#00232830" BorderThickness="1" CornerRadius="14" Padding="14">
                             <StackPanel>
                                 <TextBlock x:Name="RecentStreamsHeaderText"
                                            Text="Последние просмотренные"
@@ -1513,7 +1443,7 @@
                     Grid.RowSpan="3"
                     Padding="14"
                     CornerRadius="18"
-                    Background="#A5282924"
+                    Background="#151820"
                     BorderBrush="#35EAE8E3"
                     BorderThickness="1"
                     Visibility="Collapsed">
@@ -1557,7 +1487,7 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
-                        <Border Grid.Column="0" Background="#70393A33" BorderBrush="#30EAE8E3" BorderThickness="1" CornerRadius="14" Padding="14">
+                        <Border Grid.Column="0" Background="#191D26" BorderBrush="#00232830" BorderThickness="1" CornerRadius="14" Padding="14">
                             <StackPanel>
                                 <TextBlock x:Name="QuestsDailyHeaderText" Text="Ежедневные задания" Foreground="#F2F0ED" FontWeight="Bold" FontSize="17"/>
                                 <TextBlock x:Name="QuestsDailyResetText"
@@ -1606,7 +1536,7 @@
                             </StackPanel>
                         </Border>
 
-                        <Border Grid.Column="2" Background="#70393A33" BorderBrush="#30EAE8E3" BorderThickness="1" CornerRadius="14" Padding="14">
+                        <Border Grid.Column="2" Background="#191D26" BorderBrush="#00232830" BorderThickness="1" CornerRadius="14" Padding="14">
                             <StackPanel>
                                 <TextBlock x:Name="QuestsWeeklyHeaderText" Text="Еженедельные задания" Foreground="#F2F0ED" FontWeight="Bold" FontSize="17"/>
                                 <TextBlock x:Name="QuestsWeeklyResetText"
@@ -1663,7 +1593,7 @@
                     Grid.RowSpan="3"
                     Padding="0"
                     CornerRadius="18"
-                    Background="#A5282924"
+                    Background="#151820"
                     BorderBrush="#35EAE8E3"
                     BorderThickness="1"
                     Visibility="Collapsed">
@@ -1677,6 +1607,7 @@
                     <!-- Header -->
                     <Grid Grid.Row="0">
                         <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
@@ -1701,7 +1632,38 @@
                                    Foreground="#55CBC6BB"
                                    FontSize="9"
                                    FontWeight="SemiBold"/>
-                    </Grid>
+                                            <WrapPanel Grid.Row="2" Margin="0,10,0,0" Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock x:Name="AppVersionText"
+                                       Text="v1.4.11"
+                                       Foreground="#C8C3B8"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock x:Name="UpdateStatusText"
+                                       Margin="12,0,0,0"
+                                       Text="● Проверка обновлений..."
+                                       Foreground="#E2C17A"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                            <Button x:Name="UpdateProgramButton"
+                                    Margin="12,0,0,0"
+                                    Padding="10,4"
+                                    FontSize="13"
+                                    FontWeight="Bold"
+                                    Content="Обновить программу"
+                                    Visibility="Collapsed"
+                                    Click="UpdateProgramButton_Click"/>
+                            <Button x:Name="RestartProgramButton"
+                                    Margin="8,0,0,0"
+                                    Padding="10,4"
+                                    FontSize="13"
+                                    FontWeight="Bold"
+                                    Content="Перезапустить программу"
+                                    Visibility="Collapsed"
+                                    Click="RestartProgramButton_Click"/>
+                        </WrapPanel>
+</Grid>
 
                     <!-- Two-column layout -->
                     <Grid Grid.Row="2">
@@ -1719,8 +1681,8 @@
 
                                 <!-- Card: Интерфейс -->
                                 <Border CornerRadius="12"
-                                        Background="#70393A33"
-                                        BorderBrush="#30EAE8E3"
+                                        Background="#191D26"
+                                        BorderBrush="#00232830"
                                         BorderThickness="1"
                                         Padding="16">
                                     <StackPanel>
@@ -1785,8 +1747,8 @@
 
                                 <!-- Card: Запуск и поведение -->
                                 <Border CornerRadius="12"
-                                        Background="#70393A33"
-                                        BorderBrush="#30EAE8E3"
+                                        Background="#191D26"
+                                        BorderBrush="#00232830"
                                         BorderThickness="1"
                                         Padding="16"
                                         Margin="0,10,0,0">
@@ -1842,8 +1804,8 @@
 
                                 <!-- Card: Данные и кеш -->
                                 <Border CornerRadius="12"
-                                        Background="#70393A33"
-                                        BorderBrush="#30EAE8E3"
+                                        Background="#191D26"
+                                        BorderBrush="#00232830"
                                         BorderThickness="1"
                                         Padding="16"
                                         Margin="0,10,0,0">
@@ -1893,8 +1855,8 @@
 
                                 <!-- Card: Плеер и бинды -->
                                 <Border CornerRadius="12"
-                                        Background="#70393A33"
-                                        BorderBrush="#30EAE8E3"
+                                        Background="#191D26"
+                                        BorderBrush="#00232830"
                                         BorderThickness="1"
                                         Padding="16">
                                     <StackPanel>
@@ -2424,8 +2386,8 @@
 
                                 <!-- Card: Диагностика -->
                                 <Border CornerRadius="12"
-                                        Background="#70393A33"
-                                        BorderBrush="#30EAE8E3"
+                                        Background="#191D26"
+                                        BorderBrush="#00232830"
                                         BorderThickness="1"
                                         Padding="16"
                                         Margin="0,10,0,0">
@@ -2506,7 +2468,13 @@
             <TextBlock x:Name="StatusText" Grid.Row="8" Foreground="#DEDBD5" FontSize="12" TextWrapping="Wrap" Margin="4,4,0,0" Visibility="Collapsed"/>
 
             </Grid>
-            <Grid x:Name="LoadingOverlay" Grid.ColumnSpan="3" Panel.ZIndex="1000" Margin="-20" Background="#12140F" ClipToBounds="True">
+            <ContentControl x:Name="PlayerWorkspace" Grid.RowSpan="2" Focusable="False" Visibility="Collapsed" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
+            <Grid x:Name="PlayerTransition" Grid.RowSpan="2" Panel.ZIndex="900" ClipToBounds="True" Visibility="Collapsed">
+                <Border Background="#101218">
+                    <Image x:Name="PlayerTransitionCover" Stretch="UniformToFill"/>
+                </Border>
+            </Grid>
+            <Grid x:Name="LoadingOverlay" Grid.RowSpan="2" Panel.ZIndex="1000" Margin="0" Background="#12140F" ClipToBounds="True">
                 <Grid.ColumnDefinitions><ColumnDefinition Width="1.05*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                 <Grid Grid.Column="1" ClipToBounds="True">
                     <Image x:Name="LoadingBackgroundImage" Source="{StaticResource Brand.Medals}" Stretch="UniformToFill"/>
@@ -2523,7 +2491,7 @@
                 </StackPanel>
                 <TextBlock Text="JokerDBD Tracker" Foreground="#808577" FontSize="12" Margin="64,0,0,30" VerticalAlignment="Bottom"/>
             </Grid>
-            <views:PsiIntroView x:Name="PsiIntro" Grid.ColumnSpan="3" Panel.ZIndex="1200" Margin="-20"/>
+            <views:PsiIntroView x:Name="PsiIntro" Grid.RowSpan="2" Panel.ZIndex="1200" Margin="0"/>
         </Grid>
     </Border>
 </Window>

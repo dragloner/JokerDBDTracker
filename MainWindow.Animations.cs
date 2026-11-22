@@ -1,5 +1,8 @@
 using System.Windows;
 using System.Windows.Media;
+using System.Windows.Controls;
+using System.Windows.Media.Imaging;
+using JokerDBDTracker.Models;
 using System.Windows.Media.Animation;
 
 namespace JokerDBDTracker
@@ -30,6 +33,56 @@ namespace JokerDBDTracker
             return tcs.Task;
         }
 
+        private async Task AnimateCoverToPlayerAsync(YouTubeVideo video)
+        {
+            if (!AreAnimationsEnabled || !Uri.TryCreate(video.ThumbnailUrl, UriKind.Absolute, out var cover) ||
+                cover.Scheme != Uri.UriSchemeHttps) return;
+
+            FrameworkElement? source = null;
+            foreach (var list in new[] { VideoList, ContinueWatchingList, RecommendationsList, RecentStreamsList })
+            {
+                if (list.IsVisible && list.ItemContainerGenerator.ContainerFromItem(video) is ListBoxItem card &&
+                    card.IsVisible && card.ActualWidth > 0)
+                {
+                    source = card;
+                    break;
+                }
+            }
+            if (source is null && HeroCover.IsVisible) source = HeroCover;
+            if (source is null || source.ActualWidth <= 0 || source.ActualHeight <= 0) return;
+
+            var origin = source.TranslatePoint(new Point(), MainRootBorder);
+            if (origin.Y < 0 || origin.Y >= MainRootBorder.ActualHeight) return;
+            var scale = new ScaleTransform();
+            var shift = new TranslateTransform();
+            var transform = new TransformGroup();
+            transform.Children.Add(scale);
+            transform.Children.Add(shift);
+            var coverPlate = (Border)PlayerTransition.Children[0];
+            coverPlate.RenderTransform = transform;
+            PlayerTransitionCover.Source = new BitmapImage(cover);
+            PlayerTransition.Visibility = Visibility.Visible;
+            var duration = TimeSpan.FromMilliseconds(250);
+            var ease = new CubicEase { EasingMode = EasingMode.EaseInOut };
+            var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            DoubleAnimation Move(double from, double to) => new(from, to, duration) { EasingFunction = ease };
+            var vertical = Move(origin.Y, 0);
+            vertical.Completed += (_, _) => completed.TrySetResult();
+            try
+            {
+                scale.BeginAnimation(ScaleTransform.ScaleXProperty, Move(Math.Clamp(source.ActualWidth / MainRootBorder.ActualWidth, .1, 1), 1));
+                scale.BeginAnimation(ScaleTransform.ScaleYProperty, Move(Math.Clamp(source.ActualHeight / MainRootBorder.ActualHeight, .08, 1), 1));
+                shift.BeginAnimation(TranslateTransform.XProperty, Move(origin.X, 0));
+                shift.BeginAnimation(TranslateTransform.YProperty, vertical);
+                await Task.WhenAny(completed.Task, Task.Delay(350));
+            }
+            finally
+            {
+                PlayerTransition.Visibility = Visibility.Collapsed;
+                PlayerTransitionCover.Source = null;
+            }
+        }
+
         private void AnimatePanelEntrance(FrameworkElement element)
         {
             if (!AreAnimationsEnabled || element.Visibility != Visibility.Visible)
@@ -44,7 +97,7 @@ namespace JokerDBDTracker
                 translation = new TranslateTransform();
                 element.RenderTransform = translation;
             }
-            translation.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(10, 0, TimeSpan.FromMilliseconds(320))
+            translation.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(7, 0, TimeSpan.FromMilliseconds(195))
             {
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
             });
@@ -53,7 +106,7 @@ namespace JokerDBDTracker
             {
                 From = 0,
                 To = 1,
-                Duration = TimeSpan.FromMilliseconds(260),
+                Duration = TimeSpan.FromMilliseconds(180),
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
             };
             element.BeginAnimation(UIElement.OpacityProperty, animation);

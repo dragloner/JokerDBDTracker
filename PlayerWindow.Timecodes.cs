@@ -19,11 +19,11 @@ namespace JokerDBDTracker
                 var all = await _playerTimecodeService.LoadAsync();
                 ApplyLoadedTimecodes(all);
             }
-            catch
+            catch (Exception ex)
             {
-                _videoTimecodes = [];
-                _allTimecodes = [];
-                RefreshTimecodesPanelList();
+                JokerDBDTracker.Services.DiagnosticsService.LogException("Timecodes.Load", ex);
+                TimecodesPanelEmptyText.Text = PT("Не удалось прочитать таймкоды.", "Saved moments could not be read.");
+                TimecodesPanelEmptyText.Visibility = Visibility.Visible;
             }
         }
 
@@ -34,7 +34,7 @@ namespace JokerDBDTracker
                 timecode.IsCurrentVideo = string.Equals(
                     timecode.VideoId,
                     _video.VideoId,
-                    StringComparison.OrdinalIgnoreCase);
+                    StringComparison.Ordinal);
             }
 
             _videoTimecodes = all
@@ -328,7 +328,7 @@ namespace JokerDBDTracker
                 PlayerSurfaceHost.IsHitTestVisible = false;
             }
 
-            Activate();
+            _host.Activate();
             Focus();
             FocusTimecodePopupTextBox();
         }
@@ -363,7 +363,7 @@ namespace JokerDBDTracker
 
             void ApplyFocus()
             {
-                Activate();
+                _host.Activate();
                 Focus();
                 Keyboard.Focus(TimecodePopupLabelBox);
                 TimecodePopupLabelBox.Focus();

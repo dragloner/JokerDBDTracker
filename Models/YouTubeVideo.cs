@@ -11,11 +11,7 @@
         public int OriginalOrder { get; set; }
         public bool IsFavorite { get; set; }
 
-        public bool IsTwitchStream { get; set; }
-
-        public string EmbedUrl => IsTwitchStream
-            ? $"https://player.twitch.tv/?channel={VideoId.Replace("twitch:", "")}&parent=localhost&autoplay=true"
-            : $"https://www.youtube-nocookie.com/embed/{VideoId}";
+        public string EmbedUrl => $"https://www.youtube-nocookie.com/embed/{VideoId}";
         public string WatchUrl => $"https://www.youtube.com/watch?v={VideoId}";
         public string FavoriteGlyph => IsFavorite ? "★" : "☆";
 

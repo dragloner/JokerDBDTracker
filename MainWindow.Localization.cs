@@ -16,7 +16,11 @@ namespace JokerDBDTracker
                 return;
             }
 
-            LibraryHeroTitle.Text = T("Библиотека стримов", "Stream library");
+            RefreshCatalogLayoutLabel();
+            RefreshLibraryPageTitle();
+            CatalogNavButton.Content = T("Каталог", "Catalog");
+            LibraryHeroTitle.Text = T("ВИДЕО JOKERDBD", "JOKERDBD VIDEOS");
+            ReloadCatalogButton.Content = T("Обновить каталог", "Refresh catalog");
             RefreshStartCard();
             HomeNavButton.Content = T("Главная", "Home");
             FavoritesNavButton.Content = T("Избранное", "Favorites");
@@ -49,10 +53,6 @@ namespace JokerDBDTracker
                 ((TabItem)TopTabControl.Items[4]).Header = T("Настройки", "Settings");
             }
 
-            if (TwitchWatchButtonText is not null)
-            {
-                TwitchWatchButtonText.Text = T("Открыть Twitch", "Open Twitch");
-            }
 
             if (SearchPlaceholderText is not null)
             {

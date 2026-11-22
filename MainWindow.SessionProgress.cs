@@ -15,6 +15,7 @@ public partial class MainWindow
         var awarded = new HashSet<string>(StringComparer.Ordinal);
         player.ProgressCheckpoint = async () =>
         {
+            if (!player.PlaybackStarted) return;
             video.LastPlaybackSeconds = player.LastPlaybackSeconds;
             _playbackSecondsHistory[video.VideoId] = player.LastPlaybackSeconds;
             var totalXp = (int)Math.Round(player.WatchXpEarned * WatchSessionXpMultiplier);
